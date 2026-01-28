@@ -1,0 +1,26 @@
+:root {
+  /* JOJO Theme Colors */
+  --bg-color: #0c0014;
+  --bg-secondary: #1a0b2e;
+  --primary-color: #bd00ff; /* Electric Purple */
+  --secondary-color: #ff007f; /* Neon Pink */
+  --accent-color: #ffd700; /* Gold */
+  --text-color: #ffffff;
+  --subtext-color: #cccccc;
+  
+  --menacing-color: #551a8b;
+
+  /* Fonts */
+  --font-heading: 'Anton', 'Impact', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Spacing */
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 32px;
+  --spacing-xl: 64px;
+
+  /* Effects */
+  --shadow-neon: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);
+  --border-radius: 4px;
+}
