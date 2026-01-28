@@ -131,12 +131,16 @@ export const generateStandImage = async (appearance) => {
   // 1. Determine API Strategy based on Model Name
   const isGemini = imageModel.toLowerCase().includes('gemini');
 
+  // Support independent Image Provider
+  const imgApiKey = import.meta.env.VITE_IMAGE_API_KEY || apiKey;
+  const imgBaseUrl = import.meta.env.VITE_IMAGE_BASE_URL || baseUrl;
+
   let url, body, headers;
 
   if (isGemini) {
     // --- STRATEGY A: Google Gemini Native API ---
     // Endpoint: /v1beta/models/MODEL_NAME:generateContent
-    url = `${baseUrl}/v1beta/models/${imageModel}:generateContent?key=${apiKey}`;
+    url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent?key=${imgApiKey}`;
 
     headers = {
       'Content-Type': 'application/json'
@@ -162,10 +166,10 @@ export const generateStandImage = async (appearance) => {
 
   } else {
     // --- STRATEGY B: OpenAI Compatible API (DALL-E, etc) ---
-    url = `${baseUrl}/v1/images/generations`;
+    url = `${imgBaseUrl}/v1/images/generations`;
     headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      'Authorization': `Bearer ${imgApiKey}`
     };
     body = {
       model: imageModel,

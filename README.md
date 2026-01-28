@@ -52,6 +52,10 @@
 
     # 图像生成模型 (推荐 gemini-3-pro-image-preview 或 dall-e-3)
     VITE_IMAGE_MODEL=gemini-3-pro-image-preview
+
+    # [可选] 独立配置画图接口 (如果不填，默认使用上面的 API Key 和 Base URL)
+    # VITE_IMAGE_API_KEY=your_image_provider_key
+    # VITE_IMAGE_BASE_URL=https://api.another-provider.com
     ```
 
 4.  **启动开发服务器**
@@ -71,6 +75,8 @@
     *   `GEMINI_BASE_URL`: API 地址 (如 `https://www.wyjh.top`)
     *   `GEMINI_MODEL`: `gemini-1.5-flash`
     *   `IMAGE_MODEL`: `gemini-3-pro-image-preview`
+    *   (可选) `IMAGE_API_KEY`: 独立的绘图 API Key
+    *   (可选) `IMAGE_BASE_URL`: 独立的绘图中转地址
 4.  点击 Deploy。线上环境会自动切换到安全的后端代理模式，保护您的 Key 不泄露。
 
 ## ⚠️ 免责声明
