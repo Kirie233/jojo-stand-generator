@@ -29,44 +29,56 @@ export default async function handler(req) {
     // --- Action: Generate Profile (Text) ---
     if (action === 'profile') {
       const { song, color, personality, userName } = payload;
-      const url = `${baseUrl}/v1beta/models/${textModel}:generateContent?key=${apiKey}`;
+      const isGemini = textModel.toLowerCase().includes('gemini');
+      let url, headers, body;
 
-      const prompt = `
-        你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。
-
+      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。\n请返回一个合法的 JSON 对象。`;
+      const userPrompt = `
         用户特征:
         1. 替身使者: "${userName || 'Unknown'}"
         2. 音乐引用 (决定命名): "${song}"
         3. 代表色 (决定视觉): "${color}"
         4. 精神特质/欲望 (决定能力核心): "${personality}"
 
-        请返回一个合法的 JSON 对象 (不要使用 Markdown 代码块)，包含以下字段:
+        请返回 JSON，包含以下字段:
         {
-          "name": "替身名 (基于音乐引用的日文片假名或英文，并附带帅气的中文译名，例如 'Killer Queen (杀手皇后)')",
-          "abilityName": "能力名 (汉字，如 '败者食尘')",
-          "ability": "能力详细描述。必须基于'${personality}'设计，要有JOJO式的奇妙逻辑，避免通用的超能力。",
-          "stats": {
-            "power": "评级 (A-E, 或 ∞, ?)",
-            "speed": "评级",
-            "range": "评级",
-            "durability": "评级",
-            "precision": "评级",
-            "potential": "评级"
-          },
-          "appearance": "基于'${color}'色调的详细外貌描述，包含服装、机械或生物特征，用于后续绘画。",
-          "shout": "替身吼叫 (如 ORA ORA, ARI ARI, 或与能力相关的独特声音)"
+          "name": "替身名 (基于音乐引用)",
+          "abilityName": "能力名",
+          "ability": "能力详细描述 (基于'${personality}')",
+          "stats": { "power": "A-E", "speed": "A-E", "range": "A-E", "durability": "A-E", "precision": "A-E", "potential": "A-E" },
+          "appearance": "基于'${color}'色调的详细外貌描述",
+          "shout": "替身吼叫"
         }
       `;
 
+      if (isGemini) {
+        // Strategy A: Google Gemini
+        url = `${baseUrl}/v1beta/models/${textModel}:generateContent?key=${apiKey}`;
+        headers = { 'Content-Type': 'application/json' };
+        body = {
+          contents: [{ parts: [{ text: systemPrompt + "\n" + userPrompt }] }]
+        };
+      } else {
+        // Strategy B: OpenAI Compatible
+        url = `${baseUrl}/v1/chat/completions`;
+        headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        };
+        body = {
+          model: textModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          response_format: { type: "json_object" } // Enforce JSON for smart models
+        };
+      }
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
+        headers: headers,
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();

@@ -59,15 +59,36 @@ export const generateStandProfile = async (inputs) => {
       });
     } else {
       // --- DEVELOPMENT: Direct Client-Side Call (Fast/Debug) ---
+      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。\n请返回一个合法的 JSON 对象。`;
+
+      const isGemini = modelId.toLowerCase().includes('gemini');
+      let url, headers, body;
+
+      if (isGemini) {
+        url = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+        headers = { 'Content-Type': 'application/json' };
+        body = { contents: [{ parts: [{ text: prompt }] }] };
+      } else {
+        // OpenAI Compatible
+        url = `${baseUrl}/v1/chat/completions`;
+        headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        };
+        body = {
+          model: modelId,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" }
+        };
+      }
+
       response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
+        headers: headers,
+        body: JSON.stringify(body)
       });
     }
 
