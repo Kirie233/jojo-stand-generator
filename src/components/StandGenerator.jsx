@@ -6,7 +6,9 @@ import NavBar from './NavBar';
 import DonateModal from './DonateModal';
 import HelpModal from './HelpModal';
 import { generateStandProfile, generateStandImage, getCachedStand, saveCachedStand } from '../services/gemini';
-import { getHistory, addToHistory } from '../services/history';
+// Remove old history service import
+// import { getHistory, addToHistory } from '../services/history'; 
+import { saveStandToDB, getAllStandsFromDB, initDB } from '../services/db';
 import '../styles/variables.css';
 
 const StandGenerator = () => {
@@ -18,9 +20,39 @@ const StandGenerator = () => {
   const [showDonate, setShowDonate] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
-  // Load history on mount
+  // Load history from DB on mount (+ Migration Logic)
   useEffect(() => {
-    setHistory(getHistory());
+    const init = async () => {
+      try {
+        await initDB();
+
+        // 1. Migration: Move old LocalStorage items to IndexedDB
+        const oldRaw = localStorage.getItem('jojo_stand_history');
+        if (oldRaw) {
+          try {
+            const oldHistory = JSON.parse(oldRaw);
+            if (Array.isArray(oldHistory) && oldHistory.length > 0) {
+              console.log("Migrating legacy history to DB...", oldHistory.length);
+              for (const item of oldHistory) {
+                await saveStandToDB(item);
+              }
+              // Clear old storage after successful migration
+              localStorage.removeItem('jojo_stand_history');
+              console.log("Migration complete. LocalStorage cleared.");
+            }
+          } catch (e) {
+            console.error("Migration failed:", e);
+          }
+        }
+
+        // 2. Load from DB
+        const items = await getAllStandsFromDB();
+        setHistory(items);
+      } catch (e) {
+        console.error("Failed to initialize DB:", e);
+      }
+    };
+    init();
   }, []);
 
   const handleGenerate = async (inputs) => {
@@ -32,6 +64,13 @@ const StandGenerator = () => {
     const cached = getCachedStand(inputs);
     if (cached) {
       setStandData(cached);
+
+      // Fix: Ensure cached items are also added to history (if missing)
+      // Now using Async DB
+      await saveStandToDB(cached);
+      const updatedHistory = await getAllStandsFromDB();
+      setHistory(updatedHistory);
+
       setLoading(false);
       return;
     }
@@ -43,20 +82,35 @@ const StandGenerator = () => {
 
       // 3. Generate Image (Async)
       if (data.appearance) {
-        generateStandImage(data.appearance).then(imageUrl => {
-          if (imageUrl) {
-            // Keep userName in the final data object
-            const fullData = { ...data, imageUrl, userName: inputs.userName };
-            // Update state with image
-            setStandData(prev => ({ ...prev, imageUrl, userName: inputs.userName }));
+        generateStandImage(data.appearance).then(async (imageUrl) => {
+          // Prepare final data (with or without image)
+          const finalImageUrl = imageUrl || null;
+          const fullData = {
+            ...data,
+            imageUrl: finalImageUrl,
+            userName: inputs.userName,
+            timestamp: Date.now(),
+            // Ensure ID for DB
+            id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
+          };
 
-            // Save to Cache & History (only on full success)
-            saveCachedStand(inputs, fullData);
-            const updatedHistory = addToHistory(fullData);
+          // Update Display State
+          setStandData(fullData);
+
+          // Save to Cache & DB
+          saveCachedStand(inputs, fullData);
+
+          try {
+            await saveStandToDB(fullData);
+            const updatedHistory = await getAllStandsFromDB();
             setHistory(updatedHistory);
-          } else {
-            // Mark as failed so Card stops loading
-            setStandData(prev => ({ ...prev, imageFailed: true }));
+            console.log("Saved to IndexedDB successfully");
+          } catch (dbErr) {
+            console.error("DB Save failed:", dbErr);
+          }
+
+          if (!imageUrl) {
+            console.warn("Image generation failed, saved text profile only.");
           }
         });
       }
@@ -128,6 +182,13 @@ const StandGenerator = () => {
             <button className="reset-button" onClick={handleReset}>
               下一位替身使者 (NEXT USER)
             </button>
+
+            <div className="sponsor-inline">
+              <p>喜欢这个替身？请我喝杯阿帕茶 ☕</p>
+              <div className="qr-box-small">
+                <img src="/sponsor.png" alt="Sponsor" />
+              </div>
+            </div>
           </div>
         )}
       </main>
@@ -209,6 +270,33 @@ const StandGenerator = () => {
         @keyframes pulse {
             from { opacity: 0.6; }
             to { opacity: 1; }
+        }
+
+        .sponsor-inline {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px dashed rgba(255,255,255,0.2);
+            color: var(--subtext-color);
+        }
+
+        .sponsor-inline p {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .qr-box-small {
+            width: 120px;
+            height: 120px;
+            background: white;
+            padding: 5px;
+            border-radius: 4px;
+            margin: 0 auto;
+        }
+        
+        .qr-box-small img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
       `}</style>
     </div>

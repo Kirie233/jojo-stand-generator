@@ -14,7 +14,7 @@ const HelpModal = ({ onClose }) => {
 
           <div className="help-item">
             <h4>🎵 灵魂共鸣之音 (Song)</h4>
-            <p>输入你最喜欢的歌曲或歌手。这将直接决定替身的<strong>名字</strong>（遵循JOJO的音乐引用规则）。</p>
+            <p>输入你最喜欢的专辑、歌曲或歌手。这将直接决定替身的<strong>名字</strong>（遵循JOJO的音乐引用规则）。</p>
           </div>
 
           <div className="help-item">

@@ -1,31 +1,47 @@
 # JOJO 替身生成器 (JOJO Stand Generator)
 
-**“你的替身正如你的灵魂，正在蠢蠢欲动……”**
+> **“你的替身正如你的灵魂，正在蠢蠢欲动……”**
 
-这是一个基于 AI 驱动的 Web 应用程序，能够根据用户的特征（音乐喜好、性格欲望、代表色）自动生成独一无二的《JOJO的奇妙冒险》风格替身。不仅包含替身面板数据、能力描述，还能自动绘制出荒木飞吕彦画风的替身立绘。
+这是一个基于 AI 驱动的 Web 应用程序，能够根据用户的特征（音乐喜好、性格欲望、代表色）自动生成独一无二的《JOJO的奇妙冒险》风格替身。
 
-![Project Preview](public/vite.svg)
-*(建议在此处替换为您的项目截图)*
+不仅仅是生成数据，我们致力于还原**90年代经典 OVA 动画的视觉风格**。从闪耀着神秘光芒的雷达图，到充满颗粒感复古质感，再到荒木飞吕彦老师标志性的肌肉线条与姿势，一切只为让你体验最纯正的“觉醒”时刻。
 
-## 🌟 核心功能
+![Stand Card Preview](public/stand_card_preview.png)
+*(生成的替身卡片效果示例)*
 
-*   **替身觉醒**：输入你的灵魂特征，AI 将为你“觉醒”一个专属替身。
-*   **六维面板**：自动生成破坏力、速度、射程等六维雷达图。
-*   **能力设计**：基于你的欲望生成的独特能力，绝非简单的元素堆砌。
-*   **荒木画风绘制**：集成 Google Gemini / DALL-E 绘图接口，生成具有冲击力的 JOJO 风格立绘。
-*   **历史记录**：自动保存你的替身觉醒记录，随时回顾。
-*   **沉浸式 UI**：充满了“ゴゴゴ”氛围的视觉设计和交互动画。
+## 🌟 核心功能 (Features)
 
-## 🛠️ 技术栈
+*   **🧘 替身觉醒 (Soul Awakening)**
+    *   输入你的“精神特质”，AI 将深度解析并为你匹配最契合的替身能力。
+    *   绝非简单的随机组合，每个替身都有独特的“破坏力、速度、精密性”等六维面板。
 
-*   **前端**: React 19 + Vite
-*   **样式**: Vanilla CSS (自定义变量系统，无框架依赖)
-*   **AI 核心**: Google Gemini Pro (1.5 Flash / 3 Pro Image)
-*   **部署**: Vercel Edge Functions (后端代理，安全保护 API Key)
+*   **🎨 荒木画风绘制 (Araki Style Art)**
+    *   集成 Google Gemini / DALL-E 绘图接口。
+    *   **极致的复古美学**：自动应用胶片颗粒、径向模糊、高对比度滤镜，模拟90年代赛璐璐动画截图质感。
+    *   **完美融合**：角色与背景无缝融合，仿佛从虚空中浮现。
 
-## 🚀 本地开发指南
+*   **📊 动态雷达图 (Dynamic Radar Chart)**
+    *   复刻“白金之星”过场动画风格的六维雷达图。
+    *   带有动态刻度、金属质感边框和发光特效。
+    *   **智能排版**：无论替身名字多长，雷达图都能自动调整位置，互不遮挡。
 
-如果你想在本地运行此项目：
+*   **💾 无限觉醒历史 (Unlimited History)**
+    *   **IndexedDB 驱动**：利用浏览器本地数据库，突破 LocalStorage 容量限制。
+    *   **永久保存**：你可以生成成百上千个替身，高清大图和详细设定都会被完整保留在你的设备上。
+    *   **安全隐私**：所有数据存储在本地，不会上传到任何服务器。
+
+*   **🌍 双语支持 (Bilingual Support)**
+    *   自动生成标准的英文替身名 + 中文译名 (e.g. `Star Platinum (白金之星)`).
+
+## 🛠️ 技术栈 (Tech Stack)
+
+*   **前端 Core**: React 19 + Vite
+*   **样式 Engine**: Vanilla CSS (自定义变量系统，无 Tailwind/Bootstrap 依赖，极致轻量)
+*   **本地数据库**: IndexedDB (原生 API)
+*   **AI 接口**: Google Gemini Pro (1.5 Flash / 3 Pro Image)
+*   **部署**: Vercel Edge Functions (后端代理架构，保护 API Key 不泄露)
+
+## 🚀 本地开发 (Development)
 
 1.  **克隆仓库**
     ```bash
@@ -36,52 +52,47 @@
 2.  **安装依赖**
     ```bash
     npm install
+    # 推荐使用 pnpm 或 yarn
     ```
 
 3.  **配置环境变量**
-    在项目根目录创建一个 `.env` 文件，并添加以下内容：
+    复制 `.env` 文件（如果没有请新建），并填入你的 API Key：
     ```env
-    # Google Gemini API Key (必须)
+    # Google Gemini API Key (必须，用于文本和图像生成)
     VITE_GEMINI_API_KEY=your_api_key_here
 
-    # API Base URL (如果你使用中转服务，否则默认官方)
+    # [可选] 自定义 API 地址 (如果你使用中转/代理)
     VITE_GEMINI_BASE_URL=https://generativelanguage.googleapis.com
 
-    # 文本生成模型
+    # [可选] 自定义模型
     VITE_GEMINI_MODEL=gemini-1.5-flash
-
-    # 图像生成模型 (推荐 gemini-3-pro-image-preview 或 dall-e-3)
     VITE_IMAGE_MODEL=gemini-3-pro-image-preview
-
-    # [可选] 独立配置画图接口 (如果不填，默认使用上面的 API Key 和 Base URL)
-    # VITE_IMAGE_API_KEY=your_image_provider_key
-    # VITE_IMAGE_BASE_URL=https://api.another-provider.com
     ```
 
-4.  **启动开发服务器**
+4.  **启动替身使者**
     ```bash
     npm run dev
     ```
-    打开浏览器访问 `http://localhost:5173` 即可。
+    访问 `http://localhost:5173` 开始觉醒。
 
-## ☁️ 部署指南 (Vercel)
+## ☁️ 部署指南 (Deployment)
 
-本项目已针对 Vercel 进行了特定优化 (Edge Functions)，请务必按照以下步骤部署，以确保安全性：
+推荐使用 **Vercel** 进行零成本部署。本项目包含专门的 API 代理 (`api/generate.js`)，可防止 API Key 在前端暴露。
 
-1.  将项目 Fork 或上传到你的 GitHub。
-2.  在 [Vercel](https://vercel.com) 导入该项目。
-3.  **关键步骤**：在 Vercel 的 **Settings -> Environment Variables** 中配置以下变量（**不要**带 `VITE_` 前缀）：
+1.  **Fork 本项目** 到你的 GitHub。
+2.  在 [Vercel](https://vercel.com) 创建新项目，导入你的仓库。
+3.  **最重要的步骤**：在 Vercel 的 **Environment Variables** 设置中，添加以下变量（注意：生产环境不需要 `VITE_` 前缀，后端会自动读取）：
     *   `GEMINI_API_KEY`: 您的 API Key
-    *   `GEMINI_BASE_URL`: API 地址 (如 `https://www.wyjh.top`)
-    *   `GEMINI_MODEL`: `gemini-1.5-flash`
-    *   `IMAGE_MODEL`: `gemini-3-pro-image-preview`
-    *   (可选) `IMAGE_API_KEY`: 独立的绘图 API Key
-    *   (可选) `IMAGE_BASE_URL`: 独立的绘图中转地址
-4.  点击 Deploy。线上环境会自动切换到安全的后端代理模式，保护您的 Key 不泄露。
+    *   `GEMINI_BASE_URL`: (可选) 第三方中转地址
+4.  部署！
+    *   线上环境会自动使用 `api/generate.js` 进行请求转发。
+    *   本地环境会自动使用 `.env.local` 直连。
 
 ## ⚠️ 免责声明
 
-本项目是由《JOJO的奇妙冒险》粉丝制作的非营利性开源项目。所有通过 AI 生成的内容仅供娱乐。JOJO 的相关版权归 荒木飞吕彦 (Hirohiko Araki) 及 集英社 所有。
+本项目是由《JOJO的奇妙冒险》粉丝制作的非营利性开源项目。所有通过 AI 生成的内容仅供娱乐。JOJO 的相关版权归 **荒木飞吕彦 (Hirohiko Araki)** 及 **集英社 (SHUEISHA)** 所有。
+
+> *“人类的赞歌就是勇气的赞歌！人类的伟大就是勇气的伟大！”*
 
 ---
-**To Be Continued...**
+**To Be Continued... ➡️**

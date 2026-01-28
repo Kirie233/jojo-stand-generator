@@ -2,27 +2,35 @@ import React from 'react';
 import '../styles/variables.css';
 
 const HistoryList = ({ history, onLoad, onClose }) => {
-  if (!history || history.length === 0) return null;
+  // Removed early return to show drawer even if empty
 
   return (
     <div className="history-drawer">
       <div className="history-header">
-        <h3>替身名录 (History)</h3>
+        <h3>觉醒历史 (History)</h3>
         <button className="close-btn" onClick={onClose}>×</button>
       </div>
-      <div className="history-items">
-        {history.map((item) => (
-          <div key={item.id} className="history-item" onClick={() => onLoad(item)}>
-            <div className="history-name">{item.name}</div>
-            <div className="history-date">
-              {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString()}
+
+      {history && history.length > 0 ? (
+        <div className="history-items">
+          {history.map((item) => (
+            <div key={item.id} className="history-item" onClick={() => onLoad(item)}>
+              <div className="history-name">{item.name}</div>
+              <div className="history-date">
+                {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString()}
+              </div>
+              <div className="history-stats">
+                P:{item.stats.power} / S:{item.stats.speed}
+              </div>
             </div>
-            <div className="history-stats">
-              {item.stats.power} / {item.stats.speed}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-history">
+          <p>暂无觉醒记录</p>
+          <span style={{ fontSize: '2rem' }}>🕸️</span>
+        </div>
+      )}
 
       <style>{`
         .history-drawer {
@@ -98,6 +106,13 @@ const HistoryList = ({ history, onLoad, onClose }) => {
         .history-date {
             font-size: 0.8rem;
             opacity: 0.7;
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 50px 0;
+            color: var(--subtext-color);
+            opacity: 0.6;
         }
       `}</style>
     </div>

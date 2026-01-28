@@ -32,7 +32,7 @@ export default async function handler(req) {
       const isGemini = textModel.toLowerCase().includes('gemini');
       let url, headers, body;
 
-      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。\n请返回一个合法的 JSON 对象。`;
+      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请设计一个符合JOJO世界观的替身(Stand)。\n要求：能力设计要有创意且易于理解，符合荒木飞吕彦的风格。\n请返回一个合法的 JSON 对象。`;
       const userPrompt = `
         用户特征:
         1. 替身使者: "${userName || 'Unknown'}"
@@ -42,11 +42,11 @@ export default async function handler(req) {
 
         请返回 JSON，包含以下字段:
         {
-          "name": "替身名 (基于音乐引用)",
+          "name": "替身名 (格式必须为: English Name (中文译名), 例如: Star Platinum (白金之星))",
           "abilityName": "能力名",
-          "ability": "能力详细描述 (基于'${personality}')",
+          "ability": "能力详细描述。基于'${personality}'设计，要有JOJO式的特色，但要让人能看懂。",
           "stats": { "power": "A-E", "speed": "A-E", "range": "A-E", "durability": "A-E", "precision": "A-E", "potential": "A-E" },
-          "appearance": "基于'${color}'色调的详细外貌描述",
+          "appearance": "基于'${color}'色调的详细外貌描述，用于后续绘画。",
           "shout": "替身吼叫"
         }
       `;
@@ -94,7 +94,7 @@ export default async function handler(req) {
       const isGemini = imageModel.toLowerCase().includes('gemini');
       let url, body, headers;
 
-      const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nStyle tags: Anime, Manga Cover Art, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Surreal Fashion, Dynamic 'JoJo Pose', Menacing Atmosphere (Gogogo), Vibrant and High Contrast Colors, Psychedelic Background. No humans, focus on the Stand entity.`;
+      const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nStyle tags: Anime Character Sheet, Full Body Reference, White Background, Simple Background, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Dynamic 'JoJo Pose', Vibrant Colors. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo.`;
 
       if (isGemini) {
         url = `${baseUrl}/v1beta/models/${imageModel}:generateContent?key=${apiKey}`;

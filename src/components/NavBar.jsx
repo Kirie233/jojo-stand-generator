@@ -9,6 +9,9 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate }) => {
       </div>
 
       <div className="navbar-actions">
+        <button onClick={onReset} className="nav-btn create-btn">
+          ✨ 觉醒新替身
+        </button>
         <button onClick={onToggleDonate} className="nav-btn sponsor-btn">
           💖 赞赏
         </button>
@@ -16,7 +19,7 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate }) => {
           ❓ 指南
         </button>
         <button onClick={onToggleHistory} className="nav-btn history-btn">
-          📜 名录
+          📜 觉醒历史
         </button>
       </div>
 
@@ -82,6 +85,20 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate }) => {
         .sponsor-btn:hover {
             background: rgba(255, 107, 107, 0.1);
             border-color: #ff6b6b;
+        }
+
+        .create-btn {
+            background: var(--primary-color);
+            color: var(--bg-color);
+            border-color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .create-btn:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: 0 0 10px rgba(189, 0, 255, 0.5);
         }
       `}</style>
     </nav>

@@ -39,7 +39,7 @@ export const generateStandProfile = async (inputs) => {
         "precision": "评级",
         "potential": "评级"
       },
-      "appearance": "基于'${color}'色调的详细外貌描述，包含服装、机械或生物特征，用于后续绘画。",
+      "appearance": "基于'${color}'色调的详细外貌描述，包含服装、机械或生物特征，用于后续绘画。注意：不要描述任何文字、字母、符号或纹身在替身身上，保持外表纯净。",
       "shout": "替身吼叫 (如 ORA ORA, ARI ARI, 或与能力相关的独特声音)"
     }
   `;
@@ -59,7 +59,25 @@ export const generateStandProfile = async (inputs) => {
       });
     } else {
       // --- DEVELOPMENT: Direct Client-Side Call (Fast/Debug) ---
-      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。\n请返回一个合法的 JSON 对象。`;
+      // --- DEVELOPMENT: Direct Client-Side Call (Fast/Debug) ---
+      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请设计一个符合JOJO世界观的替身(Stand)。\n要求：能力设计要有创意且易于理解，符合荒木飞吕彦的风格。\n请返回一个合法的 JSON 对象。`;
+      const userPrompt = `
+        用户特征:
+        1. 替身使者: "${inputs.userName || 'Unknown'}"
+        2. 音乐引用 (决定命名): "${inputs.song}"
+        3. 代表色 (决定视觉): "${inputs.color}"
+        4. 精神特质/欲望 (决定能力核心): "${inputs.personality}"
+
+        请返回 JSON:
+        {
+          "name": "替身名 (音乐引用+译名)",
+          "abilityName": "能力名",
+          "ability": "能力详细描述。基于'${inputs.personality}'设计，要有JOJO式的特色，但要让人能看懂。",
+          "stats": { "power": "A-E", "speed": "A-E", "range": "A-E", "durability": "A-E", "precision": "A-E", "potential": "A-E" },
+          "appearance": "基于'${inputs.color}'色调的详细外貌描述",
+          "shout": "替身吼叫"
+        }
+      `;
 
       const isGemini = modelId.toLowerCase().includes('gemini');
       let url, headers, body;
@@ -147,7 +165,7 @@ export const generateStandImage = async (appearance) => {
 
   console.log("Generating Image Model:", imageModel);
 
-  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nStyle tags: Anime, Manga Cover Art, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Surreal Fashion, Dynamic 'JoJo Pose', Menacing Atmosphere (Gogogo), Vibrant and High Contrast Colors, Psychedelic Background. No humans, focus on the Stand entity.`;
+  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nStyle tags: Anime Character Sheet, Full Body Reference, White Background, Simple Background, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Dynamic 'JoJo Pose', Vibrant Colors. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo.`;
 
   // 1. Determine API Strategy based on Model Name
   const isGemini = imageModel.toLowerCase().includes('gemini');

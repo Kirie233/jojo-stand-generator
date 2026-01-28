@@ -29,7 +29,7 @@ const InputForm = ({ onSubmit }) => {
       </div>
 
       <div className="form-group">
-        <label>1. 灵魂共鸣之音 (喜欢的歌曲/歌手)</label>
+        <label>1. 灵魂共鸣之音 (喜欢的专辑歌曲/歌手)</label>
         <input
           type="text"
           value={song}

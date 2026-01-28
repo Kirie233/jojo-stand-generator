@@ -37,6 +37,13 @@ const StatRadar = ({ stats, labels: customLabels }) => {
     customLabels.potential
   ] : defaultLabels;
 
+  // Labels: Combine Name and Grade in a clean format
+  const fullLabels = chartLabels.map((label, index) => {
+    const keys = ['power', 'speed', 'range', 'durability', 'precision', 'potential'];
+    const grade = stats[keys[index]] || '?';
+    return `${label} ${grade}`;
+  });
+
   const dataValues = [
     gradeToNumber(stats.power),
     gradeToNumber(stats.speed),
@@ -47,40 +54,48 @@ const StatRadar = ({ stats, labels: customLabels }) => {
   ];
 
   const data = {
-    labels: chartLabels,
+    labels: fullLabels,
     datasets: [
       {
-        label: 'Stand Stats',
+        label: 'Stats',
         data: dataValues,
-        backgroundColor: 'rgba(189, 0, 255, 0.4)', // Primary color opacity
-        borderColor: '#bd00ff', // Primary color
+        backgroundColor: 'rgba(220, 20, 60, 0.6)', // Crimson Red
+        borderColor: '#ff0000',
         borderWidth: 2,
-        pointBackgroundColor: '#ffd700', // Accent color
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: '#bd00ff',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#000',
+        pointRadius: 3,
+        pointHoverRadius: 5,
       },
     ],
   };
 
   const options = {
+    maintainAspectRatio: false,
     scales: {
       r: {
         angleLines: {
-          color: 'rgba(255, 255, 255, 0.2)',
+          color: 'rgba(0,0,0,0.5)',
+          lineWidth: 1,
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.2)',
+          color: 'rgba(0,0,0,0.3)',
+          circular: true,
+          lineWidth: 1,
         },
         pointLabels: {
-          color: '#ffd700', // Gold labels
+          color: '#000',
           font: {
-            size: 14,
-            family: 'Anton', // Custom font
-          }
+            size: 13,
+            family: '"Noto Sans SC", sans-serif',
+            weight: 'bold' // Bold for readability
+          },
+          backdropColor: 'rgba(255, 255, 255, 0.9)', // White bg for text readability
+          backdropPadding: 4,
+          padding: 10
         },
         ticks: {
-          display: false, // Hide numbers
+          display: false,
           maxTicksLimit: 6,
         },
         suggestedMin: 0,
@@ -88,10 +103,11 @@ const StatRadar = ({ stats, labels: customLabels }) => {
       },
     },
     plugins: {
-      legend: {
-        display: false,
-      },
+      legend: { display: false },
     },
+    layout: {
+      padding: 5
+    }
   };
 
   return <Radar data={data} options={options} />;
