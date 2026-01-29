@@ -38,7 +38,7 @@
 *   **前端 Core**: React 19 + Vite
 *   **样式 Engine**: Vanilla CSS (自定义变量系统，无 Tailwind/Bootstrap 依赖，极致轻量)
 *   **本地数据库**: IndexedDB (原生 API)
-*   **AI 接口**: Google Gemini Pro (1.5 Flash / 3 Pro Image)
+*   **AI 接口**: Google Gemini Pro (3 Flash Preview / 3 Pro Image)
 *   **部署**: Vercel Edge Functions (后端代理架构，保护 API Key 不泄露)
 
 ## 🚀 本地开发 (Development)
@@ -65,7 +65,7 @@
     VITE_GEMINI_BASE_URL=https://generativelanguage.googleapis.com
 
     # [可选] 自定义模型
-    VITE_GEMINI_MODEL=gemini-1.5-flash
+    VITE_GEMINI_MODEL=gemini-3-flash-preview
     VITE_IMAGE_MODEL=gemini-3-pro-image-preview
     ```
 
