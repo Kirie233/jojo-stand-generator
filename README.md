@@ -75,18 +75,37 @@
     ```
     访问 `http://localhost:5173` 开始觉醒。
 
-## ☁️ 部署指南 (Deployment)
+## ☁️ 部署指南 (Deployment Guide)
 
-推荐使用 **Vercel** 进行零成本部署。本项目包含专门的 API 代理 (`api/generate.js`)，可防止 API Key 在前端暴露。
+本指南将手把手教您如何将 **JOJO 替身生成器** 免费部署到 Vercel 平台。
 
-1.  **Fork 本项目** 到你的 GitHub。
-2.  在 [Vercel](https://vercel.com) 创建新项目，导入你的仓库。
-3.  **最重要的步骤**：在 Vercel 的 **Environment Variables** 设置中，添加以下变量（注意：生产环境不需要 `VITE_` 前缀，后端会自动读取）：
-    *   `GEMINI_API_KEY`: 您的 API Key
-    *   `GEMINI_BASE_URL`: (可选) 第三方中转地址
-4.  部署！
-    *   线上环境会自动使用 `api/generate.js` 进行请求转发。
-    *   本地环境会自动使用 `.env.local` 直连。
+### 1. 导入项目 (Import Project)
+1.  **Fork** 本项目到您的 GitHub 账号。
+2.  登录 [Vercel](https://vercel.com)。
+3.  点击 **"Add New..."** -> **"Project"**。
+4.  选择导入您刚刚 Fork 的 `jojo-stand-generator` 仓库。
+
+### 2. 配置环境变量 (Environment Variables) - ⚠️ 重要步骤
+在 Vercel 的 "Configure Project" 页面，点开 **"Environment Variables"** 选项卡，添加以下变量：
+
+| 变量名 (Key) | 示例值 (Value) | 说明 |
+| :--- | :--- | :--- |
+| `GEMINI_API_KEY` | `sk-VYny...` | **[必填]** 您的 Gemini API Key |
+| `GEMINI_BASE_URL` | `https://rinkoai.com` | **[选填]** API 中转地址 (若使用官方接口可忽略) |
+| `GEMINI_MODEL` | `gemini-3-flash-preview` | **[选填]** 指定思考模型 |
+| `IMAGE_MODEL` | `gemini-3-pro-image-preview` | **[选填]** 指定画图模型 |
+| `IMAGE_API_KEY` | `sk-GVXly...` | **[选填]** 独立画图 Key (若需与文本分开) |
+| `IMAGE_BASE_URL` | `https://www.wyjh.top` | **[选填]** 独立画图地址 |
+
+> **注意：** 在 Vercel 中不需要添加 `VITE_` 前缀，后端会自动读取。前端代码也会自动适配。
+
+### 3. 开始部署 (Deploy)
+1.  点击底部的 **Deploy** 按钮。
+2.  等待约 1 分钟构建完成。
+3.  点击 **Visit** 即可访问您的线上替身生成器！
+
+### 4. 后续更新
+只要您向 GitHub 仓库推送了新代码 (`git push`)，Vercel 会自动触发重新部署，无需额外操作。
 
 ## ⚠️ 免责声明
 
