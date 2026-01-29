@@ -63,10 +63,21 @@ const StandCard = ({ standData }) => {
           <div className="card-bg"></div>
           <div className="texture-overlay"></div>
 
+          {/* STAND IMAGE (Full Width Background Layer) */}
+          {standData.imageUrl ? (
+            <div
+              className="stand-full-bg"
+              style={{ backgroundImage: `url(${standData.imageUrl})` }}
+            ></div>
+          ) : (
+            /* Loading State (Only if no image yet) */
+            <div className="loading-overlay">GENERATING...</div>
+          )}
+
           {/* Layout Container for Separation */}
           <div className="visual-layout">
 
-            {/* LEFT ZONE (40%): Text & Radar */}
+            {/* LEFT ZONE (Text & Radar) */}
             <div className="zone-left">
               <div className="header-group">
                 <div className="label-row">
@@ -78,29 +89,36 @@ const StandCard = ({ standData }) => {
               </div>
 
               <div className="radar-group">
+                <div className="radar-label">STATISTICS</div>
                 <CustomRadar stats={stats} labels={translatedLabels} />
               </div>
             </div>
 
-            {/* RIGHT ZONE (60%): Image Only */}
-            <div className="zone-right">
-              {standData.imageUrl ? (
-                <img src={standData.imageUrl} alt={name} className="stand-image" crossOrigin="anonymous" />
-              ) : (
-                <div className="loading">GENERATING...</div>
-              )}
-
-              {/* User Name Floating in Right Zone */}
-              <div className="user-floating">
-                <div className="user-label-group">
-                  <div className="label-cn" style={{ textAlign: 'right', display: 'inline-block' }}>[替身使者]</div>
-                  <div className="label-bracket" style={{ fontSize: '1rem', textAlign: 'right', display: 'block' }}>[STAND MASTER]</div>
+            {/* Reference Image (Catalyst) - Top Right Absolute */}
+            {standData.referenceImage && (
+              <div className="catalyst-box-floating">
+                <div className="catalyst-header">
+                  <span>[CATALYST]</span>
+                  <span>[触媒]</span>
                 </div>
-                <h1 className="user-name">{standData.userName || 'YOU'}</h1>
+                <img src={standData.referenceImage} alt="Ref" />
+              </div>
+            )}
+
+            {/* RIGHT ZONE (Master Name Only) */}
+            <div className="zone-right">
+              {/* Stand Master (Moved to Bottom Right of Right Zone) */}
+              <div className="user-info-right">
+                <div className="label-row-sm" style={{ justifyContent: 'flex-end' }}>
+                  <span className="label-cn-sm">[替身使者]</span>
+                  <span className="label-bracket-sm">[STAND MASTER]</span>
+                </div>
+                <h2 className="user-name-right">{standData.userName || 'YOU'}</h2>
               </div>
             </div>
           </div>
         </div>
+
 
         {/* === BOTTOM INFO AREA (Auto Height) === */}
         <div className="info-area">
@@ -113,232 +131,289 @@ const StandCard = ({ standData }) => {
       </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Serif+SC:wght@700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Serif+SC:wght@700;900&family=Bangers&display=swap');
 
         .stand-card-container {
-            margin: 20px auto;
+            margin: 40px auto;
             max-width: 900px;
             font-family: 'Cinzel', serif;
+            position: relative;
         }
 
         .stand-card {
             width: 100%;
-            border: 8px solid #d7ccc8;
-            outline: 3px solid #000;
-            background: #2e003e;
+            border: 6px solid #000;
+            background: #fff;
             display: flex;
             flex-direction: column;
+            box-shadow: 15px 15px 0px #222; /* Manga Heavy Shadow */
+            position: relative;
+            overflow: hidden;
+            border-radius: 30px; /* GOLDEN WIND ROUNDING */
         }
 
-        /* --- TOP VISUAL AREA --- */
+        /* --- BACKGROUND: JOJO STYLE --- */
         .visual-area {
             position: relative;
             width: 100%;
-            height: 500px; /* Fixed height for image area */
+            height: 600px; 
             overflow: hidden;
-            border-bottom: 4px solid #3e2723;
+            border-bottom: 6px solid #000;
+            background-color: #2b003e; /* Deep Purple Base */
         }
 
         .card-bg {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
-            background: 
-                radial-gradient(circle at 30% 30%, rgba(255, 0, 150, 0.5) 0%, transparent 60%),
-                radial-gradient(circle at 70% 70%, rgba(255, 140, 0, 0.4) 0%, transparent 60%),
-                linear-gradient(135deg, #4a148c 0%, #1a0033 100%);
-            filter: blur(2px) contrast(1.1); 
-            transform: scale(1.05);
+            /* Iconic JoJo Gradient: Purple -> Pink -> Gold */
+            background: linear-gradient(135deg, #4a148c 0%, #d500f9 60%, #ffd700 100%);
+            opacity: 0.9;
         }
 
+        /* Triangle Pattern Overlay */
         .texture-overlay {
             position: absolute;
             z-index: 2;
             width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
-            opacity: 0.4;
+            /* CSS Triangle Pattern */
+            background-image: 
+                linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000),
+                linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+            opacity: 0.1; /* Subtle texture blending */
             mix-blend-mode: overlay;
         }
 
-        /* --- VISUAL LAYOUT (Split) --- */
+        /* --- VISUAL LAYOUT --- */
         .visual-layout {
             position: relative;
-            z-index: 10;
+            z-index: 20; /* Above BG */
             display: flex;
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
         }
 
-        /* LEFT ZONE */
+        /* --- STAND IMAGE (Background Layer) --- */
+        .stand-full-bg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-size: cover;
+            background-position: top center;
+            mix-blend-mode: normal; /* True Colors */
+            z-index: 10;
+            /* Fade bottom slightly for text area integration */
+            mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+        }
+        
+        /* Remove the spotlight fix since we are in normal mode now */
+        .card-bg::after {
+            display: none;
+        }
+
+        /* --- LEFT ZONE: NAME & RADAR --- */
         .zone-left {
-            width: 40%;
-            height: 100%;
-            position: relative;
-            padding: 30px 0 30px 40px;
+            width: 45%;
+            padding: 30px;
             display: flex;
             flex-direction: column;
-            /* Removed justify-content: space-between; becuz Radar is now absolute */
+            justify-content: space-between;
+            pointer-events: none; /* Click through */
         }
-
+        
+        /* STAND NAME header */
         .header-group {
+            pointer-events: auto;
             text-align: left;
-            z-index: 20;
-            /* Prevents overlap with header */
-            max-height: 220px; 
-            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 50;
+            padding: 10px;
+            /* Gradient fade for readability */
+            background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+            border-left: 5px solid var(--accent-color); /* Anime Title Marker */
         }
 
         .label-row {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 5px;
-        }
-
-        /* ... (labels styles unchanged) ... */
-
-        .radar-group {
-            position: absolute;
-            bottom: 10px;
-            left: 30px;
-            /* Scale down and anchor to bottom-left */
-            transform: scale(0.85); 
-            transform-origin: bottom left;
-            z-index: 25; 
-            pointer-events: none; /* Let clicks pass through if needed */
-        }
-
-        .label-bracket {
-            color: #ffd700; 
-            font-weight: bold; 
-            letter-spacing: 1px;
-            font-size: 1.2rem; 
-            text-shadow: 2px 2px 0 #000;
-            font-family: 'Cinzel', serif;
-        }
-        
-        .label-cn {
-            color: #fff;
-            font-family: "Noto Serif SC", serif;
-            font-weight: 900;
-            font-size: 1.1rem;
-            text-shadow: 1px 1px 0 #000;
-            background: rgba(0,0,0,0.5);
-            padding: 0 5px;
+            display: none; /* Hide standard label, use integrated */
         }
 
         .main-name {
-            font-size: 3.2rem; /* Reduced from 3.8rem */
-            line-height: 0.95; 
-            margin: 0; 
-            color: #fff;
-            font-family: 'Cinzel', serif; 
+            font-family: 'Noto Serif SC', serif; /* ANIME SERIF */
             font-weight: 900;
-            -webkit-text-stroke: 2px #000; 
-            paint-order: stroke fill;
-            filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.8));
-            word-break: break-word;
-        }
-        .sub-name {
-            font-family: 'Noto Serif SC', serif; 
-            font-size: 1.8rem; 
+            font-size: 4rem;
+            line-height: 1;
             color: #fff;
-            font-weight: 900; 
-            margin-top: 10px; 
+            margin: 5px 0;
+            /* ANIME GLOW STYLE: Used in Part 3/4/5 Titles */
+            text-shadow: 
+                0 0 5px #d500f9,
+                0 0 10px #d500f9,
+                0 0 20px #d500f9,
+                2px 2px 0 #2b003e; /* Hard Shadow */
+            transform: scale(1, 1.1); /* Slight vertical stretch */
+        }
+
+        .sub-name {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 2rem;
+            color: #ffd700; /* Gold */
+            font-weight: 700;
+            text-shadow: 2px 2px 0 #000;
+            margin-top: 5px;
             letter-spacing: 2px;
-            text-shadow: 2px 2px 0 #000; 
-            -webkit-text-stroke: 0.5px #000;
         }
-        
-        /* Radar Group (Absolute Positioned now) */
-        /* .radar-group styles moved up */
 
-        /* RIGHT ZONE */
-        .zone-right {
-            width: 60%;
-            height: 100%;
+        /* RADAR: Floating HUD / Coin Style */
+        .radar-group {
             position: relative;
-            display: flex;
-            align-items: flex-end; 
-            justify-content: flex-end;
+            width: 300px; 
+            margin-top: auto; 
+            margin-left: 0;
+            /* Remove Paper Styling */
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            transform: rotate(-2deg); 
+            pointer-events: auto;
+            /* Ensure it sits above image */
+            z-index: 50; 
+            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
         }
 
-        .stand-image {
-            mix-blend-mode: multiply; 
-            width: 100%;
-            height: 105%;
-            object-fit: contain;
-            object-position: bottom right;
-            /* 
-               Fix: Remove drop-shadow (it created a box). 
-               Add brightness to force background to pure white. 
-            */
-            filter: brightness(1.05) contrast(1.1) saturate(1.2); 
-            
-            /* Radial mask to fade ALL edges softly */
-            mask-image: radial-gradient(circle at 70% 60%, black 50%, transparent 100%);
-            transform: translateX(20px);
+        /* Remove old paper texture */
+        .radar-group::before { display: none; }
+        
+        .radar-label {
+            display: none; /* Embedded in chart now or removed for anime accuracy */
         }
 
-        .user-floating {
-            position: absolute;
-            bottom: 30px;
-            right: 40px;
-            text-align: right;
-            z-index: 25;
+
+        /* --- RIGHT ZONE: MASTER & CATALYST --- */
+        .zone-right {
+            width: 55%;
+            position: relative;
             pointer-events: none;
         }
-        
-        .user-label-group {
-             margin-bottom: 0px;
+
+        .user-info-right {
+           position: absolute;
+           bottom: 40px;
+           right: 20px;
+           text-align: right;
+           pointer-events: auto;
+           z-index: 50;
+           /* Text Visibility Backdrop */
+           padding: 10px;
+           background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, transparent 70%);
         }
         
-        .user-name {
-            font-size: 2.8rem; 
-            color: #fff; 
-            -webkit-text-stroke: 1.5px #000;
-            text-shadow: 3px 3px 0 #000; 
-            margin: 0; 
-            font-family: 'Cinzel', serif;
+        .user-name-right {
+            font-family: 'Noto Serif SC', serif; /* Match Master to Stand */
+            font-size: 3rem;
+            font-weight: 900;
+            color: #fff;
             line-height: 1;
+            text-shadow: 
+                0 0 5px #00e5ff,
+                0 0 10px #00e5ff,
+                2px 2px 0 #000;
+        }
+        
+        .label-bracket-sm {
+            background: #000; color: #ffd700; padding: 2px 6px; font-weight: bold; 
+            border: 1px solid #fff; margin-bottom: 5px; display: inline-block;
+        }
+
+        /* CATALYST IMAGE "Photo" Style */
+        .catalyst-box-floating {
+            position: absolute;
+            top: 25px; right: 25px;
+            width: 110px; height: 110px;
+            background: #000;
+            /* JEWEL STYLE */
+            border: 4px solid var(--accent-color); /* Gold Border */
+            border-radius: 50%; /* Circle */
+            box-shadow: 0 0 15px var(--accent-color), 4px 4px 0 #000;
+            overflow: hidden;
+            z-index: 60;
+            display: flex;
+            align-items: center; justify-content: center;
+        }
+        .catalyst-box-floating img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border: none;
+        }
+        .catalyst-header {
+            display: none; /* Clean Look */
         }
 
 
-        /* --- BOTTOM INFO AREA --- */
+        /* --- BOTTOM ABILITY AREA --- */
         .info-area {
-            background: #fdf5e6;
-            color: #3e2723;
-            padding: 30px 40px;
-            /* Inner Grain */
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
-            box-shadow: inset 0 10px 20px rgba(0,0,0,0.1);
+            background: #fff;
+            position: relative;
+            /* Rounded Top Right Corner Integration */
+            border-top: 6px solid #000;
+            border-top-right-radius: 60px;
+            padding: 30px;
+            margin-top: -2px; /* Connect lines */
+        }
+        
+        .ability-content {
+            background: transparent;
+            padding: 10px;
+            border: none;
+            clip-path: none;
         }
 
+        /* Stylized Ability Header: Arrow Shape */
         .ability-content h3 {
-            margin: 0 0 15px 0;
-            color: #bf360c;
-            font-family: 'Cinzel', serif;
-            font-size: 1.8rem;
-            border-bottom: 2px solid #bf360c;
-            display: inline-block; padding-bottom: 5px;
+            position: relative;
+            background: #000;
+            color: #fff;
+            padding: 8px 30px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-size: 1.6rem;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            /* Skewed Tech Label */
+            transform: skewX(-15deg);
+            clip-path: none;
+            border-radius: 4px;
         }
 
         .ability-content p {
-            margin: 0;
             font-family: 'Noto Serif SC', serif;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #333;
             font-weight: bold;
-            font-size: 1.25rem;
-            line-height: 1.8;
         }
-
+        
+        /* Save Button */
         .save-btn {
-            background: #3e2723; color: #fff; padding: 10px 20px;
-            cursor: pointer; border: none; font-family: sans-serif;
+            background: #6a1b9a; color: #fff; border: 3px solid #000;
+            font-weight: 900; box-shadow: 4px 4px 0 #000;
+            padding: 8px 24px; font-size: 1.1rem;
         }
-        .save-btn:hover { background: #5d4037; }
+        .save-btn:hover { background: #8e24aa; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #000; }
 
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+             .visual-area { height: auto; min-height: 700px; }
+             .visual-layout { flex-direction: column-reverse; }
+             .zone-left, .zone-right { width: 100%; }
+             .header-group { text-align: center; margin-top: 20px; }
+             .radar-group { margin: 0 auto; margin-top: 200px; /* Push down to clear image */ }
+             .user-info-right { bottom: auto; top: 400px; right: 10px; } 
+             /* This is complex on mobile; simplified stack is better */
+        }
       `}</style>
-    </div>
+    </div >
   );
 };
 

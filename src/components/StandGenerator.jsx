@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import LandingPage from './LandingPage'; // Import Landing Page
 import InputForm from './InputForm';
 import StandCard from './StandCard';
 import HistoryList from './HistoryList';
@@ -7,12 +8,13 @@ import DonateModal from './DonateModal';
 import HelpModal from './HelpModal';
 import FAQModal from './FAQModal';
 import { generateStandProfile, generateStandImage, getCachedStand, saveCachedStand } from '../services/gemini';
-// Remove old history service import
-// import { getHistory, addToHistory } from '../services/history'; 
 import { saveStandToDB, getAllStandsFromDB, initDB } from '../services/db';
 import '../styles/variables.css';
 
 const StandGenerator = () => {
+  // GAME STATE: 'LANDING' | 'INPUT' | 'RESULT'
+  const [gameState, setGameState] = useState('LANDING');
+
   const [standData, setStandData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,306 +24,209 @@ const StandGenerator = () => {
   const [showHelp, setShowHelp] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
 
-  // Load history from DB on mount (+ Migration Logic)
+  // Load history from DB on mount
   useEffect(() => {
     const init = async () => {
       try {
         await initDB();
-
-        // 1. Migration: Move old LocalStorage items to IndexedDB
+        // LocalStorage Migration Logic (Simplified)
         const oldRaw = localStorage.getItem('jojo_stand_history');
         if (oldRaw) {
-          try {
-            const oldHistory = JSON.parse(oldRaw);
-            if (Array.isArray(oldHistory) && oldHistory.length > 0) {
-              console.log("Migrating legacy history to DB...", oldHistory.length);
-              for (const item of oldHistory) {
-                await saveStandToDB(item);
-              }
-              // Clear old storage after successful migration
-              localStorage.removeItem('jojo_stand_history');
-              console.log("Migration complete. LocalStorage cleared.");
-            }
-          } catch (e) {
-            console.error("Migration failed:", e);
+          const old = JSON.parse(oldRaw);
+          if (Array.isArray(old)) {
+            for (const i of old) await saveStandToDB(i);
+            localStorage.removeItem('jojo_stand_history');
           }
         }
-
-        // 2. Load from DB
         const items = await getAllStandsFromDB();
         setHistory(items);
-      } catch (e) {
-        console.error("Failed to initialize DB:", e);
-      }
+      } catch (e) { console.error(e); }
     };
     init();
   }, []);
+
+  // --- FLOW HANDLERS ---
+  const handleStartGame = () => {
+    setGameState('INPUT');
+  };
+
+  const handleBackToTitle = () => {
+    // Nigerundayo!
+    setGameState('LANDING');
+    setStandData(null);
+    setLoading(false);
+    setError(null); // Clear error when going back to title
+  };
+
+  const handleReset = () => {
+    setStandData(null);
+    setGameState('INPUT'); // Or LANDING if preferred, but usually Retry means new Input
+    setError(null); // Clear error when resetting
+  };
 
   const handleGenerate = async (inputs) => {
     setLoading(true);
     setError(null);
     setShowHistory(false);
 
-    // 1. Check Cache
+    // Check Cache
     const cached = getCachedStand(inputs);
     if (cached) {
       setStandData(cached);
-
-      // Fix: Ensure cached items are also added to history (if missing)
-      // Now using Async DB
       await saveStandToDB(cached);
-      const updatedHistory = await getAllStandsFromDB();
-      setHistory(updatedHistory);
-
+      setHistory(await getAllStandsFromDB());
       setLoading(false);
+      setGameState('RESULT'); // Move to Result
       return;
     }
 
     try {
-      // 2. Generate Text Profile
+      // Generate Text
       const data = await generateStandProfile(inputs);
-      setStandData({ ...data, userName: inputs.userName }); // Display text immediately while image loads
+      setStandData({ ...data, userName: inputs.userName });
+      setGameState('RESULT'); // Show Text first
 
-      // 3. Generate Image (Async)
+      // Generate Image in background
       if (data.appearance) {
         generateStandImage(data.appearance).then(async (imageUrl) => {
-          // Prepare final data (with or without image)
           const finalImageUrl = imageUrl || null;
           const fullData = {
             ...data,
             imageUrl: finalImageUrl,
             userName: inputs.userName,
+            referenceImage: inputs.referenceImage,
             timestamp: Date.now(),
-            // Ensure ID for DB
             id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
           };
 
-          // Update Display State
+          // Update State & Cache
           setStandData(fullData);
-
-          // Save to Cache & DB
           saveCachedStand(inputs, fullData);
-
-          try {
-            await saveStandToDB(fullData);
-            const updatedHistory = await getAllStandsFromDB();
-            setHistory(updatedHistory);
-            console.log("Saved to IndexedDB successfully");
-          } catch (dbErr) {
-            console.error("DB Save failed:", dbErr);
-          }
-
-          if (!imageUrl) {
-            console.warn("Image generation failed, saved text profile only.");
-          }
+          await saveStandToDB(fullData);
+          setHistory(await getAllStandsFromDB());
         });
       }
     } catch (err) {
       console.error(err);
-      setError("替身觉醒失败 (FAILED): " + err.message);
+      setError("替身觉醒失败... 你的精神力还不够强吗？(API Error)");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReset = () => {
-    setStandData(null);
-    setError(null);
+  // --- RENDER HELPERS ---
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="loading-container">
+          <div className="menacing-loader">ゴゴゴゴ...</div>
+          <p>正在从精神之海中召唤替身...</p>
+        </div>
+      );
+    }
+
+    switch (gameState) {
+      case 'LANDING':
+        return <LandingPage onStart={handleStartGame} />;
+
+      case 'INPUT':
+        return <InputForm onSubmit={handleGenerate} onCancel={handleBackToTitle} />;
+
+      case 'RESULT':
+        return standData ? (
+          <StandCard standData={standData} onReset={handleReset} />
+        ) : null;
+
+      default:
+        return <LandingPage onStart={handleStartGame} />;
+    }
   };
 
   return (
-    <div className="generator-container">
-      <NavBar
-        onReset={handleReset}
-        onToggleHistory={() => {
-          setShowHistory(prev => !prev);
-          setShowDonate(false);
-          setShowHelp(false);
-          setShowFAQ(false);
-        }}
-        onToggleDonate={() => {
-          setShowDonate(prev => !prev);
-          setShowHistory(false);
-          setShowHelp(false);
-          setShowFAQ(false);
-        }}
-        onToggleHelp={() => {
-          setShowHelp(prev => !prev);
-          setShowHistory(false);
-          setShowDonate(false);
-          setShowFAQ(false);
-        }}
-        onToggleFAQ={() => {
-          setShowFAQ(prev => !prev);
-          setShowHistory(false);
-          setShowDonate(false);
-          setShowHelp(false);
-        }}
-      />
+    <div className="app-container">
+      {/* GLOBAL HUD (Only show on Input/Result, hide on Landing for immersion?) */}
+      {gameState !== 'LANDING' && (
+        <NavBar
+          onReset={handleBackToTitle} // "The Fool" now goes to Title? Or Input? Let's say Title for "New Awakening"
+          onToggleHistory={() => {
+            setShowHistory(prev => !prev);
+            setShowDonate(false);
+            setShowHelp(false);
+            setShowFAQ(false);
+          }}
+          onToggleDonate={() => {
+            setShowDonate(prev => !prev);
+            setShowHistory(false);
+            setShowHelp(false);
+            setShowFAQ(false);
+          }}
+          onToggleHelp={() => {
+            setShowHelp(prev => !prev);
+            setShowHistory(false);
+            setShowDonate(false);
+            setShowFAQ(false);
+          }}
+          onToggleFAQ={() => {
+            setShowFAQ(prev => !prev);
+            setShowHistory(false);
+            setShowDonate(false);
+            setShowHelp(false);
+          }}
+        />
+      )}
+
+      {/* ERROR MESSAGE */}
+      {error && (
+        <div className="error-message" onClick={() => setError(null)}>
+          <span className="error-icon">⚠️</span> {error}
+        </div>
+      )}
+
+      {/* MAIN CONTENT AREA */}
+      <main className="content-area">
+        {renderContent()}
+      </main>
+
+      {/* MODALS */}
+      {showHistory && (
+        <div className="modal-overlay" onClick={() => setShowHistory(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <HistoryList history={history} />
+            <button className="close-btn" onClick={() => setShowHistory(false)}>CLOSE</button>
+          </div>
+        </div>
+      )}
 
       {showDonate && <DonateModal onClose={() => setShowDonate(false)} />}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
 
-      {showHistory && (
-        <HistoryList
-          history={history}
-          onClose={() => setShowHistory(false)}
-          onLoad={(item) => {
-            setStandData(item);
-            setShowHistory(false);
-          }}
-        />
-      )}
-
-      <main className="content-area">
-        {loading && (
-          <div className="loading-state">
-            <div className="menacing">ゴ</div>
-            <div className="menacing">ゴ</div>
-            <div className="menacing">ゴ</div>
-            <div className="menacing">ゴ</div>
-            <p>觉醒中... AWAKENING</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="error-state">
-            <p>{error}</p>
-            <button onClick={() => setError(null)}>重试 (RETRY)</button>
-          </div>
-        )}
-
-        {!loading && !standData && (
-          <div className="intro-area">
-            <h1 className="main-title">JOJO替身生成器</h1>
-            <p className="subtitle">觉醒你的精神幽波纹</p>
-            <InputForm onSubmit={handleGenerate} />
-          </div>
-        )}
-
-        {!loading && standData && (
-          <div className="result-area">
-            <StandCard standData={standData} />
-            <button className="reset-button" onClick={handleReset}>
-              下一位替身使者 (NEXT USER)
-            </button>
-
-            <div className="sponsor-inline">
-              <p>喜欢这个替身？请我喝杯阿帕茶 ☕</p>
-              <div className="qr-box-small">
-                <img src="/sponsor.png" alt="Sponsor" />
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
       <style>{`
-        .generator-container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 80px 20px 20px; /* Top padding for fixed navbar */
-            text-align: center;
-        }
-
-        .main-title {
-            font-size: 4rem;
-            color: var(--accent-color);
-            text-shadow: 4px 4px var(--primary-color);
-            margin-bottom: 10px;
-            line-height: 1;
-        }
-
-        .subtitle {
-            color: var(--secondary-color);
-            letter-spacing: 5px;
-            font-size: 1.2rem;
-            margin-bottom: 40px;
-            font-weight: bold;
-        }
-
-        .loading-state {
-            font-size: 3rem;
-            color: var(--primary-color);
-            animation: pulse 1s infinite alternate;
-        }
-
-        .menacing {
-            display: inline-block;
-            margin: 0 10px;
-            animation: shake 0.5s infinite;
-        }
-        
-        .menacing:nth-child(1) { animation-delay: 0s; }
-        .menacing:nth-child(2) { animation-delay: 0.1s; }
-        .menacing:nth-child(3) { animation-delay: 0.2s; }
-        .menacing:nth-child(4) { animation-delay: 0.3s; }
-
-        .error-state {
-            color: red;
-            background: rgba(255,0,0,0.1);
-            padding: 20px;
-            border: 1px solid red;
-        }
-
-        .reset-button {
-            margin-top: 30px;
-            background: transparent;
-            border: 2px solid var(--text-color);
-            color: var(--text-color);
-            padding: 10px 30px;
-            font-family: var(--font-heading);
-            font-size: 1.2rem;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .reset-button:hover {
-            background: var(--text-color);
-            color: var(--bg-color);
-        }
-
-        @keyframes shake {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(2px, 2px) rotate(5deg); }
-            50% { transform: translate(0, -2px) rotate(0deg); }
-            75% { transform: translate(-2px, 2px) rotate(-5deg); }
-            100% { transform: translate(0, 0) rotate(0deg); }
-        }
-        
-        @keyframes pulse {
-            from { opacity: 0.6; }
-            to { opacity: 1; }
-        }
-
-        .sponsor-inline {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px dashed rgba(255,255,255,0.2);
-            color: var(--subtext-color);
-        }
-
-        .sponsor-inline p {
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-        }
-
-        .qr-box-small {
-            width: 120px;
-            height: 120px;
-            background: white;
-            padding: 5px;
-            border-radius: 4px;
-            margin: 0 auto;
-        }
-        
-        .qr-box-small img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
+          .loading-container {
+              color: #fff; text-align: center; margin-top: 100px;
+              font-family: 'ZCOOL KuaiLe'; font-size: 2rem;
+          }
+          .menacing-loader {
+              font-size: 4rem; animation: shake 1s infinite alternate;
+              color: #d500f9; margin-bottom: 20px;
+          }
+          .error-message {
+              position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+              background: #d32f2f; color: #fff; padding: 15px 30px;
+              border: 3px solid #000; z-index: 10000;
+              font-family: 'Courier New'; font-weight: bold;
+              cursor: pointer; box-shadow: 5px 5px 0 rgba(0,0,0,0.5);
+              animation: slideDown 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+          }
+          @keyframes slideDown { from {top: -100px;} to {top: 20px;} }
+          
+          .content-area {
+              width: 100%;
+              min-height: 80vh;
+              display: flex;
+              justify-content: center;
+              padding: 20px;
+          }
       `}</style>
     </div>
   );

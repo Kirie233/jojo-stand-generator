@@ -1,110 +1,150 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../styles/variables.css';
 
-const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onToggleFAQ }) => {
-  return (
-    <nav className="navbar">
-      <div className="navbar-brand" onClick={onReset} title="重置 / Reset">
-        JOJO 替身生成器
-      </div>
+const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate }) => {
+  const [isOpen, setIsOpen] = useState(false);
 
-      <div className="navbar-actions">
-        <button onClick={onReset} className="nav-btn create-btn">
-          ✨ 觉醒新替身
+  return (
+    <>
+      <div className={`zipper-nav ${isOpen ? 'open' : ''}`}>
+
+        {/* ZIPPER PULL BUTTON */}
+        <button className="zipper-toggle" onClick={() => setIsOpen(!isOpen)} title="Sticky Fingers!">
+          <div className="zipper-icon">
+            {/* SVG Zipper Pull */}
+            <svg viewBox="0 0 24 24" fill="gold" stroke="black" strokeWidth="1">
+              <path d="M12,2 C12,2 8,6 8,10 C8,14 10,16 12,18 C14,16 16,14 16,10 C16,6 12,2 12,2 Z" />
+              <circle cx="12" cy="10" r="2" fill="black" />
+              <rect x="11" y="18" width="2" height="6" fill="gold" stroke="black" />
+            </svg>
+          </div>
+          <span className="zipper-text">{isOpen ? 'CLOSE' : 'MENU'}</span>
         </button>
-        <button onClick={onToggleDonate} className="nav-btn sponsor-btn">
-          💖 赞赏
-        </button>
-        <button onClick={onToggleHelp} className="nav-btn help-btn">
-          ❓ 指南
-        </button>
-        <button onClick={onToggleFAQ} className="nav-btn help-btn">
-          💬 FAQ
-        </button>
-        <button onClick={onToggleHistory} className="nav-btn history-btn">
-          📜 觉醒历史
-        </button>
+
+        {/* INSIDE THE ZIPPER (MENU CONTENT) */}
+        <div className="zipper-content">
+          <div className="menu-list">
+            <div onClick={() => { onReset(); setIsOpen(false); }}>
+              <span className="menu-en">AWAKEN</span>
+              <span className="menu-cn">觉醒</span>
+            </div>
+            <div onClick={() => { onToggleHistory(); setIsOpen(false); }}>
+              <span className="menu-en">HISTORY</span>
+              <span className="menu-cn">记录</span>
+            </div>
+            <div onClick={() => { onToggleHelp(); setIsOpen(false); }}>
+              <span className="menu-en">GUIDE</span>
+              <span className="menu-cn">图鉴</span>
+            </div>
+            <div onClick={() => { onToggleDonate(); setIsOpen(false); }}>
+              <span className="menu-en">DONATE</span>
+              <span className="menu-cn">赞赏</span>
+            </div>
+          </div>
+          {/* Background Pattern for "Void" */}
+          <div className="zipper-void"></div>
+        </div>
+
       </div>
 
       <style>{`
-        .navbar {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 60px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0 20px;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(189, 0, 255, 0.3);
-          z-index: 999;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        .zipper-nav {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
         }
 
-        .navbar-brand {
-          font-family: var(--font-heading);
-          font-size: 1.5rem;
-          color: var(--accent-color);
-          cursor: pointer;
-          text-shadow: 2px 2px var(--primary-color);
-          transition: transform 0.2s;
+        .zipper-toggle {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        .zipper-toggle:hover { transform: scale(1.1); }
+
+        .zipper-icon {
+            width: 50px; height: 80px;
+            filter: drop-shadow(3px 3px 0 #000);
+        }
+        .zipper-text {
+            font-family: 'Anton', sans-serif;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+            margin-top: 5px;
+            background: #000;
+            padding: 2px 5px;
         }
 
-        .navbar-brand:hover {
-          transform: scale(1.05);
+        /* MENU CONTENT */
+        .zipper-content {
+            position: fixed;
+            top: 0; right: 0; width: 300px; height: 100vh;
+            background: #1a1a1d; /* Void color */
+            border-left: 8px solid gold; /* The Zipper Teeth */
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+            /* Zipper Teeth Pattern */
+            background-image: 
+                linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222),
+                linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            z-index: 10000;
         }
 
-        .navbar-actions {
-          display: flex;
-          gap: 15px;
+        .zipper-nav.open .zipper-content {
+            transform: translateX(0);
         }
 
-        .nav-btn {
-          background: transparent;
-          border: 1px solid transparent;
-          color: #eee;
-          font-size: 0.9rem;
-          cursor: pointer;
-          padding: 5px 10px;
-          border-radius: 4px;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          gap: 5px;
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            text-align: right;
+            width: 100%;
+            padding-right: 40px;
         }
 
-        .nav-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.2);
+        .menu-list div {
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .menu-list div:hover {
+            transform: translateX(-10px);
+        }
+        .menu-list div:hover .menu-cn {
+            color: gold;
+            text-shadow: 0 0 10px gold;
         }
 
-        .sponsor-btn {
-          color: #ff6b6b;
+        .menu-en {
+            display: block;
+            font-family: 'Anton', sans-serif;
+            font-size: 1.5rem;
+            color: #555;
+            letter-spacing: 2px;
         }
-        
-        .sponsor-btn:hover {
-            background: rgba(255, 107, 107, 0.1);
-            border-color: #ff6b6b;
+        .menu-cn {
+            display: block;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 2.5rem;
+            color: #fff;
+            line-height: 1;
         }
 
-        .create-btn {
-            background: var(--primary-color);
-            color: var(--bg-color);
-            border-color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        .create-btn:hover {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            transform: translateY(-1px);
-            box-shadow: 0 0 10px rgba(189, 0, 255, 0.5);
-        }
       `}</style>
-    </nav>
+    </>
   );
 };
 

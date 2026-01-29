@@ -2,6 +2,30 @@ const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
 const getBaseUrl = () => import.meta.env.VITE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
 
 export const generateStandProfile = async (inputs) => {
+  return retryOperation(() => _generateStandProfile(inputs));
+};
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const retryOperation = async (operation, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await operation();
+    } catch (err) {
+      if (
+        i < retries - 1 &&
+        (err.message.includes("Overloaded") || err.message.includes("503") || err.message.includes("quota"))
+      ) {
+        console.warn(`API Overloaded. Retrying in ${(i + 1) * 2}s...`);
+        await sleep((i + 1) * 2000);
+        continue;
+      }
+      throw err;
+    }
+  }
+};
+
+const _generateStandProfile = async (inputs) => {
   const apiKey = getApiKey();
 
   // Only enforce API Key in Development (Client-side)
@@ -21,30 +45,29 @@ export const generateStandProfile = async (inputs) => {
   console.log("Current Model ID:", modelId);
   console.log("Request URL (masked):", url.replace(apiKey, '***'));
 
-  const prompt = `
-    你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。
+  const prompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。
 
-    用户特征:
-    1. 音乐引用 (决定命名): "${song}"
-    2. 代表色 (决定视觉): "${color}"
-    3. 精神特质/欲望 (决定能力核心): "${personality}"
+  用户特征:
+  1. 音乐引用(决定命名): "${song}"
+  2. 代表色(决定视觉): "${color}"
+  3. 精神特质 / 欲望(决定能力核心): "${personality}"
 
-    请返回一个合法的 JSON 对象 (不要使用 Markdown 代码块)，包含以下字段:
-    {
-      "name": "替身名 (基于音乐引用的日文片假名或英文，并附带帅气的中文译名，例如 'Killer Queen (杀手皇后)')",
+    请返回一个合法的 JSON 对象(不要使用 Markdown 代码块)，包含以下字段:
+  {
+    "name": "替身名 (基于音乐引用的日文片假名或英文，并附带帅气的中文译名，例如 'Killer Queen (杀手皇后)')",
       "abilityName": "能力名 (汉字，如 '败者食尘')",
-      "ability": "能力详细描述。必须基于'${personality}'设计，要有JOJO式的奇妙逻辑，避免通用的超能力。",
-      "stats": {
-        "power": "评级 (A-E, 或 ∞, ?)",
+        "ability": "能力详细描述。必须基于'${personality}'设计。请使用以下格式：\n【能力概述】简短一句话。\n【详细机制】具体的发动条件和效果。\n【限制/代价】能力使用的弱点或风险 (JOJO的替身都有局限性)。",
+          "stats": {
+      "power": "评级 (A=极强, B=强, C=普通, D=弱, E=极弱, None=无, ∞=无限)。⚠️严禁全A面板！必须遵循等价交换原则：强力能力(A)必须伴随弱项(D/E/None)。请大胆使用 D 和 E 甚至 None。",
         "speed": "评级",
-        "range": "评级",
-        "durability": "评级",
-        "precision": "评级",
-        "potential": "评级"
-      },
-      "appearance": "基于'${color}'色调的详细外貌描述，包含服装、机械或生物特征，用于后续绘画。注意：不要描述任何文字、字母、符号或纹身在替身身上，保持外表纯净。",
+          "range": "评级",
+            "durability": "评级",
+              "precision": "评级",
+                "potential": "成长性 (体现未来的可能性)"
+    },
+    "appearance": "基于'${color}'色调的详细外貌描述，包含服装、机械或生物特征，用于后续绘画。注意：不要描述任何文字、字母、符号或纹身在替身身上，保持外表纯净。",
       "shout": "替身吼叫 (如 ORA ORA, ARI ARI, 或与能力相关的独特声音)"
-    }
+  }
   `;
 
   try {
@@ -60,57 +83,87 @@ export const generateStandProfile = async (inputs) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'profile',
-          payload: { ...inputs, userName: inputs.userName || 'Unknown' }
+          payload: { ...inputs, userName: inputs.userName || 'Unknown', referenceImage: inputs.referenceImage }
         })
       });
     } else {
       // --- DIRECT CLIENT-SIDE CALL ---
 
       const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请设计一个符合JOJO世界观的替身(Stand)。\n要求：能力设计要有创意且易于理解，符合荒木飞吕彦的风格。\n请返回一个合法的 JSON 对象。`;
-      const userPrompt = `
-        用户特征:
-        1. 替身使者: "${inputs.userName || 'Unknown'}"
-        2. 音乐引用 (决定命名): "${inputs.song}"
-        3. 代表色 (决定视觉): "${inputs.color}"
-        4. 精神特质/欲望 (决定能力核心): "${inputs.personality}"
+      const userPromptText = `
+  用户特征:
+  1. 替身使者: "${inputs.userName || 'Unknown'}"
+  2. 音乐引用(决定命名): "${inputs.song}"
+  3. 代表色(决定视觉): "${inputs.color}"
+  4. 精神特质 / 欲望(决定能力核心): "${inputs.personality}"
+        ${inputs.referenceImage ? "5. [重要] 请参考我提供的图片，将其中的视觉元素（如服装风格、姿势、物品）融入到替身的外貌描述中。" : ""}
 
         请返回 JSON:
-        {
-          "name": "替身名 (音乐引用+译名)",
-          "abilityName": "能力名",
-          "ability": "能力详细描述。基于'${inputs.personality}'设计，要有JOJO式的特色，但要让人能看懂。",
-          "stats": { "power": "A-E", "speed": "A-E", "range": "A-E", "durability": "A-E", "precision": "A-E", "potential": "A-E" },
-          "appearance": "基于'${inputs.color}'色调的详细外貌描述",
-          "shout": "替身吼叫"
-        }
-      `;
+  {
+    "name": "替身名 (音乐引用+译名)",
+      "abilityName": "能力名",
+        "ability": "能力详细描述。基于'${inputs.personality}' ${inputs.referenceImage ? "并结合参考图特征" : ""} 设计。请严格遵守格式：\n【能力概述】...\n【详细机制】...\n【限制/代价】...",
+          "stats": { 
+            "power": "评级 (A=极强, B=强, C=普通, D=弱, E=极弱, None=无, ∞=无限)。⚠️严禁全A面板！必须遵循等价交换原则：强力能力(A)必须伴随弱项(D/E/None)。请大胆使用 D 和 E 甚至 None，特别是对于非战斗型替身。", 
+            "speed": "评级", "range": "评级", "durability": "评级", "precision": "评级", "potential": "评级" 
+          },
+    "appearance": "基于'${inputs.color}'色调${inputs.referenceImage ? "及参考图视觉元素" : ""}的详细外貌描述",
+      "shout": "替身吼叫"
+  }
+  `;
 
       const isGemini = modelId.toLowerCase().includes('gemini');
-      let url, headers, body;
+      let requestUrl, headers, body;
 
       if (isGemini) {
-        url = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+        requestUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
         headers = { 'Content-Type': 'application/json' };
-        body = { contents: [{ parts: [{ text: userPrompt }] }] };
+
+        // Gemini Multimodal Format
+        const parts = [{ text: userPromptText }];
+        if (inputs.referenceImage) {
+          // inputs.referenceImage is "data:image/jpeg;base64,..."
+          // Gemini needs raw base64 without prefix
+          const base64Data = inputs.referenceImage.split(',')[1];
+          const mimeType = inputs.referenceImage.split(';')[0].split(':')[1];
+          parts.push({
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data
+            }
+          });
+        }
+        body = { contents: [{ parts: parts }] };
+
       } else {
-        // OpenAI Compatible
-        url = `${baseUrl}/v1/chat/completions`;
+        // OpenAI Compatible Multimodal
+        // Many proxies support standard OpenAI "image_url"
+        requestUrl = `${baseUrl}/v1/chat/completions`;
         headers = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         };
+
+        const userContentVector = [{ type: "text", text: userPromptText }];
+        if (inputs.referenceImage) {
+          userContentVector.push({
+            type: "image_url",
+            image_url: { url: inputs.referenceImage }
+          });
+        }
+
         body = {
           model: modelId,
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: "user", content: userContentVector }
           ],
           response_format: { type: "json_object" }
         };
       }
 
       console.log("Using Direct Client-Side Call for Text");
-      response = await fetch(url, {
+      response = await fetch(requestUrl, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(body)
@@ -119,7 +172,7 @@ export const generateStandProfile = async (inputs) => {
 
     if (!response.ok) {
       const errorRaw = await response.text();
-      let errorMsg = `Status ${response.status}`;
+      let errorMsg = `Status ${response.status} `;
       try {
         const errorJson = JSON.parse(errorRaw);
         // Check for specific provider error messages
@@ -133,7 +186,7 @@ export const generateStandProfile = async (inputs) => {
         if (e.message.startsWith("API 额度")) throw e;
         errorMsg = errorRaw;
       }
-      throw new Error(`Gemini API Error: ${errorMsg}`);
+      throw new Error(`Gemini API Error: ${errorMsg} `);
     }
 
     const data = await response.json();
@@ -172,7 +225,7 @@ export const generateStandImage = async (appearance) => {
 
   console.log("Generating Image Model:", imageModel);
 
-  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nStyle tags: Anime Character Sheet, Full Body Reference, White Background, Simple Background, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Dynamic 'JoJo Pose', Vibrant Colors. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo.`;
+  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nCOMPOSITION: Position the character slightly to the RIGHT of center. CRITICAL: Leave the BOTTOM-RIGHT corner empty (negative space) for text overlay. Do not place heavy details, feet, or effects in the absolute bottom-right area. \n\nStyle tags: Anime Character Sheet, Full Body Reference, White Background, Simple Background, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Dynamic 'JoJo Pose', Vibrant Colors. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo, bottom right details.`;
 
   // 1. Determine API Strategy based on Model Name
   const isGemini = imageModel.toLowerCase().includes('gemini');

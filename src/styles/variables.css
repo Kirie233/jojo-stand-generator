@@ -1,26 +1,31 @@
 :root {
-  /* JOJO Theme Colors */
-  --bg-color: #0c0014;
-  --bg-secondary: #1a0b2e;
-  --primary-color: #bd00ff; /* Electric Purple */
-  --secondary-color: #ff007f; /* Neon Pink */
-  --accent-color: #ffd700; /* Gold */
+  /* JOJO COMIC THEME - MANGA EDITION */
+  --bg-color: #2b003e;
+  /* Deep Purple Base */
+  --bg-secondary: #000000;
+  /* Ink Black */
+  --primary-color: #d500f9;
+  /* Stand Aura Purple */
+  --secondary-color: #00e5ff;
+  /* Star Platinum Blue */
+  --accent-color: #ffd700;
+  /* DIO Gold */
+
   --text-color: #ffffff;
-  --subtext-color: #cccccc;
-  
-  --menacing-color: #551a8b;
+  --subtext-color: #e0e0e0;
+
+  --menacing-color: #6a1b9a;
 
   /* Fonts */
-  --font-heading: 'Anton', 'Impact', sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Anton', 'Noto Serif SC', serif;
+  --font-body: 'Noto Sans SC', sans-serif;
 
   /* Spacing */
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 32px;
-  --spacing-xl: 64px;
 
   /* Effects */
-  --shadow-neon: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);
-  --border-radius: 4px;
+  --shadow-comic: 6px 6px 0px #000;
+  --border-ink: 3px solid #000;
 }
