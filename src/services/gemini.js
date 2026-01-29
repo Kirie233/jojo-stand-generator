@@ -15,7 +15,7 @@ export const generateStandProfile = async (inputs) => {
 
 
   const baseUrl = getBaseUrl();
-  const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
+  const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
   const url = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
   console.log("Current Model ID:", modelId);
