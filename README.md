@@ -77,8 +77,6 @@
 
 ## ☁️ 部署指南 (Deployment Guide)
 
-本指南将手把手教您如何将 **JOJO 替身生成器** 免费部署到 Vercel 平台。
-
 ### 1. 导入项目 (Import Project)
 1.  **Fork** 本项目到您的 GitHub 账号。
 2.  登录 [Vercel](https://vercel.com)。
