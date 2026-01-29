@@ -228,7 +228,7 @@ export const generateStandImage = async (appearance) => {
 
   // 2. Timeout Controller
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 40000); // 40s timeout (Images can be slow)
+  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout (Images can be slow)
 
   try {
     let response;

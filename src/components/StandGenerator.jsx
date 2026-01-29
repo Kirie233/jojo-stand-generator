@@ -131,9 +131,21 @@ const StandGenerator = () => {
     <div className="generator-container">
       <NavBar
         onReset={handleReset}
-        onToggleHistory={() => setShowHistory(prev => !prev)}
-        onToggleDonate={() => setShowDonate(true)}
-        onToggleHelp={() => setShowHelp(true)}
+        onToggleHistory={() => {
+          setShowHistory(prev => !prev);
+          setShowDonate(false);
+          setShowHelp(false);
+        }}
+        onToggleDonate={() => {
+          setShowDonate(prev => !prev);
+          setShowHistory(false);
+          setShowHelp(false);
+        }}
+        onToggleHelp={() => {
+          setShowHelp(prev => !prev);
+          setShowHistory(false);
+          setShowDonate(false);
+        }}
       />
 
       {showDonate && <DonateModal onClose={() => setShowDonate(false)} />}
