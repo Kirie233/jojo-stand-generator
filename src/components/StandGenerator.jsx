@@ -5,6 +5,7 @@ import HistoryList from './HistoryList';
 import NavBar from './NavBar';
 import DonateModal from './DonateModal';
 import HelpModal from './HelpModal';
+import FAQModal from './FAQModal';
 import { generateStandProfile, generateStandImage, getCachedStand, saveCachedStand } from '../services/gemini';
 // Remove old history service import
 // import { getHistory, addToHistory } from '../services/history'; 
@@ -19,6 +20,7 @@ const StandGenerator = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showDonate, setShowDonate] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showFAQ, setShowFAQ] = useState(false);
 
   // Load history from DB on mount (+ Migration Logic)
   useEffect(() => {
@@ -135,21 +137,31 @@ const StandGenerator = () => {
           setShowHistory(prev => !prev);
           setShowDonate(false);
           setShowHelp(false);
+          setShowFAQ(false);
         }}
         onToggleDonate={() => {
           setShowDonate(prev => !prev);
           setShowHistory(false);
           setShowHelp(false);
+          setShowFAQ(false);
         }}
         onToggleHelp={() => {
           setShowHelp(prev => !prev);
           setShowHistory(false);
           setShowDonate(false);
+          setShowFAQ(false);
+        }}
+        onToggleFAQ={() => {
+          setShowFAQ(prev => !prev);
+          setShowHistory(false);
+          setShowDonate(false);
+          setShowHelp(false);
         }}
       />
 
       {showDonate && <DonateModal onClose={() => setShowDonate(false)} />}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
 
       {showHistory && (
         <HistoryList

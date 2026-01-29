@@ -1,7 +1,7 @@
 import React from 'react';
 import '../styles/variables.css';
 
-const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate }) => {
+const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onToggleFAQ }) => {
   return (
     <nav className="navbar">
       <div className="navbar-brand" onClick={onReset} title="重置 / Reset">
@@ -17,6 +17,9 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate }) => {
         </button>
         <button onClick={onToggleHelp} className="nav-btn help-btn">
           ❓ 指南
+        </button>
+        <button onClick={onToggleFAQ} className="nav-btn help-btn">
+          💬 FAQ
         </button>
         <button onClick={onToggleHistory} className="nav-btn history-btn">
           📜 觉醒历史
