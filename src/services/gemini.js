@@ -65,11 +65,49 @@ export const generateStandProfile = async (inputs) => {
       });
     } else {
       // --- DIRECT CLIENT-SIDE CALL ---
-      // ... (Prompt preparation moved inside or reused) ...
-      // Wait, I need to ensure prompt logic is accessible. 
-      // The previous code had prompt setup BEFORE this block. 
-      // Let's verify context. "url", "headers", "body" were set up in lines 85-104.
-      // So I can just use them.
+
+      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请设计一个符合JOJO世界观的替身(Stand)。\n要求：能力设计要有创意且易于理解，符合荒木飞吕彦的风格。\n请返回一个合法的 JSON 对象。`;
+      const userPrompt = `
+        用户特征:
+        1. 替身使者: "${inputs.userName || 'Unknown'}"
+        2. 音乐引用 (决定命名): "${inputs.song}"
+        3. 代表色 (决定视觉): "${inputs.color}"
+        4. 精神特质/欲望 (决定能力核心): "${inputs.personality}"
+
+        请返回 JSON:
+        {
+          "name": "替身名 (音乐引用+译名)",
+          "abilityName": "能力名",
+          "ability": "能力详细描述。基于'${inputs.personality}'设计，要有JOJO式的特色，但要让人能看懂。",
+          "stats": { "power": "A-E", "speed": "A-E", "range": "A-E", "durability": "A-E", "precision": "A-E", "potential": "A-E" },
+          "appearance": "基于'${inputs.color}'色调的详细外貌描述",
+          "shout": "替身吼叫"
+        }
+      `;
+
+      const isGemini = modelId.toLowerCase().includes('gemini');
+      let url, headers, body;
+
+      if (isGemini) {
+        url = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+        headers = { 'Content-Type': 'application/json' };
+        body = { contents: [{ parts: [{ text: userPrompt }] }] };
+      } else {
+        // OpenAI Compatible
+        url = `${baseUrl}/v1/chat/completions`;
+        headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        };
+        body = {
+          model: modelId,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          response_format: { type: "json_object" }
+        };
+      }
 
       console.log("Using Direct Client-Side Call for Text");
       response = await fetch(url, {
