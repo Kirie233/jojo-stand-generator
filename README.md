@@ -88,14 +88,14 @@
 
 | 变量名 (Key) | 示例值 (Value) | 说明 |
 | :--- | :--- | :--- |
-| `GEMINI_API_KEY` | `sk-VYny...` | **[必填]** 您的 Gemini API Key |
-| `GEMINI_BASE_URL` | `https://rinkoai.com` | **[选填]** API 中转地址 (若使用官方接口可忽略) |
-| `GEMINI_MODEL` | `gemini-3-flash-preview` | **[选填]** 指定思考模型 |
-| `IMAGE_MODEL` | `gemini-3-pro-image-preview` | **[选填]** 指定画图模型 |
-| `IMAGE_API_KEY` | `sk-GVXly...` | **[选填]** 独立画图 Key (若需与文本分开) |
-| `IMAGE_BASE_URL` | `https://www.wyjh.top` | **[选填]** 独立画图地址 |
+| `GEMINI_API_KEY` | `sk...` | **[必填]** 后端用 Key |
+| `GEMINI_BASE_URL` | `https://...` | **[选填]** 后端请求地址 |
+| `GEMINI_MODEL` | `gemini-1.5-flash` | **[选填]** 指定思考模型 |
+| `IMAGE_MODEL` | `dall-e-3` | **[选填]** 指定画图模型 |
+| `VITE_GEMINI_API_KEY` | `sk...` | **[混合模式必填]** 前端直连用 (防超时) |
+| `VITE_GEMINI_BASE_URL`| `https://...` | **[混合模式必填]** 前端请求地址 |
 
-> **注意：** 在 Vercel 中不需要添加 `VITE_` 前缀，后端会自动读取。前端代码也会自动适配。
+> **提示：** 为了防止绘图超时 (504 Error)，强烈建议同时配置 `VITE_` 开头的变量。
 
 ### 3. 开始部署 (Deploy)
 1.  点击底部的 **Deploy** 按钮。
