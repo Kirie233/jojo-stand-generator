@@ -3,7 +3,10 @@ const getBaseUrl = () => import.meta.env.VITE_GEMINI_BASE_URL || 'https://genera
 
 export const generateStandProfile = async (inputs) => {
   const apiKey = getApiKey();
-  if (!apiKey) {
+
+  // Only enforce API Key in Development (Client-side)
+  // In Production, we use the backend proxy which has its own key.
+  if (!import.meta.env.PROD && !apiKey) {
     throw new Error("请在 .env 文件中配置 VITE_GEMINI_API_KEY");
   }
 
