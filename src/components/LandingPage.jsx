@@ -1,250 +1,236 @@
 import React, { useState } from 'react';
 
 const LandingPage = ({ onStart }) => {
-  const [isStarting, setIsStarting] = useState(false);
+  const [clicked, setClicked] = useState(false);
 
   const handleClick = () => {
-    setIsStarting(true);
-    // Play sound here if possible: new Audio('/ora.mp3').play();
+    setClicked(true);
     setTimeout(() => {
       onStart();
-    }, 800); // 0.8s for transition animation
+    }, 1000);
   };
 
   return (
-    <div className={`landing-container ${isStarting ? 'shattering' : ''}`}>
+    <div className={`landing-container ${clicked ? 'exit-anim' : ''}`}>
 
-      {/* BACKGROUND ELEMENTS */}
-      <div className="landing-bg"></div>
-      <img src="/assets/jojo_silhouettes.png" className="jojo-silhouettes-bg" alt="" />
-      <img src="/assets/joestar_star.png" className="joestar-star-topright" alt="Joestar Mark" />
+      {/* 1. BACKGROUND LAYERS */}
+      <div className="bg-sunburst"></div>
+      <div className="bg-particles"></div>
 
-      {/* MENACING SFX */}
-      <div className="sfx-layer">
-        <span style={{ top: '10%', left: '5%' }}>ゴ</span>
-        <span style={{ top: '15%', left: '12%' }}>ゴ</span>
-        <span style={{ top: '25%', left: '8%' }}>ゴ</span>
-        <span style={{ top: '80%', right: '5%' }}>ド</span>
-        <span style={{ top: '75%', right: '12%' }}>ォ</span>
-        <span style={{ top: '85%', right: '8%' }}>ン</span>
+      {/* 2. HAT LAYER (Middle - Decorative) */}
+      <div className="hat-layer">
+        <img src="/assets/jotaro_hat_no_border.png" className="hat-visual" alt="Jotaro Hat" />
       </div>
 
-      <div className="jotaro-hat-container">
-        <div className="hat-brim-logic">
-          <div className="hat-palm-emblem"></div>
-          <div className="title-wrapper">
-            <h1 className="main-title">
-              <span className="jojo-word">JOJO</span>
-              <span className="sub-title">STAND GENERATOR</span>
-            </h1>
-            <div className="jap-title">奇妙な冒険：替身生成器</div>
-          </div>
+      {/* 3. SFX LAYER (Floating) */}
+      <div className="sfx-layer">
+        <span style={{ top: '10%', left: '5%', animationDelay: '0s' }}>ゴ</span>
+        <span style={{ top: '25%', left: '2%', animationDelay: '0.2s' }}>ゴ</span>
+        <span style={{ top: '80%', right: '5%', animationDelay: '0.5s' }}>ゴ</span>
+        <span style={{ top: '65%', right: '2%', animationDelay: '0.7s' }}>ゴ</span>
+      </div>
 
-          <button className="start-btn" onClick={handleClick}>
-            <span className="btn-content">
-              <span className="arrow-icon">➤</span>
-              <span className="btn-text">觉醒你的替身<br /><small>ENTER THE WORLD</small></span>
-            </span>
+      {/* 4. UI LAYER (Top Level) */}
+      <div className="ui-layer">
+
+        {/* TOP: LOGO */}
+        <div className="logo-section">
+          <h1 className="main-logo">JOJO</h1>
+          <div className="sub-logo">STAND GENERATOR</div>
+        </div>
+
+        {/* BOTTOM: CONTROLS */}
+        <div className="controls-section">
+          <h2 className="action-title">奇妙な冒険：替身生成器</h2>
+
+          <button className="stand-arrow-btn" onClick={handleClick}>
+            <div className="btn-inner">
+              <img src="/assets/arrow_gold.png" className="arrow-icon-img" alt="Arrow" />
+              <span className="btn-text">
+                <span>覺醒能力</span>
+                <small>AWAKEN YOUR STAND</small>
+              </span>
+            </div>
+            <div className="btn-shine"></div>
           </button>
         </div>
+
       </div>
 
       <style>{`
+        /* --- LAYOUT & CONTAINER --- */
         .landing-container {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #2b003e; /* Deep Purple */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            position: fixed; inset: 0;
+            background: #1a0033;
             overflow: hidden;
-            z-index: 5000;
-            transition: all 0.5s;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
         }
 
-        /* BACKGROUND PATTERN */
-        .landing-bg {
-            position: absolute; inset: 0;
-            background-image: 
-                radial-gradient(#4a148c 30%, transparent 30%),
-                linear-gradient(45deg, rgba(255,215,0,0.1) 25%, transparent 25%, transparent 75%, rgba(255,215,0,0.1) 75%);
-            background-size: 20px 20px, 40px 40px;
-            opacity: 0.5;
+        /* --- BACKGROUND EFFECTS --- */
+        .bg-sunburst {
+            position: absolute; inset: -50%;
+            background: repeating-conic-gradient(
+                from 0deg,
+                rgba(0,0,0,0) 0deg 10deg,
+                rgba(255,255,255,0.03) 10deg 20deg
+            );
+            animation: sunburst-spin 20s linear infinite;
             z-index: 0;
-            animation: bg-scroll 20s linear infinite;
         }
-        @keyframes bg-scroll { 0% {background-position: 0 0;} 100% {background-position: 100px 100px;} }
+        @keyframes sunburst-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* DECORATIONS */
-        .joestar-star-topright {
-            position: absolute;
-            top: 40px; right: 40px;
-            width: 80px; height: 80px;
-            background: #d500f9;
-            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-            box-shadow: 0 0 30px #d500f9;
-            animation: breathe-star 3s infinite alternate;
-            z-index: 100;
-        }
-        @keyframes breathe-star {
-            from { transform: scale(1) rotate(0deg); filter: brightness(1); }
-            to { transform: scale(1.2) rotate(15deg); filter: brightness(1.5); }
-        }
-
-        .jojo-silhouettes-bg {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 30%;
-            background: url('/assets/jojo_silhouettes.png') center bottom no-repeat;
-            background-size: cover;
-            opacity: 0.2;
-            mix-blend-mode: screen; /* Fixes checkerboard if it's dark enough */
-            z-index: 1;
-        }
-
-        /* JOTARO HAT THEME */
-        .jotaro-hat-container {
-            position: relative;
-            z-index: 10;
-            transform: rotate(8deg);
-        }
-
-        .hat-brim-logic {
-            background: #000;
-            padding: 80px 100px;
-            border: 6px solid #FFD700;
-            box-shadow: 15px 15px 0 #d500f9;
-            position: relative;
-            /* Jotaro Hat Brim Shape */
-            border-radius: 10px 10px 300px 80px;
-            overflow: hidden;
-        }
-
-        .hat-brim-logic::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 30px;
-            background: #d500f9; /* Cap band */
-        }
-
-        .hat-palm-emblem {
-            position: absolute;
-            top: 35px; left: 30px;
-            width: 60px; height: 60px;
-            background: #FFD700;
-            clip-path: polygon(40% 0%, 50% 20%, 60% 0%, 80% 20%, 100% 50%, 80% 80%, 50% 100%, 20% 80%, 0% 50%, 20% 20%);
-            border: 2px solid #000;
-        }
-
-        /* SFX */
         .sfx-layer span {
             position: absolute;
             font-family: 'Noto Serif SC', serif;
+            font-size: 5rem;
+            color: #4b0082;
+            text-shadow: 2px 2px 0 #FFF;
             font-weight: 900;
-            font-size: 4rem;
-            color: rgba(213, 0, 249, 0.2);
-            animation: shake 2s infinite ease-in-out alternate;
+            opacity: 0.8;
+            animation: sfx-float 3s ease-in-out infinite alternate;
+            z-index: 10;
+        }
+        @keyframes sfx-float { from { transform: translateY(0px); } to { transform: translateY(-20px); } }
+
+        /* --- HAT VISUAL --- */
+        .hat-layer {
+            position: absolute;
+            top: 45%; left: 50%; /* Move up slightly */
+            transform: translate(-50%, -50%);
+            width: 60%; max-width: 600px; /* Reduced from 80% to fix oppressiveness */
             z-index: 5;
+            pointer-events: none;
         }
+        .hat-visual {
+            width: 100%; height: auto;
+            transform: rotate(25deg); /* Slightly reduced tilt for balance */
+            filter: drop-shadow(10px 10px 0 rgba(0,0,0,0.3)); /* Cleaner shadow */
+            opacity: 0.8; /* Dim background to let text pop */
+            animation: hat-hover 4s ease-in-out infinite alternate;
+        }
+        @keyframes hat-hover { from { transform: rotate(20deg) translateY(0); } to { transform: rotate(22deg) translateY(-15px); } }
 
-        /* TITLE */
-        .title-wrapper {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            margin-bottom: 40px;
+        /* --- UI LAYER --- */
+        .ui-layer {
+            position: relative; z-index: 20;
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: space-between;
+            padding: 40px 0;
+            box-sizing: border-box;
+            pointer-events: none; /* Pass through to buttons */
         }
-        .main-title {
+        .ui-layer > * { pointer-events: auto; } /* Re-enable controls */
+
+        /* TOP LOGO */
+        .logo-section {
+            display: flex; flex-direction: column; align-items: center;
+            margin-top: 5vh;
+        }
+        .main-logo {
             font-family: 'ZCOOL KuaiLe', cursive;
-            font-size: 7rem;
-            color: #FFD700;
-            text-shadow: 8px 8px 0 #000;
+            font-size: 10rem;
+            line-height: 0.8;
             margin: 0;
-            line-height: 0.9;
+            color: #FFF;
+            text-shadow: 8px 8px 0 #000;
+            -webkit-text-stroke: 3px #000;
         }
-        .sub-title {
-            display: block;
+        .sub-logo {
             font-family: 'Anton', sans-serif;
-            font-size: 2.5rem;
-            color: #fff;
-            background: #000;
-            padding: 5px 20px;
-            margin-top: 10px;
-            transform: skewX(10deg);
-        }
-        .jap-title {
-            font-family: 'Noto Serif SC', serif;
-            font-weight: bold;
-            font-size: 1.5rem;
-            color: #FFD700;
-            margin-top: 15px;
-            text-shadow: 2px 2px 2px #000;
-            letter-spacing: 5px;
-        }
-
-        /* START BUTTON */
-        .start-btn {
-            position: relative;
-            z-index: 10;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-top: 20px;
-        }
-        .start-btn:hover { transform: scale(1.1) rotate(-2deg); }
-        
-        .btn-content {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: #000;
-            border: 4px solid #d500f9;
-            padding: 15px 40px;
-            clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%);
-            box-shadow: 0 0 15px #d500f9;
-        }
-        
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 20px #FFD700; }
-            50% { box-shadow: 0 0 50px #FFD700, 0 0 30px #d500f9; }
-            100% { box-shadow: 0 0 20px #FFD700; }
-        }
-
-        .arrow-icon {
             font-size: 3rem;
-            color: #d500f9;
-            animation: point-right 1s infinite alternate;
+            color: #FFD700;
+            background: #000; /* As requested, keep nice contrast but user said remove BG bars - wait, user said 'Remove white background bars'. Black is okay? Or remove all bars? User said 'remove white bars', use hard shadow. Let's try NO BG. */
+            /* UPDATING TO NO BG AS PER REQUEST */
+            background: transparent;
+            color: #FFF;
+            text-shadow: 4px 4px 0 #000;
+            padding: 0;
+            margin-top: 0;
+            transform: skewX(-15deg);
+            border: none;
+            -webkit-text-stroke: 0;
         }
-        @keyframes point-right { from {transform: translateX(0);} to {transform: translateX(10px);} }
+
+        /* BOTTOM CONTROLS */
+        .controls-section {
+            display: flex; flex-direction: column; align-items: center;
+            margin-bottom: 20vh; /* Move up a bit */
+            gap: 30px;
+        }
+
+        .action-title {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 3rem;
+            
+            /* PURE WHITE - Force clean fill */
+            color: #FFFFFF;
+            -webkit-text-fill-color: #FFFFFF; /* Override any potential gradient clips */
+            background: none; /* Ensure no texture background */
+            
+            /* Black Stroke (4px) */
+            -webkit-text-stroke: 4px #000;
+            paint-order: stroke fill;
+            
+            /* Purple Outer Glow */
+            text-shadow: 0 0 15px #800080;
+            
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 100;
+        }
+
+        /* BUTTON DESIGN */
+        .stand-arrow-btn {
+            background: transparent; border: none;
+            cursor: pointer;
+            perspective: 500px;
+            transition: transform 0.2s;
+            animation: btn-heartbeat 1.5s ease-in-out infinite;
+        }
+        .stand-arrow-btn:hover { animation: none; transform: scale(1.1); }
+        .stand-arrow-btn:active { transform: scale(0.95); }
+
+        .btn-inner {
+            background: #000; /* PURE BLACK BACKGROUND */
+            padding: 15px 60px;
+            display: flex; align-items: center; gap: 20px;
+            transform: skewX(-20deg); 
+            border: 3px solid #FFD700; /* Gold Border */
+            /* Tight 3D Thickness Shadow (Top-Left as requested) */
+            box-shadow: -6px -6px 0 #4b0082; 
+            position: relative;
+            overflow: hidden;
+        }
+
+        .arrow-icon-img {
+            width: 60px; height: 60px;
+            object-fit: contain;
+            transform: skewX(20deg) rotate(-45deg);
+            /* HOLY RELIC GLOW: Brightness + Contrast + Strong Gold Shadow */
+            filter: brightness(1.3) contrast(1.2) drop-shadow(0 0 8px #FFD700);
+        }
 
         .btn-text {
-            color: #fff;
-            font-family: 'ZCOOL KuaiLe', cursive;
-            font-size: 2rem;
-            text-align: left;
-            line-height: 1.2;
+            display: flex; flex-direction: column; align-items: flex-start;
+            transform: skewX(20deg);
+            color: #FFD700; /* GOLD TEXT */
+            line-height: 1;
         }
-        .btn-text small {
-            font-family: 'Anton', sans-serif;
-            font-size: 1rem;
-            color: #aaa;
-            letter-spacing: 2px;
+        .btn-text span { font-size: 2rem; font-weight: 900; letter-spacing: 2px; }
+        .btn-text small { font-size: 0.9rem; font-weight: 800; opacity: 1; letter-spacing: 1px; }
+
+        @keyframes btn-heartbeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.05); }
+            30% { transform: scale(1); }
+            100% { transform: scale(1); }
         }
 
-        /* SHATTER EFFECT (Simple CSS approximation) */
-        .landing-container.shattering {
-            opacity: 0;
-            transform: scale(1.5) rotate(5deg);
-            filter: blur(10px);
-        }
-
-        @media (max-width: 768px) {
-            .main-title { font-size: 5rem; }
-            .sub-title { font-size: 2rem; }
-            .btn-content { padding: 15px 30px; }
-        }
+        .exit-anim { opacity: 0; transform: scale(1.1); }
       `}</style>
     </div>
   );

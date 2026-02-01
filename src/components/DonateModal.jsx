@@ -4,100 +4,183 @@ import '../styles/variables.css';
 const DonateModal = ({ onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>赞赏 (SPONSOR)</h2>
-          {/* Top Right Close Icon */}
-          <button className="close-icon" onClick={onClose}>×</button>
-        </div>
-        <div className="modal-body" style={{ textAlign: 'center' }}>
-          <p>如果你喜欢这个替身生成器，欢迎请我喝一杯阿帕茶。</p>
+      <div className="harvest-modal-content" onClick={e => e.stopPropagation()}>
 
-          <div className="qr-placeholder">
-            <div className="qr-box">
-              <img src="/sponsor.png" alt="赞赏码" className="qr-image" />
+        {/* HARVEST DECORATION */}
+        <div className="harvest-header-icon">
+          <img src="/assets/icon_tarot_harvest.png" alt="Harvest" className="shigechi-icon" />
+        </div>
+
+        <div className="modal-header-shigechi">
+          <h2>收成时刻 (HARVEST)</h2>
+          <p className="shigechi-dialogue">
+            "希希希... 只要给我一枚硬币，<br />
+            我就能为你收集更多的替身创意！"
+          </p>
+        </div>
+
+        <div className="modal-body">
+          <div className="coin-bag-container">
+            <div className="qr-wrapper">
+              {/* Replace with actual sponsor QR if available, or keep placeholder logic */}
+              <img src="/sponsor.png"
+                alt="Donate QR"
+                className="qr-code-img"
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+              />
+              <div className="qr-fallback" style={{ display: 'none' }}>
+                <span>QR CODE LOADER BROKEN<br />BUT THE GOLDEN SPIRIT IS HERE</span>
+              </div>
             </div>
-            <p className="qr-hint">感谢您的支持！Arigato!</p>
+
+            <div className="coin-pile">
+              <span className="coin c1">🪙</span>
+              <span className="coin c2">🪙</span>
+              <span className="coin c3">🪙</span>
+            </div>
           </div>
 
-          <button className="close-btn-large" onClick={onClose}>
-            关闭 (CLOSE)
+          <p className="donate-hint">
+            支持开发者 (Support User's Passion)
+          </p>
+
+          <button className="close-btn-harvest" onClick={onClose}>
+            不要太贪心了 (CLOSE)
           </button>
         </div>
+
       </div>
 
       <style>{`
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
+        .harvest-modal-content {
+            background: #fff;
+            width: 350px;
+            border: 4px solid #FFD700;
+            border-radius: 20px;
+            position: relative;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Comic Pattern Background */
+            background-image: radial-gradient(#FFD700 10%, transparent 10%), radial-gradient(#FFD700 10%, transparent 10%);
+            background-size: 20px 20px;
+            background-color: #fffacd; /* Lemon Chiffon */
+        }
+
+        .harvest-header-icon {
+            position: absolute;
+            top: -40px; left: 50%;
+            transform: translateX(-50%);
+            width: 80px; height: 80px;
+            background: #fff;
+            border: 4px solid #FFD700;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10;
+        }
+        .shigechi-icon { width: 60px; height: 60px; object-fit: contain; }
+
+        .modal-header-shigechi {
+            margin-top: 30px;
             margin-bottom: 20px;
         }
-
-        .modal-header h2 {
+        .modal-header-shigechi h2 {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            color: #B8860B; /* Dark Goldenrod */
+            font-size: 1.8rem;
             margin: 0;
-            color: var(--accent-color);
-            font-size: 1.5rem;
+            text-shadow: 2px 2px 0 #fff;
         }
-
-        .close-icon {
-            background: transparent;
-            border: none;
-            color: rgba(255,255,255,0.5);
-            font-size: 2rem;
-            cursor: pointer;
-            line-height: 1;
-        }
-        .close-icon:hover { color: white; }
-
-        .qr-placeholder {
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-        
-        .qr-box {
-            width: 220px;
-            height: 220px;
-            margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: white;
+        .shigechi-dialogue {
+            font-family: 'Noto Serif SC', serif;
+            font-style: italic;
+            color: #555;
+            background: #fff;
             padding: 10px;
-            border-radius: 5px;
+            border-radius: 10px;
+            border: 2px dashed #FFD700;
+            margin-top: 10px;
+            font-size: 0.9rem;
         }
 
-        .qr-image {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        .coin-bag-container {
+            background: #fff;
+            border: 3px solid #000;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+            transform: rotate(-2deg);
+            transition: transform 0.3s;
+        }
+        .coin-bag-container:hover {
+            transform: rotate(0deg) scale(1.02);
+      
         }
 
-        .qr-hint {
-            color: var(--accent-color);
-            font-weight: bold;
+        .qr-wrapper {
+            width: 200px; height: 200px;
+            margin: 0 auto;
+            background: #eee;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .qr-code-img { width: 100%; height: 100%; object-fit: contain; }
+        .qr-fallback { 
+            width: 100%; height: 100%; 
+            display: flex; align-items: center; justify-content: center; 
+            text-align: center; color: #aaa; font-size: 0.8rem;
         }
 
-        .close-btn-large {
-            background: transparent;
-            border: 2px solid var(--secondary-color);
-            color: var(--secondary-color);
-            padding: 10px 40px;
-            font-size: 1.1rem;
+        .coin-pile {
+            position: absolute;
+            bottom: -15px; right: -15px;
+            font-size: 2rem;
+            display: flex;
+        }
+        .coin { 
+            display: inline-block; 
+            filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.3));
+            animation: bounce 2s infinite; 
+        }
+        .c1 { animation-delay: 0s; }
+        .c2 { animation-delay: 0.2s; }
+        .c3 { animation-delay: 0.4s; }
+
+        .donate-hint {
+            font-family: 'Bangers', cursive;
+            letter-spacing: 1px;
+            color: #B8860B;
+            font-size: 1.2rem;
+        }
+
+        .close-btn-harvest {
+            background: #FFD700;
+            color: #000;
+            border: 3px solid #000;
+            padding: 10px 30px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1.2rem;
             cursor: pointer;
-            font-weight: bold;
+            box-shadow: 4px 4px 0 #000;
             transition: all 0.2s;
             width: 100%;
         }
+        .close-btn-harvest:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 #000;
+            background: #fff;
+        }
 
-        .close-btn-large:hover {
-            background: var(--secondary-color);
-            color: #000;
+        @keyframes popIn {
+             from { transform: scale(0.8); opacity: 0; }
+             to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
         }
       `}</style>
     </div>

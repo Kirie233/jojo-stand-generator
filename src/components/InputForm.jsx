@@ -3,16 +3,16 @@ import '../styles/variables.css';
 import standArrowImg from '../assets/stand_arrow.png';
 
 const EXAMPLES_SONG = ["Killer Queen", "Last Train Home", "Roundabout", "Walk Like an Egyptian", "Sono Chi no Sadame"];
-const EXAMPLES_NAME = ["Jotaro Kujo", "Giorno Giovanna", "Joseph Joestar", "Dio Brando", "Rohan Kishibe"];
+const EXAMPLES_NAME = ["空条承太郎", "乔鲁诺·乔巴纳", "乔瑟夫·乔斯达", "迪奥·布兰度", "岸边露伴", "吉良吉影", "布鲁诺·布加拉提"];
 const COLORS = [
-  { name: "Star Platinum Purple", value: "#7B1FA2" },
-  { name: "Magician's Red", value: "#D50000" },
-  { name: "Hierophant Green", value: "#00C853" },
-  { name: "Silver Chariot", value: "#B0BEC5" },
-  { name: "The World Gold", value: "#FFD700" },
-  { name: "Killer Queen Pink", value: "#FF4081" },
-  { name: "Sticky Fingers Blue", value: "#2962FF" },
-  { name: "Black Sabbath", value: "#000000" }
+  { name: "Star Platinum Purple (白金之星紫)", value: "#7B1FA2" },
+  { name: "Magician's Red (魔术师之红)", value: "#D50000" },
+  { name: "Hierophant Green (法皇之绿)", value: "#00C853" },
+  { name: "Silver Chariot (银色战车)", value: "#B0BEC5" },
+  { name: "The World Gold (世界·金)", value: "#FFD700" },
+  { name: "Killer Queen Pink (杀手皇后粉)", value: "#FF4081" },
+  { name: "Sticky Fingers Blue (钢链手指蓝)", value: "#2962FF" },
+  { name: "Black Sabbath (黑色安息日)", value: "#000000" }
 ];
 const PERSONALITY_TAGS = [
   "想要平静的生活", "想要守护某人", "想要成为流氓巨星",
@@ -27,7 +27,7 @@ const STEPS = [
   {
     id: 'NAME',
     question: "你的真名是？",
-    sub: "THE FOOL - 0",
+    sub: "THE FOOL (愚者) - 0",
     plain: "请输入你的姓名或昵称",
     placeholder: "空条承太郎 / Jotaro Kujo",
     random: EXAMPLES_NAME
@@ -35,7 +35,7 @@ const STEPS = [
   {
     id: 'SONG',
     question: "灵魂的旋律？",
-    sub: "THE LOVERS - VI",
+    sub: "THE LOVERS (恋人) - VI",
     plain: "输入一首你喜欢的歌曲名或歌手",
     placeholder: "Killer Queen / Michael Jackson",
     random: EXAMPLES_SONG
@@ -43,33 +43,35 @@ const STEPS = [
   {
     id: 'COLOR',
     question: "精神的波纹色？",
-    sub: "THE MAGICIAN - I",
+    sub: "THE MAGICIAN (魔术师) - I",
     plain: "选择代表你精神能量的颜色",
     type: 'color'
   },
   {
     id: 'PERSONALITY',
     question: "你的欲望与执念？",
-    sub: "THE DEVIL - XV",
+    sub: "THE DEVIL (恶魔) - XV",
     plain: "选择或输入你内心最深处的渴望",
     type: 'tags'
   },
   {
     id: 'PHOTO',
     question: "灵魂投影 (念写)",
-    sub: "HERMIT PURPLE - IX",
-    plain: "上传一张照片作为替身外形的参考",
+    sub: "HERMIT PURPLE (隐者之紫) - IX",
+    plain: "上传一张照片作为替身外形的参考 (可选/Optional)",
     type: 'upload'
   },
   {
     id: 'RITUAL',
     question: "接受试炼",
-    sub: "THE WORLD - XXI",
+    sub: "THE WORLD (世界) - XXI",
     plain: "觉醒时刻已到",
     type: 'final'
   }
 ];
 
+// TBC Progress Logic: Linear 0-100% based on steps
+// Now that image is cropped tightly, we can use simple math.
 const InputForm = ({ onSubmit, onCancel }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -79,7 +81,8 @@ const InputForm = ({ onSubmit, onCancel }) => {
     personality: '',
     referenceImage: null
   });
-  const [isAnimating, setIsAnimating] = useState(false);
+  // Animation State: 'idle' | 'out' (burning/swiping) | 'in' (restoring/entering)
+  const [animPhase, setAnimPhase] = useState('idle');
   const [direction, setDirection] = useState('next');
 
   const handleNext = () => {
@@ -87,32 +90,48 @@ const InputForm = ({ onSubmit, onCancel }) => {
     const currentFieldValue = formData[fieldMap[currentStep]];
     const stepType = STEPS[currentStep].type;
 
-    // Allow empty for optional? No, let's easier for now.
-    // Ritual step doesn't need input.
     if (stepType === 'final') {
       onSubmit(formData);
       return;
     }
 
     if (currentFieldValue || stepType === 'upload') {
-      setIsAnimating(true);
       setDirection('next');
-      setTimeout(() => {
-        setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
-        setIsAnimating(false);
-      }, 600); // Wait for burn animation
+      triggerTransition(() => setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1)));
     }
   };
 
   const handlePrev = () => {
     if (currentStep > 0) {
-      setIsAnimating(true);
       setDirection('prev');
-      setTimeout(() => {
-        setCurrentStep(prev => prev - 1);
-        setIsAnimating(false);
-      }, 600);
+      triggerTransition(() => setCurrentStep(prev => prev - 1));
     }
+  };
+
+  // ... triggerTransition ...
+
+  // ... handleChange ...
+
+  // Update class logic to include direction
+  // className={`tarot-card-frame ${animPhase === 'out' ? 'exit-' + direction : animPhase === 'in' ? 'enter-' + direction : ''}`}
+
+  // Centralized Transition Logic: Burn Out -> Update State -> Restore In
+  const triggerTransition = (stateUpdateCallback) => {
+    if (animPhase !== 'idle') return; // Prevent double clicks
+
+    // Phase 1: Burn Out
+    setAnimPhase('out');
+
+    setTimeout(() => {
+      // Phase 2: State Update & Start Restore
+      stateUpdateCallback();
+      setAnimPhase('in');
+
+      // Phase 3: Finish
+      setTimeout(() => {
+        setAnimPhase('idle');
+      }, 300); // Wait for restore animation
+    }, 300); // Wait for burn animation
   };
 
   const handleChange = (key, val) => {
@@ -152,28 +171,40 @@ const InputForm = ({ onSubmit, onCancel }) => {
 
   return (
     <div className="tarot-container">
-      {/* RUN AWAY BUTTON (Nigerundayo!) */}
+      {/* REDESIGNED RETURN BUTTON (Borderless, Arrow Only) */}
       {onCancel && (
-        <button className="nigerundayo-btn" onClick={onCancel} title="Tactical Retreat!">
-          <div className="run-icon">
-            <img src="/assets/nigerundayo.png" alt="Run!" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-          </div>
-          <span className="run-text">尼给路达哟!</span>
+        <button className="return-btn" onClick={onCancel}>
+          <svg className="return-arrow" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20,11 L7.83,11 L13.42,5.41 L12,4 L4,12 L12,20 L13.41,18.59 L7.83,13 L20,13 Z" />
+          </svg>
+          <span className="return-text">RETURN</span>
         </button>
       )}
 
-      {/* TBC Progress Arrow */}
-      <div className="tbc-progress-container">
-        <div className="tbc-arrow-bg">
-          <div className="tbc-arrow-fill" style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}></div>
+      {/* LIQUID FILL TBC PROGRESS ARROW (STENCIL COMPATIBLE) */}
+      <div className="tbc-container-fixed">
+        <div className="tbc-mask-container">
+          {/* 1. Base Layer (The "Unlit" Tube - Always Visible) */}
+          <div className="tbc-mask-base"></div>
+
+          {/* 2. active Layer (The "Lit" Gradient - Fills up) */}
+          <div className="tbc-mask-fill" style={{ width: `${currentStep / (STEPS.length - 1) * 100}%` }}></div>
         </div>
-        <span className="tbc-text">TO BE CONTINUED</span>
       </div>
 
-      <div className={`tarot-card-frame ${isAnimating ? (direction === 'next' ? 'burning' : 'restoring') : ''}`}>
+      {/* MOVED OUTSIDE container to allow mix-blend-mode: screen to work with body background! */}
+      <img
+        src="/assets/stand_awakening_text.png"
+        className={`tbc-floating-img ${currentStep === STEPS.length - 1 ? 'visible' : ''}`}
+        alt="Stand Awakening"
+      />
 
-        {/* Watermark */}
-        <div className="tarot-watermark">{step.sub.split(' - ')[0]}</div>
+      <div className={`tarot-card-frame ${animPhase !== 'idle' ? `${animPhase}-${direction}` : ''}`}>
+
+        {/* Watermark - Hidden on Final Step to keep background clean */}
+        <div className="tarot-watermark" style={{ display: step.type === 'final' ? 'none' : 'block' }}>
+          {step.sub.split(' - ')[0]}
+        </div>
 
         <div className="card-header">
           <span className="card-sub">{step.sub}</span>
@@ -239,7 +270,17 @@ const InputForm = ({ onSubmit, onCancel }) => {
 
               <div className="polaroid-inner">
                 {formData.referenceImage ? (
-                  <img src={formData.referenceImage} className="preview-image" alt="Spirit" />
+                  <div className="preview-container">
+                    <img src={formData.referenceImage} className="preview-image" alt="Spirit" />
+                    <button className="remove-photo-btn" onClick={(e) => {
+                      e.preventDefault();
+                      handleChange('referenceImage', null);
+                    }} title="Remove Photo">
+                      <svg viewBox="0 0 24 24" fill="white" style={{ width: '20px', height: '20px' }}>
+                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                      </svg>
+                    </button>
+                  </div>
                 ) : (
                   <div className="void-placeholder">
                     <img src="/assets/hermit_purple_smashed_camera_full_color.png" className="upload-art-full" alt="Spirit Camera" />
@@ -249,18 +290,55 @@ const InputForm = ({ onSubmit, onCancel }) => {
                   </div>
                 )}
               </div>
-              <div className="polaroid-footer-text">
-                <span className="polaroid-label">念写 / 隐者之紫</span>
+              <div className="polaroid-text-container">
+                <span className="polaroid-marker-text">砸毁相机！(UPLOAD)</span>
+                <svg className="hand-arrow" viewBox="0 0 50 50">
+                  <path d="M10,40 Q25,10 40,20 L35,25 M40,20 L38,15" fill="none" stroke="#2b1d2b" strokeWidth="3" strokeLinecap="round" />
+                </svg>
               </div>
             </div>
           ) : step.type === 'final' ? (
             <div className="arrow-ritual-container">
-              <div className="sunburst-bg"></div>
-              <img src="/assets/arrow_gold.png" className="floating-arrow-lg" alt="Stand Arrow" />
-              <button className="awakening-btn" onClick={() => onSubmit(formData)}>
-                <span className="menacing-char">ゴ</span>
-                觉醒替身 (AWAKEN)
-                <span className="menacing-char">ゴ</span>
+
+              {/* Floating 'Go' text VFX */}
+              <div className="gogogo-container">
+                <span className="go-text go-1">ゴ</span>
+                <span className="go-text go-2">ゴ</span>
+                <span className="go-text go-3">ゴ</span>
+              </div>
+
+              {/* Electricity VFX */}
+              <div className="sparks-container">
+                <div className="spark s1"></div>
+                <div className="spark s2"></div>
+                <div className="spark s3"></div>
+                <div className="spark s4"></div>
+              </div>
+
+              {/* SYNCED VISUAL WRAPPER: Aura + Arrow move together */}
+              <div className="arrow-visual-wrapper">
+                {/* Back Glow - ADVANCED GOLDEN AURA */}
+                <div className="arrow-aura-advanced">
+                  <div className="aura-rays"></div>
+                  <div className="aura-wave wave-1"></div>
+                  <div className="aura-wave wave-2"></div>
+                  <div className="aura-wave wave-3"></div>
+                  <div className="aura-core"></div>
+                </div>
+
+                {/* Arrow Image */}
+                <div className="ritual-circle-new">
+                  <img src="/assets/stand_arrow_final.png" className="ritual-arrow-multiply" alt="Stand Arrow" />
+                </div>
+              </div>
+
+              <button className="awakening-btn-final" onClick={handleNext}>
+                <span className="kana skew-fix">ゴ</span>
+                <div className="btn-text-group skew-fix">
+                  <span className="text-cn">觉醒替身</span>
+                  <span className="text-en">AWAKEN</span>
+                </div>
+                <span className="kana skew-fix">ゴ</span>
               </button>
             </div>
           ) : (
@@ -269,41 +347,67 @@ const InputForm = ({ onSubmit, onCancel }) => {
               <div className="ink-splatter splatter-1"></div>
               <div className="ink-splatter splatter-2"></div>
 
+              {/* INPUT AREA (Minimalist Underline) */}
               <div className="speech-bubble-wrapper">
                 <input
+                  type="text"
                   className="speech-bubble-input"
                   placeholder={step.placeholder}
-                  value={currentVal}
+                  value={formData[getFieldKey()] || ''}
                   onChange={(e) => handleChange(getFieldKey(), e.target.value)}
-                  onKeyDown={handleKeyDown}
                   autoFocus
                 />
-              </div>
 
-
-
-              {step.random && (
-                <div style={{ textAlign: 'right', marginTop: '-15px', position: 'relative', zIndex: 10 }}>
-                  <button className="random-btn-styled" onClick={handleRandom} title="Destiny">
-                    🎲 命运 (Random)
+                {/* RANDOM DICE BUTTON (Visible Button) */}
+                {step.random && (
+                  <button className="random-dice-btn" onClick={() => handleRandom()} title="Roll Destiny">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="dice-icon">
+                      <path d="M19,3H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V5C21,3.9,20.1,3,19,3z M19,19H5V5h14V19z" />
+                      <circle cx="8" cy="8" r="1.5" />
+                      <circle cx="16" cy="16" r="1.5" />
+                      <circle cx="8" cy="16" r="1.5" />
+                      <circle cx="16" cy="8" r="1.5" />
+                      <circle cx="12" cy="12" r="1.5" />
+                    </svg>
+                    <span className="random-text">命运 (RANDOM)</span>
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
 
         <div className="card-footer">
-          <button className="nav-btn prev" onClick={handlePrev} disabled={currentStep === 0}>
-            ◀ PREV
-          </button>
+          {currentStep > 0 && (
+            <button className="nav-btn prev-btn" onClick={handlePrev}>
+              ◀ 上一页
+            </button>
+          )}
           <span className="page-indicator">{currentStep + 1} / {STEPS.length}</span>
           {step.type !== 'final' && (
-            <button className="nav-btn next" onClick={handleNext}>
-              NEXT ▶
+            <button className="nav-btn next-btn" onClick={handleNext}>
+              {step.type === 'upload' && !formData.referenceImage ? '跳过 ▶' : '下一页 ▶'}
             </button>
           )}
         </div>
+      </div>
+
+      {/* QUICK NAVIGATION / CHAPTER SELECT */}
+      <div className="chapter-nav">
+        {STEPS.map((s, index) => (
+          <div
+            key={s.id}
+            className={`nav-item ${index === currentStep ? 'active' : ''}`}
+            onClick={() => {
+              if (index === currentStep) return;
+              setDirection(index > currentStep ? 'next' : 'prev');
+              triggerTransition(() => setCurrentStep(index));
+            }}
+            title={s.question}
+          >
+            <span className="nav-num">{['I', 'II', 'III', 'IV', 'V', 'VI'][index]}</span>
+          </div>
+        ))}
       </div>
 
       <style>{`
@@ -317,81 +421,115 @@ const InputForm = ({ onSubmit, onCancel }) => {
             padding-bottom: 50px;
         }
 
-        /* NIGERUNDAYO BUTTON */
-        .nigerundayo-btn {
-          position: absolute;
-          top: 0; left: 0;
-          background: transparent;
-          border: none;
+        /* RETURN BUTTON - Minimalist */
+        .return-btn {
+          position: fixed;
+          top: 30px; left: 30px;
+          background: transparent; /* No background */
+          border: none; /* No border */
+          color: #fff;
           cursor: pointer;
           z-index: 2000;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          opacity: 0.7;
-          transition: all 0.2s;
+          display: flex; align-items: center; gap: 8px;
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
-        .nigerundayo-btn:hover {
-          opacity: 1;
-          transform: translateX(-5px);
+        .return-btn:hover {
+          transform: translateX(-8px); /* Left Move Animation */
+          color: gold;
         }
-        .run-icon { font-size: 2rem; }
-        .run-text {
-          font-family: 'ZCOOL KuaiLe', cursive;
-          color: #fff;
-          background: #000;
-          padding: 2px 5px;
-          font-size: 1rem;
-          border: 1px solid #fff;
-          display: none; /* Show on hover */
-        }
-        .nigerundayo-btn:hover .run-text { display: block; }
-
-        .tbc-progress-container {
-          position: absolute;
-          bottom: 10px; left: 50px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          opacity: 0.8;
-        }
-        
-        .tbc-arrow-bg {
-          width: 300px; height: 40px;
-          background: rgba(0,0,0,0.5);
-          clip-path: polygon(0% 20%, 90% 20%, 100% 50%, 90% 80%, 0% 80%);
-          border: 2px solid #fff;
-          position: relative;
-        }
-        
-        .tbc-arrow-fill {
-           height: 100%;
-           background: #d500f9;
-           transition: width 0.5s ease-out;
-           clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+        .return-arrow { width: 32px; height: 32px; }
+        .return-text { 
+           font-family: 'Anton', sans-serif; 
+           font-size: 1.2rem; 
+           letter-spacing: 1px;
+           text-shadow: 2px 2px 0 #000;
         }
 
-        .tbc-text {
-            font-family: 'Anton', sans-serif;
-            font-size: 1.5rem;
-            color: #d500f9;
-            text-shadow: 2px 2px #000;
-            transform: skewX(-10deg);
+        /* LIQUID FILL TBC ARROW */
+        .tbc-container-fixed {
+            position: fixed;
+            /* Container is now a large square to match the 1:1 mask image */
+            /* We pull it down (-100px) so the centered arrow sits at the bottom */
+            bottom: -100px; left: 10px;
+            z-index: 50;
+            width: 300px; height: 300px; 
+            transform-origin: bottom left;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            pointer-events: none; /* Let clicks pass through the huge transparent box */
+        }
+
+        .tbc-mask-container {
+            position: relative;
+            width: 100%; height: 100%; /* Fill the 16:9 box */
+            /* THE MASK MAGIC: Use the STENCIL (Outline + Text) */
+            -webkit-mask-image: url('/assets/tbc_arrow_stencil.png');
+            mask-image: url('/assets/tbc_arrow_stencil.png');
+            /* FORCE STRETCH: Ensure the arrow fills the box 100% to match progress bar geometry */
+            -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            /* Use Luminance Masking for B&W Stencil (White=See, Black=Hide) */
+            -webkit-mask-mode: luminance;
+            mask-mode: luminance;
+            /* NEON GLOW: Brighter and stronger to stand out on dark bg */
+            filter: drop-shadow(0 0 2px #be00dd) drop-shadow(0 0 8px #be00dd) drop-shadow(0 0 15px #d500f9); 
+        }
+
+        .tbc-mask-base {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            /* The "Empty" State Color: Visible Translucent Gold/White */
+            background: rgba(255, 235, 150, 0.35); 
+        }
+
+        .tbc-mask-fill {
+            position: absolute;
+            top: 0; left: 0; height: 100%;
+            background: linear-gradient(90deg, #d500f9, #FFD700); /* Purple to Gold */
+            /* Width is handled by inline style now */
+            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: 0 0 20px #d500f9;
+        }
+
+
+
+        /* REPLACED TEXT WITH IMAGE */
+        .tbc-floating-img {
+            position: fixed; /* Fix to screen like the arrow */
+            bottom: 50px; /* Clear the Arrow (20px + 80px*1.5 ~ 140px) */
+            left: 0;
+            width: 250px; /* Adjust size */
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* BLEND MODE MAGIC: Remove black background */
+            mix-blend-mode: screen; 
+            pointer-events: none;
+        }
+        .tbc-floating-img.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
         }
 
         .tarot-card-frame {
             position: relative;
             width: 400px;
+            /* FIX: Fixed Height to prevent button jumping */
+            height: 600px; 
             background: #fff;
             border: 4px solid #000;
             box-shadow: 15px 15px 0 #000;
-            padding: 30px;
-            text-align: center;
-            transition: all 0.5s;
-            overflow: hidden;
-            display: flex;
+            z-index: 50; 
+            display: flex; 
             flex-direction: column;
-            gap: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            transform-style: preserve-3d;
+            gap: 0; /* Remove gap, handle spacing internally */
         }
         
         .tarot-watermark {
@@ -407,19 +545,18 @@ const InputForm = ({ onSubmit, onCancel }) => {
         }
         
         .tarot-card-frame.burning {
-            animation: burnCard 0.6s forwards;
+            animation: burnCard 0.3s forwards;
         }
         .tarot-card-frame.restoring {
-            animation: restoreCard 0.6s forwards;
+            animation: restoreCard 0.3s forwards;
         }
 
         .card-header { position: relative; z-index: 2; flex-shrink: 0; }
         .card-body { 
             position: relative; z-index: 2; width: 100%; 
-            display: flex; flex-direction: column; gap: 10px; /* Reduced gap */
-            /* Removed max-height and overflow to disable scrollbar */
-            padding-right: 5px; 
-            padding-bottom: 5px;
+            display: flex; flex-direction: column; gap: 10px;
+            /* REMOVED asymmetric padding for perfect centering */
+            padding: 0; 
         }
 
         .card-sub {
@@ -435,46 +572,82 @@ const InputForm = ({ onSubmit, onCancel }) => {
         
         .card-question {
             font-family: 'ZCOOL KuaiLe', cursive;
-            font-size: 1.2rem; /* Smaller */
+            font-size: 1.2rem;
             margin: 0;
             color: #000;
-            text-align: left; /* Move to top-left */
+            text-align: left;
             padding-left: 20px;
             border-left: 5px solid #d500f9;
             padding-bottom: 5px;
             width: fit-content;
         }
         .card-plain {
-            font-family: 'Noto Serif SC', serif;
-            font-size: 0.9rem;
-            color: #888;
+            font-family: 'ZCOOL KuaiLe', cursive; /* Thematic Match */
+            font-size: 1.2rem; /* Slightly larger for this font */
+            color: #444;
             margin: 0;
-            font-style: italic;
+            letter-spacing: 1px;
         }
 
         /* INPUTS */
-        /* SPEECH BUBBLE INPUT */
+        /* INPUTS - WEIGHT REDUCTION */
         .speech-bubble-wrapper {
             position: relative;
-            padding: 30px;
-            filter: drop-shadow(4px 4px 0 #000);
-            transform: rotate(-1deg);
+            padding: 10px 0 0 0; /* Reset padding */
+            margin-bottom: 60px; /* SPACE FIX: Push footer down so button fits */
+            width: 100%;
+            display: flex; justify-content: center;
+            box-sizing: border-box;
+            align-items: flex-end; /* Align icon to bottom */
         }
         .speech-bubble-input {
             width: 100%;
-            background: #fff;
-            border: 4px solid #000;
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; /* Irregular */
-            padding: 20px 30px;
-            font-family: 'Bangers', cursive;
-            font-size: 2.5rem; /* HUGE TEXT */
+            box-sizing: border-box;
+            background: transparent; /* Transparent bg */
+            border: none;
+            border-bottom: 4px solid #000; /* Bottom border only */
+            border-radius: 0;
+            padding: 10px; /* Symmetrical Padding */
+            font-family: 'ZCOOL KuaiLe', 'Bangers', cursive; /* Use ZCOOL for Chinese support */
+            font-size: 2.2rem;
             text-align: center;
             color: #000;
             outline: none;
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 80% 100%, 75% 115%, 70% 100%, 0% 100%);
-            margin-bottom: 20px; /* Space for the tail */
+            margin-bottom: 20px;
+            box-shadow: none; /* No shadow */
+            letter-spacing: 2px; /* Increased Spacing */
+            transition: border-color 0.3s;
         }
-        .speech-bubble-input::placeholder { color: #ddd; font-family: 'Courier New'; font-size: 1rem; }
+        .speech-bubble-input:focus {
+            border-bottom-color: #d500f9;
+        }
+        .speech-bubble-input::placeholder { color: #ccc; font-family: 'Courier New'; font-size: 1.2rem; }
+
+        /* RANDOM DICE BUTTON (Visible Pill - Below Input) */
+        .random-dice-btn {
+            position: absolute;
+            bottom: -45px; /* Moved below the line */
+            right: 0;
+            display: flex; align-items: center; gap: 8px;
+            background: #000;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 5;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        }
+        .random-dice-btn:hover {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+            transform: translateY(-2px);
+            box-shadow: 2px 4px 0 rgba(0,0,0,0.2);
+        }
+        .dice-icon { width: 18px; height: 18px; }
+        .random-text { font-family: 'ZCOOL KuaiLe', cursive; font-size: 0.9rem; white-space: nowrap; }
 
         /* OLD INPUT (Backup) */
         .tarot-input { display: none; } 
@@ -496,7 +669,7 @@ const InputForm = ({ onSubmit, onCancel }) => {
             border: none;
             border-bottom: 2px solid #000;
             padding: 5px;
-            font-family: 'Courier New', monospace;
+            font-family: 'ZCOOL KuaiLe', monospace; /* Consistent Font */
             text-align: center;
             outline: none;
             margin-top: 10px;
@@ -695,6 +868,39 @@ const InputForm = ({ onSubmit, onCancel }) => {
             display: flex; align-items: center; justify-content: center;
             padding-top: 10px;
         }
+        /* POLAROID MARKER TEXT (GRAFFITI STYLE) */
+        .polaroid-text-container {
+            margin-top: 15px;
+            position: relative;
+            transform: rotate(-2deg); /* Slight container tilt */
+            width: 100%;
+            text-align: center;
+        }
+        .polaroid-marker-text {
+            font-family: 'ZCOOL KuaiLe', cursive; /* Thick Marker Font */
+            font-size: 2.2rem; /* HUGE */
+            color: #2b1d2b; /* Dried Dark Purple Ink */
+            display: block;
+            transform: rotate(-5deg); /* Handwritten Tilt */
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1); /* Ink bleed */
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .item-upload-label:hover .polaroid-marker-text {
+            transform: rotate(-5deg) scale(1.1);
+            color: #d500f9; /* Glow on hover */
+        }
+        
+        .hand-arrow {
+            position: absolute;
+            top: -10px; right: -30px;
+            width: 40px; height: 40px;
+            opacity: 0.8;
+            transform: rotate(20deg);
+        }
+
+        .upload-input { display: none; }
         .polaroid-label {
             font-family: 'ZCOOL KuaiLe', cursive;
             font-size: 1rem;
@@ -702,54 +908,303 @@ const InputForm = ({ onSubmit, onCancel }) => {
             letter-spacing: 2px;
             font-weight: bold;
         }
+        .preview-container { position: relative; width: 100%; height: 100%; }
         .preview-image { width: 100%; height: 100%; object-fit: cover; }
+        
+        .remove-photo-btn {
+            position: absolute;
+            top: 5px; right: 5px;
+            width: 30px; height: 30px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50;
+            transition: all 0.2s;
+        }
+        .remove-photo-btn:hover { background: #ff0000; transform: scale(1.1); }
         
         #upload-hidden { display: none; }
 
         /* ARROW RITUAL */
-        .arrow-ritual-container { position: relative; display: flex; flex-direction: column; align-items: center; gap: 30px; margin-top: 20px; }
-        .sunburst-bg {
-            position: absolute; top: 50%; left: 50%;
-            width: 400px; height: 400px;
-            background: repeating-conic-gradient(from 0deg, rgba(255, 215, 0, 0.2) 0deg 10deg, transparent 10deg 20deg);
-            transform: translate(-50%, -50%);
-            animation: spin 10s linear infinite;
-            z-index: -1;
-            border-radius: 50%;
+        /* RITUAL NEW STYLES */
+        .final-step-header {
+            width: 100%; display: flex; justify-content: center;
+        }
+        /* RE-ADDED & STYLED BOTTOM TITLE */
+        .tbc-floating-img-new {
+            position: fixed; /* Changed to FIXED since it's now root level */
+            bottom: 80px; /* Adjusted position */
+            left: 30px; /* Match arrow left + padding */
+            width: 250px;
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* CRITICAL: Cut out black background */
+            mix-blend-mode: screen; 
             pointer-events: none;
+            z-index: 9999; /* Ensure above everything */
         }
-        @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-
-        .floating-arrow-lg {
-            width: 180px;
-            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+        .tbc-floating-img-new.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        
+        .arrow-ritual-container { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 10px; }
+        
+        /* WRAPPER FOR SYNCED FLOATING */
+        .arrow-visual-wrapper {
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            width: 300px; height: 300px; /* Slightly larger than arrow box */
             animation: float 3s ease-in-out infinite;
+            z-index: 10; /* Visual layer */
         }
-        .awakening-btn {
-            background: #000; color: #FFD700;
-            border: 4px solid #FFD700;
-            padding: 20px 50px;
-            font-family: 'Bangers', cursive;
-            font-size: 2rem;
+
+        /* ADVANCED AURA SYSTEM v2 - GOLDEN WIND */
+        .arrow-aura-advanced {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            display: flex; align-items: center; justify-content: center;
+            z-index: -1; /* BEHIND ARROW */
+            /* Removed translateY offset */
+        }
+        
+        /* 1. The Core Sun - HOLLOWED OUT */
+        .aura-core {
+            position: absolute;
+            width: 160px; height: 160px;
+            /* Center is transparent so arrow sits on white card (clean), glow starts further out */
+            background: radial-gradient(circle, transparent 30%, rgba(255, 215, 0, 0.4) 50%, rgba(255, 165, 0, 0) 70%);
+            border-radius: 50%;
+            animation: core-pulse 2s ease-in-out infinite alternate;
+            mix-blend-mode: normal;
+        }
+
+        /* 2. Rotating Rays - SUNBURST / GOD RAYS effect */
+        .aura-rays {
+            position: absolute;
+            width: 380px; height: 380px; 
+            background: repeating-conic-gradient(
+                from 0deg, 
+                rgba(255, 215, 0, 0) 0deg, 
+                rgba(255, 215, 0, 0) 10deg, 
+                rgba(255, 215, 0, 0.4) 12deg, /* Slightly softer alpha */
+                rgba(255, 215, 0, 0) 14deg,
+                rgba(255, 215, 0, 0) 20deg
+            );
+            border-radius: 50%;
+            opacity: 0.9; 
+            animation: rotate-rays 20s linear infinite;
+            /* Donut Mask: Softened significantly. No hard hole. */
+            mask-image: radial-gradient(circle, transparent 20%, black 40%, black 70%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle, transparent 20%, black 40%, black 70%, transparent 100%);
+        }
+
+        /* ... shockwaves removed ... */
+        /* 4. Magic Particles (Dust) */
+        .aura-particles {
+            position: absolute;
+            width: 300px; height: 300px;
+            animation: rotate-particles 20s linear infinite;
+        }
+
+        /* ... */
+
+        .text-cn {
+            font-size: 2.4rem; /* Reduced from 2.8rem to prevent wrapping */
+            font-weight: 900; 
+            color: #fff;
+            /* Stronger Shadow + Stroke effect for legibility */
+            text-shadow: 2px 2px 0 #000, -1px -1px 0 #4b0082;
+            -webkit-text-stroke: 1px #000;
+            white-space: nowrap; /* Force single line */
+            font-family: 'ZCOOL KuaiLe', 'SimHei', sans-serif; 
+            letter-spacing: 2px; /* Slightly tighter spacing */
+            margin-bottom: 2px;
+        }
+        
+        @keyframes core-pulse {
+            0% { transform: scale(0.95); opacity: 0.8; filter: brightness(1); }
+            100% { transform: scale(1.1); opacity: 1; filter: brightness(1.3); }
+        }
+        @keyframes rotate-rays {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes ripple-expand {
+            0% { width: 100px; height: 100px; opacity: 0.8; border-width: 4px; }
+            100% { width: 350px; height: 350px; opacity: 0; border-width: 0px; }
+        }
+        @keyframes rotate-particles {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+
+
+
+        .ritual-circle-new {
+            /* No Black Box - Just a layout container */
+            width: 280px; height: 280px;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            z-index: 2; /* ABOVE AURA */
+            /* FIX: Apply blend mode to the CONTAINER so it blends with siblings (GoGoGo text) */
+            mix-blend-mode: multiply;
+        }
+
+        .ritual-arrow-multiply {
+            width: 100%;
+            height: auto;
+            /* Removed internal blend mode, handled by parent */
+            /* mix-blend-mode: multiply; */
+            /* Brightness tweak to counteract multiply darkness */
+            filter: contrast(1.1) brightness(1.05);
+            /* animation: float 3s ease-in-out infinite; -- REMOVED, handled by wrapper */
+        }
+
+        /* GoGoGo VFX */
+        .gogogo-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; 
+            z-index: 20; /* FIX: Raised above visual wrapper (10) so text is visible */
+        }
+        .go-text {
+            position: absolute; font-family: 'Impact', sans-serif; font-size: 2rem; color: #800080; opacity: 0;
+            animation: go-float 2s infinite;
+        }
+
+        /* ... spark rules ... */
+
+        /* 2. Rotating Rays - SUNBURST / GOD RAYS effect */
+        .aura-rays {
+            position: absolute;
+            width: 380px; height: 380px; 
+            background: repeating-conic-gradient(
+                from 0deg, 
+                rgba(255, 215, 0, 0) 0deg, 
+                rgba(255, 215, 0, 0) 10deg, 
+                rgba(255, 215, 0, 0.4) 12deg, /* Slightly softer alpha */
+                rgba(255, 215, 0, 0) 14deg,
+                rgba(255, 215, 0, 0) 20deg
+            );
+            border-radius: 50%;
+            opacity: 0.9; 
+            animation: rotate-rays 20s linear infinite;
+            /* Donut Mask: Softened significantly. No hard hole. */
+            mask-image: radial-gradient(circle, transparent 20%, black 40%, black 70%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle, transparent 20%, black 40%, black 70%, transparent 100%);
+        }
+        .go-1 { top: 20px; left: 20px; animation-delay: 0s; font-size: 2.5rem; }
+        .go-2 { top: 100px; right: 10px; animation-delay: 0.5s; font-size: 2rem; }
+        .go-3 { bottom: 80px; left: 40px; animation-delay: 1s; font-size: 3rem; }
+
+        @keyframes go-float {
+            0% { transform: translateY(10px) rotate(-5deg); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-20px) rotate(5deg); opacity: 0; }
+        }
+
+        /* Sparks / Electricity */
+        .sparks-container { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; }
+        .spark {
+            position: absolute; background: #00ffff;
+            box-shadow: 0 0 10px #00ffff;
+            opacity: 0;
+        }
+        .s1 { top: 40%; left: 10%; width: 40px; height: 2px; transform: rotate(15deg); animation: spark-flash 0.3s infinite 0.1s; }
+        .s2 { top: 30%; right: 10%; width: 30px; height: 3px; transform: rotate(-25deg); animation: spark-flash 0.4s infinite 0.2s; }
+        .s3 { bottom: 30%; left: 20%; width: 50px; height: 1px; transform: rotate(45deg); animation: spark-flash 0.2s infinite 0s; }
+        .s4 { bottom: 40%; right: 15%; width: 40px; height: 2px; transform: rotate(-10deg); animation: spark-flash 0.5s infinite 0.3s; }
+        
+        @keyframes spark-flash {
+            0% { opacity: 0; clip-path: polygon(0 40%, 100% 40%, 100% 60%, 0 60%); }
+            50% { opacity: 1; clip-path: polygon(0 45%, 50% 10%, 100% 55%, 0 55%); }
+            100% { opacity: 0; }
+        }
+
+        /* ULTIMATE BUTTON */
+        /* ULTIMATE BUTTON - REDESIGNED */
+        .awakening-btn-final {
+            width: 90%; /* Slight reduction for skew clearance */
+            background: linear-gradient(135deg, #2a0845 0%, #6441A5 100%);
+            border: 2px solid #FFD700;
+            box-shadow: 0 0 15px rgba(100, 65, 165, 0.8);
+            transform: skewX(-15deg);
+            padding: 15px 0;
+            margin-top: 25px;
             cursor: pointer;
-            display: flex; align-items: center; gap: 15px;
-            transition: all 0.1s;
-            box-shadow: 10px 10px 0 #d500f9;
-            text-transform: uppercase;
+            display: flex; align-items: center; justify-content: center; gap: 20px;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-        .awakening-btn:hover {
-            transform: translate(-2px, -2px);
-            box-shadow: 12px 12px 0 #d500f9;
-            text-shadow: 0 0 10px #FFD700;
-            animation: shake 0.5s infinite;
+        
+        .awakening-btn-final:hover {
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 215, 0, 0.2);
+            transform: skewX(-15deg) scale(1.05); /* Maintain skew on hover */
+            border-color: #fff;
         }
+
+        .awakening-btn-final:active {
+            transform: skewX(-15deg) scale(0.95);
+        }
+
+        /* TEXT STYLING */
+        .skew-fix {
+            transform: skewX(15deg); /* Counter-skew to make text upright */
+            display: inline-block;
+        }
+        
+        .btn-text-group {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            line-height: 1; /* Tighter line height to keep group compact */
+        }
+
+        .text-cn {
+            font-size: 2.8rem; /* Larger */
+            font-weight: 900; /* Ultra Bold */
+            color: #fff;
+            /* Stronger Shadow + Stroke effect for legibility */
+            text-shadow: 2px 2px 0 #000, -1px -1px 0 #4b0082;
+            -webkit-text-stroke: 1px #000;
+            font-family: 'ZCOOL KuaiLe', 'SimHei', sans-serif; 
+            letter-spacing: 4px; /* Wider spacing for epic feel */
+            margin-bottom: 2px;
+        }
+        
+        .text-en {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #FFD700;
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.8);
+        }
+
+        .kana {
+            font-family: 'Sawarabi Mincho', serif;
+            font-size: 2rem; 
+            color: #FFD700; 
+            text-shadow: 0 0 5px #d500f9, 1px 1px 0 #000;
+            margin: 0 10px; /* Give some breathing room */
+        }
+
+        /* RGB Border Gradient removed as per request for Gold Border */
+        /* Preserving pulse bloom for context */
+        @keyframes pulse-bloom { 0%, 100% { filter: drop-shadow(0 0 10px #d500f9); } 50% { filter: drop-shadow(0 0 25px #d500f9); } }
+
+        /* Background Pattern on Body - Add this to global or parent in next edit if needed, for now scoped to this file context? No, inputform is scoped. Let's add body style via JS or assume global. */
 
         /* FOOTER */
         .card-footer {
+            margin-top: auto; /* Push to bottom if viewport doesn't fill */
+            flex-shrink: 0; /* Never shrink */
             display: flex; justify-content: space-between; align-items: center;
             border-top: 1px solid #eee; padding-top: 20px;
+            height: 50px; /* Fixed height for stability */
         }
         .nav-btn {
             background: none; border: none; font-family: 'Anton'; font-size: 1.2rem; cursor: pointer;
@@ -759,15 +1214,88 @@ const InputForm = ({ onSubmit, onCancel }) => {
         .nav-btn:hover:not(:disabled) { color: #d500f9; }
         .page-indicator { font-family: 'Courier New'; font-weight: bold; }
 
-        @keyframes burnCard {
-            0% { transform: rotate(0deg); opacity: 1; filter: contrast(1); }
-            50% { transform: rotate(5deg) scale(0.9); opacity: 0.5; filter: contrast(2) sepia(1); }
-            100% { transform: rotate(10deg) scale(0.8); opacity: 0; filter: contrast(5) brightness(0.5); }
+        /* CHAPTER NAVIGATION */
+        .chapter-nav {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
         }
-        @keyframes restoreCard {
-            0% { transform: rotate(-10deg) scale(0.8); opacity: 0; }
-            100% { transform: rotate(0deg) scale(1); opacity: 1; }
+
+        .nav-item {
+            width: 30px; height: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #6441A5;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transform: skewX(-10deg);
+            transition: all 0.3s ease;
         }
+
+        .nav-item:hover {
+            background: #6441A5;
+            border-color: #FFD700;
+            transform: skewX(-10deg) scale(1.1);
+        }
+
+        .nav-item.active {
+            background: #FFD700;
+            border-color: #fff;
+            box-shadow: 0 0 10px #FFD700;
+        }
+
+        .nav-num {
+            font-family: 'Times New Roman', serif;
+            font-size: 0.8rem;
+            color: #fff;
+            font-weight: bold;
+            transform: skewX(10deg); /* Counter skew */
+        }
+
+        .nav-item.active .nav-num {
+            color: #000;
+        }
+
+        /* MODERN BLUR-SLIDE TRANSITIONS */
+        @keyframes slideBlurOutLeft {
+            0% { transform: translateX(0); opacity: 1; filter: blur(0); }
+            100% { transform: translateX(-40px); opacity: 0; filter: blur(8px); }
+        }
+        @keyframes slideBlurInRight {
+            0% { transform: translateX(40px); opacity: 0; filter: blur(8px); }
+            100% { transform: translateX(0); opacity: 1; filter: blur(0); }
+        }
+        
+        @keyframes slideBlurOutRight {
+            0% { transform: translateX(0); opacity: 1; filter: blur(0); }
+            100% { transform: translateX(40px); opacity: 0; filter: blur(8px); }
+        }
+        @keyframes slideBlurInLeft {
+            0% { transform: translateX(-40px); opacity: 0; filter: blur(8px); }
+            100% { transform: translateX(0); opacity: 1; filter: blur(0); }
+        }
+
+        /* Apply to the inner viewport, NOT the card frame */
+        /* Apply to the inner viewport, NOT the card frame */
+        .card-scroll-viewport {
+            width: 100%;
+            flex: 1; /* Consume all available space */
+            display: flex; flex-direction: column; 
+            /* Center vertically for aesthetic balance if content is short */
+            justify-content: center; 
+            overflow: hidden; 
+            position: relative;
+        }
+
+        .card-scroll-viewport.out-next { animation: slideBlurOutLeft 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards; }
+        .card-scroll-viewport.in-next { animation: slideBlurInRight 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards; }
+        
+        .card-scroll-viewport.out-prev { animation: slideBlurOutRight 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards; }
+        .card-scroll-viewport.in-prev { animation: slideBlurInLeft 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards; }
+
         @keyframes float {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
