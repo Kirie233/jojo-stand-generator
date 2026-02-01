@@ -70,6 +70,15 @@ const STEPS = [
   }
 ];
 
+const BG_MAP = [
+  '/assets/tarot_bg_fool.png',      // 0: Name (The Fool)
+  '/assets/tarot_bg_lovers.png',    // 1: Song (The Lovers)
+  '/assets/tarot_bg_magician.png',  // 2: Color (The Magician)
+  '/assets/tarot_bg_devil.png',     // 3: Personality (The Devil)
+  '/assets/tarot_bg_hermit.png',    // 4: Photo (The Hermit)
+  '/assets/tarot_bg_world.png'      // 5: Final (The World)
+];
+
 // TBC Progress Logic: Linear 0-100% based on steps
 // Now that image is cropped tightly, we can use simple math.
 const InputForm = ({ onSubmit, onCancel }) => {
@@ -199,12 +208,17 @@ const InputForm = ({ onSubmit, onCancel }) => {
         alt="Stand Awakening"
       />
 
-      <div className={`tarot-card-frame ${animPhase !== 'idle' ? `${animPhase}-${direction}` : ''}`}>
-
-        {/* Watermark - Hidden on Final Step to keep background clean */}
-        <div className="tarot-watermark" style={{ display: step.type === 'final' ? 'none' : 'block' }}>
-          {step.sub.split(' - ')[0]}
-        </div>
+      {/* Card Frame - Dynamic Background */}
+      <div
+        className={`tarot-card-frame ${animPhase !== 'idle' ? `${animPhase}-${direction}` : ''}`}
+        style={{ backgroundImage: `url(${BG_MAP[currentStep] || BG_MAP[0]})` }}
+      >
+        {/* Watermark is BAKED into the image now, so we can remove the old text watermark if we want,
+            but let's keep it as a subtle overlay or remove it.
+            The user instruction implies the images ARE the tarot style.
+            So I will comment out the old text watermark to avoid clutter.
+        */}
+        {/* <div className="tarot-watermark">{step.sub.split(' - ')[0]}</div> */}
 
         <div className="card-header">
           <span className="card-sub">{step.sub}</span>
@@ -520,9 +534,21 @@ const InputForm = ({ onSubmit, onCancel }) => {
             width: 400px;
             /* FIX: Fixed Height to prevent button jumping */
             height: 600px; 
-            background: #fff;
-            border: 4px solid #000;
-            box-shadow: 15px 15px 0 #000;
+            
+            /* BEAUTIFICATION: Manga/Tarot Paper Style */
+            background-color: #fffdf0; /* Cream Paper Fallback */
+            /* Dynamic Image Background set via inline style */
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: multiply; /* Blend image with cream color */
+
+            /* DOUBLE BORDER EFFECT (Black -> White -> Black) */
+            border: 3px solid #000;
+            box-shadow: 
+                inset 0 0 0 3px #fffdf0, /* Gap */
+                inset 0 0 0 5px #000,    /* Inner Line */
+                12px 12px 0 #2a0845;     /* Deep Purple Hard Shadow */
+
             z-index: 50; 
             display: flex; 
             flex-direction: column;
