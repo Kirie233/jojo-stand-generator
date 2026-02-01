@@ -60,8 +60,8 @@ const CustomRadar = ({ stats, labels }) => {
       const isAxis = (i % 10 === 0);
 
       const rStart = outerRadius;
-      const rEnd = isAxis ? outerRadius + 8 : (isMajor ? outerRadius + 5 : outerRadius + 3);
-      const width = isAxis ? 2.5 : (isMajor ? 2 : 1);
+      const rEnd = isAxis ? outerRadius + 8 : (isMajor ? outerRadius + 8 : outerRadius + 4);
+      const width = isAxis ? 2 : (isMajor ? 1.5 : 1);
 
       const x1 = center + rStart * Math.cos(angle - Math.PI / 2); // Adjust -90 for 12 o'clock start
       const y1 = center + rStart * Math.sin(angle - Math.PI / 2);
@@ -79,65 +79,73 @@ const CustomRadar = ({ stats, labels }) => {
   const renderAxes = () => {
     return keys.map((key, i) => {
       const angle = getAngle(i);
+      const axisAngleDeg = (angle * 180) / Math.PI; // Convert to degrees
 
       // Axis Line
       const xLine = center + outerRadius * Math.cos(angle);
       const yLine = center + outerRadius * Math.sin(angle);
 
-      // Label (Text Name) - Curved alignment simulation by offset
-      // Hardcoded offsets for specific positions to look nicely "around"
-      let labelX = center + (outerRadius + 25) * Math.cos(angle);
-      let labelY = center + (outerRadius + 25) * Math.sin(angle);
+      // Label (Text Name) - ROTATED along the ring
+      // Position: Sits exactly on the ring or slightly outside
+      const labelR = outerRadius + 15;
+      const labelX = center + labelR * Math.cos(angle);
+      const labelY = center + labelR * Math.sin(angle);
 
-      // Fine tune text anchor
-      let anchor = "middle";
-      if (i === 1 || i === 2) anchor = "start"; // Right side
-      if (i === 4 || i === 5) anchor = "end";   // Left side
-      // i=0 is Top (middle), i=3 is Bottom (middle)
+      // Calculate Rotation for Text
+      // Top (i=0, -90deg): Text is Horizontal (0 deg rotation) or follows curve?
+      // Anime ref: Text is always perpendicular to radius, or tangent? 
+      // Reference shows labels are tangent to the circle.
+      // Top: Horizontal. Right: Vertical (reading down). Bottom: Upside down (or flipped).
+      // Let's simple rotate by axisAngleDeg + 90
+      let textRot = axisAngleDeg + 90;
 
-      // Grade Letter (Inside chart, constant radius)
-      const gradeR = chartRadius - 15; // Slightly inside the data limit area
-      // Actually in anime, letters are placed in the "middle" of the pie slice usually? 
-      // No, usually at the vertex. The user image shows "A" at the specific axis point.
-      // But notice: for "A" stats, the red polygon goes PAST the letter "A". 
-      // This implies the letter is at Fixed Position (e.g. at 'B' level or 'C' level physically), 
-      // OR the letter is just labeling the axis near the rim.
-      // Let's place the letter at a fixed radius (like 80% out) just for display.
-      const letterR = outerRadius * 0.75;
-      const letterX = center + letterR * Math.cos(angle);
-      const letterY = center + letterR * Math.sin(angle);
+      // Fix readability for bottom half (flip text so it's not upside down completely? Anime keeps it strict circle usually)
+      // Anime (Stardust): "Speed" on right is rotated 90. 
+      // "Range" on bottom right is 120 approx.
+      // Strict rotation:
+
+      const labelTransform = `rotate(${textRot}, ${labelX}, ${labelY})`;
+
+      // Grade Letter (Inside chart)
+      // Positioned at a fixed radius inner
+      const gradeR = outerRadius * 0.70;
+      const letterX = center + gradeR * Math.cos(angle);
+      const letterY = center + gradeR * Math.sin(angle);
 
       return (
         <g key={key}>
           {/* Axis Line */}
-          <line x1={center} y1={center} x2={xLine} y2={yLine} stroke="#000" strokeWidth="1" opacity="0.5" />
+          <line x1={center} y1={center} x2={xLine} y2={yLine} stroke="#000" strokeWidth="1.5" opacity="0.6" />
 
-          {/* Label (Name) */}
+          {/* Label (Name) - ROTATED */}
           <text
             x={labelX} y={labelY}
-            textAnchor={anchor}
-            dominantBaseline="middle"
+            textAnchor="middle"
+            dominantBaseline="auto" // Changed from middle to sit on line?
             fill="#000"
+            transform={labelTransform}
             style={{
               fontFamily: '"Noto Serif SC", serif',
               fontWeight: 900,
               fontSize: '14px',
-              textShadow: '0 0 2px #fff'
+              textShadow: '0 0 2px #fff',
+              letterSpacing: '1px'
             }}
           >
             {labels[key]}
           </text>
 
-          {/* Letter Grade (A, B...) */}
+          {/* Letter Grade (A, B...) - Heavy Serif */}
           <text
             x={letterX} y={letterY}
             textAnchor="middle"
-            dominantBaseline="middle"
+            dominantBaseline="central"
             fill="#000"
             style={{
-              fontFamily: '"Cinzel", serif',
+              fontFamily: '"Times New Roman", Times, serif', // HEAVY SERIF
               fontWeight: 900,
-              fontSize: '24px',
+              fontSize: '28px',
+              textShadow: '2px 2px 0 rgba(255,255,255,0.8)'
             }}
           >
             {stats[key] || '?'}
@@ -159,51 +167,43 @@ const CustomRadar = ({ stats, labels }) => {
             <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
           </filter>
-          {/* Metallic Disk Gradient - Like a Silver Coin */}
-          <radialGradient id="metal-disk" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="40%" stopColor="#e0e0e0" />
-            <stop offset="80%" stopColor="#b0b0b0" />
-            <stop offset="100%" stopColor="#909090" />
-          </radialGradient>
-          {/* Inner Shadow for depth */}
-          <radialGradient id="metal-ring" cx="50%" cy="50%" r="50%">
-            <stop offset="80%" stopColor="transparent" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.3)" />
-          </radialGradient>
         </defs>
 
-        {/* 0. The Metal Disk Background (The "Coin") */}
-        <circle cx={center} cy={center} r={outerRadius + 8} fill="url(#metal-disk)" stroke="#555" strokeWidth="1" />
+        {/* 0. Background Area (Transparent for strict overlay, or slight white for contrast) */}
+        {/* User requested strict copy, usually just lines on parchment/bg. Use minimal white wash for contrast. */}
+        <circle cx={center} cy={center} r={outerRadius + 15} fill="rgba(255,255,255,0.1)" stroke="none" />
 
-        {/* Ring Shadow Overlay */}
-        <circle cx={center} cy={center} r={outerRadius + 8} fill="url(#metal-ring)" />
-
-        {/* 1. Concentric Grid Circles */}
+        {/* 1. Concentric Grid Circles (Light) */}
         {[0.2, 0.4, 0.6, 0.8].map((scale, idx) => (
           <circle
             key={`grid-${idx}`}
             cx={center} cy={center} r={outerRadius * scale}
             fill="none"
             stroke="#000"
-            strokeWidth="1"
-            opacity="0.3"
-            strokeDasharray="4 2"
+            strokeWidth="0.5"
+            opacity="0.2"
           />
         ))}
 
-        {/* 2. The Main Polygon Fill (Red Ink) */}
+        {/* 2. The Main Polygon Fill */}
         <polygon
           points={polygonString}
-          fill="rgba(220, 20, 60, 0.6)"
+          fill="rgba(220, 50, 50, 0.7)"
           stroke="#8b0000"
           strokeWidth="2"
           style={{ mixBlendMode: 'multiply' }}
         />
 
-        {/* 3. Outer Gauge Ring & Ticks */}
+        {/* 3. Anime Gauge Rings */}
+        {/* Inner Ring - Thin */}
+        <circle cx={center} cy={center} r={outerRadius - 3} fill="none" stroke="#000" strokeWidth="1" />
+
+        {/* Outer Ring - Thick & Segmented look handled by ticks, this acts as base */}
         <circle cx={center} cy={center} r={outerRadius} fill="none" stroke="#000" strokeWidth="2.5" />
-        <circle cx={center} cy={center} r={outerRadius + 5} fill="none" stroke="#000" strokeWidth="1" opacity="0.5" />
+
+        {/* Outer Decor Ring (The tracks) */}
+        <circle cx={center} cy={center} r={outerRadius + 8} fill="none" stroke="#000" strokeWidth="1.5" />
+
         {ticks}
 
         {/* Axes & Labels */}

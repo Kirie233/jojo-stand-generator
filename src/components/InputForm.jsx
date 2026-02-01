@@ -2,16 +2,33 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../styles/variables.css';
 import standArrowImg from '../assets/stand_arrow.png';
 
-const EXAMPLES_SONG = ["Killer Queen", "Last Train Home", "Roundabout", "Walk Like an Egyptian", "Sono Chi no Sadame"];
-const EXAMPLES_NAME = ["空条承太郎", "乔鲁诺·乔巴纳", "乔瑟夫·乔斯达", "迪奥·布兰度", "岸边露伴", "吉良吉影", "布鲁诺·布加拉提"];
+const EXAMPLES_SONG = [
+  "白金之星 (Star Platinum)", "世界 (The World)", "杀手皇后 (Killer Queen)", "绯红之王 (King Crimson)", "黄金体验 (Gold Experience)",
+  "石之自由 (Stone Free)", "肮脏肮脏的低价把戏 (D4C)", "透龙 (Wonder of U)", "天堂制造 (Made in Heaven)",
+  "牙 (Tusk)", "软又湿 (Soft & Wet)", "疯狂钻石 (Crazy Diamond)", "钢链手指 (Sticky Fingers)", "银色战车 (Silver Chariot)",
+  "回音 (Echoes)", "天堂之门 (Heaven's Door)", "天气预报 (Weather Report)", "碎球 (Ball Breaker)", "骇人恶兽 (Scary Monsters)",
+  "Roundabout", "Walk Like an Egyptian", "Last Train Home", "Freak'n You",
+  "Great Days", "Bloody Stream", "Sono Chi no Sadame", "Fighting Gold", "Modern Crusaders"
+];
+const EXAMPLES_NAME = [
+  "乔纳森·乔斯达", "迪奥·布兰度", "乔瑟夫·乔斯达", "西撒·谢皮利", "空条承太郎",
+  "花京院典明", "简·皮埃尔·波鲁纳雷夫", "东方仗助", "吉良吉影",
+  "岸边露伴", "乔鲁诺·乔巴纳", "布鲁诺·布加拉提", "迪亚波罗", "盖多·米斯达",
+  "空条徐伦", "恩里克·普奇", "乔尼·乔斯达", "杰洛·谢皮利", "法尼·瓦伦泰",
+  "迪亚哥·布兰度", "透龙", "广濑康穗", "东方定助"
+];
 const COLORS = [
   { name: "Star Platinum Purple (白金之星紫)", value: "#7B1FA2" },
   { name: "Magician's Red (魔术师之红)", value: "#D50000" },
-  { name: "Hierophant Green (法皇之绿)", value: "#00C853" },
-  { name: "Silver Chariot (银色战车)", value: "#B0BEC5" },
   { name: "The World Gold (世界·金)", value: "#FFD700" },
-  { name: "Killer Queen Pink (杀手皇后粉)", value: "#FF4081" },
+  { name: "Hierophant Green (法皇之绿)", value: "#00C853" },
   { name: "Sticky Fingers Blue (钢链手指蓝)", value: "#2962FF" },
+  { name: "Killer Queen Pink (杀手皇后粉)", value: "#FF4081" },
+  { name: "Silver Chariot (银色战车)", value: "#B0BEC5" },
+  { name: "Gold Experience (黄金体验)", value: "#FFEA00" },
+  { name: "Stone Free (石之自由)", value: "#00B0FF" },
+  { name: "Crazy Diamond (疯狂钻石)", value: "#F48FB1" },
+  { name: "Purple Haze (紫烟)", value: "#AB47BC" },
   { name: "Black Sabbath (黑色安息日)", value: "#000000" }
 ];
 const PERSONALITY_TAGS = [
@@ -45,7 +62,8 @@ const STEPS = [
     question: "精神的波纹色？",
     sub: "THE MAGICIAN (魔术师) - I",
     plain: "选择代表你精神能量的颜色",
-    type: 'color'
+    type: 'color',
+    random: COLORS
   },
   {
     id: 'PERSONALITY',
@@ -72,7 +90,7 @@ const STEPS = [
 
 // TBC Progress Logic: Linear 0-100% based on steps
 // Now that image is cropped tightly, we can use simple math.
-const InputForm = ({ onSubmit, onCancel }) => {
+const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false); // 3D Flip State
   const [formData, setFormData] = useState({
@@ -82,6 +100,18 @@ const InputForm = ({ onSubmit, onCancel }) => {
     personality: '',
     referenceImage: null
   });
+  const [invalidField, setInvalidField] = useState(null); // Which field failed validation
+  const [showHint, setShowHint] = useState(false); // Show the floating validation hint
+
+  // Report progress to parent
+  useEffect(() => {
+    if (onStepChange) {
+      onStepChange({
+        current: currentStep,
+        total: STEPS.length
+      });
+    }
+  }, [currentStep, onStepChange]);
 
 
   const handleNext = () => {
@@ -94,9 +124,19 @@ const InputForm = ({ onSubmit, onCancel }) => {
       return;
     }
 
-    if (currentFieldValue || stepType === 'upload') {
-      triggerTransition(() => setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1)));
+    // Validation Check
+    if (!currentFieldValue && stepType !== 'upload') {
+      setInvalidField(fieldMap[currentStep]);
+      setShowHint(true);
+      // Clear hint after animation
+      setTimeout(() => {
+        setInvalidField(null);
+        setShowHint(false);
+      }, 2000);
+      return;
     }
+
+    triggerTransition(() => setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1)));
   };
 
   const handlePrev = () => {
@@ -133,8 +173,26 @@ const InputForm = ({ onSubmit, onCancel }) => {
   const handleRandom = () => {
     const step = STEPS[currentStep];
     if (step.random) {
-      const rand = step.random[Math.floor(Math.random() * step.random.length)];
-      handleChange(getFieldKey(), rand);
+      const currentKey = getFieldKey();
+      const currentVal = formData[currentKey];
+
+      // Handle both primitive strings (Name/Song) and Objects (Colors)
+      const getRandomValue = (item) => (typeof item === 'object' && item.value) ? item.value : item;
+
+      // Filter out candidates where the value matches current
+      const candidates = step.random.filter(item => {
+        const val = getRandomValue(item);
+        return val !== currentVal;
+      });
+
+      if (candidates.length > 0) {
+        const randItem = candidates[Math.floor(Math.random() * candidates.length)];
+        handleChange(currentKey, getRandomValue(randItem));
+      } else {
+        // Fallback
+        const randItem = step.random[Math.floor(Math.random() * step.random.length)];
+        handleChange(currentKey, getRandomValue(randItem));
+      }
     }
   };
 
@@ -173,22 +231,6 @@ const InputForm = ({ onSubmit, onCancel }) => {
         </button>
       )}
 
-      {/* LIQUID FILL TBC PROGRESS ARROW (STENCIL COMPATIBLE) */}
-      <div className="tbc-container-fixed">
-        <div className="tbc-mask-container">
-          {/* 1. Base Layer (The "Unlit" Tube - Always Visible) */}
-          <div className="tbc-mask-base"></div>
-
-          {/* 2. active Layer (The "Lit" Gradient - Fills up) */}
-          <div className="tbc-mask-fill" style={{ width: `${currentStep / (STEPS.length - 1) * 100}%` }}></div>
-        </div>
-      </div>
-
-      <img
-        src="/assets/stand_awakening_text.png"
-        className={`tbc-floating-img ${currentStep === STEPS.length - 1 ? 'visible' : ''}`}
-        alt="Stand Awakening"
-      />
       <div className="tarot-container">
         <div className="tarot-card-scene">
           <div className={`tarot-card-frame ${isFlipping ? 'flip-out' : ''}`}>
@@ -207,32 +249,105 @@ const InputForm = ({ onSubmit, onCancel }) => {
             <div className="card-body">
               {step.type === 'color' ? (
                 <div className="color-grid">
-                  {COLORS.map(c => (
-                    <div
-                      key={c.value}
-                      className={`color-swatch ${currentVal === c.value ? 'selected' : ''}`}
-                      style={{ background: c.value }}
-                      onClick={() => handleChange('color', c.value)}
-                      title={c.name}
-                    />
-                  ))}
-                  <div className="color-label">{COLORS.find(c => c.value === currentVal)?.name || "自定义颜色 (Custom)"}</div>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px', width: '90%', margin: '15px auto' }}>
+                  <div className="color-swatches-container">
+                    {COLORS.map(c => (
+                      <div
+                        key={c.value}
+                        className={`color-swatch ${currentVal === c.value ? 'selected' : ''}`}
+                        style={{ background: c.value }}
+                        onClick={() => handleChange('color', c.value)}
+                        title={c.name}
+                      />
+                    ))}
+                  </div>
+                  <div className="color-custom-container" style={{
+                    position: 'relative',
+                    width: 'fit-content',
+                    minWidth: '280px',
+                    margin: '20px auto 10px',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}>
+                    {/* HIDDEN NATIVE PICKER (Covers entire area) */}
                     <input
                       type="color"
                       value={currentVal.startsWith('#') ? currentVal : '#000000'}
                       onChange={(e) => handleChange('color', e.target.value)}
-                      style={{ width: '50px', height: '54px', border: '2px solid #000', borderRadius: '8px', cursor: 'pointer', padding: '0' }}
+                      style={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                        opacity: 0, zIndex: 10, cursor: 'pointer'
+                      }}
                     />
-                    <input
-                      className="tarot-input-custom"
-                      placeholder="#HEX 或 颜色名称..."
-                      value={currentVal}
-                      onChange={(e) => handleChange('color', e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      style={{ flex: 1, margin: 0 }}
-                    />
+
+                    {/* INTERACTIVE CARD UI */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center',
+                      background: '#fff',
+                      border: '3px solid #000',
+                      padding: '10px 20px',
+                      boxShadow: '6px 6px 0 rgba(0,0,0,0.8)',
+                      transform: 'skewX(-10deg)',
+                      transition: 'transform 0.2s',
+                    }}>
+                      {/* COLOR PREVIEW CIRCLE */}
+                      <div style={{
+                        width: '40px', height: '40px',
+                        background: currentVal,
+                        border: '2px solid #000',
+                        borderRadius: '50%',
+                        marginRight: '15px',
+                        flexShrink: 0,
+                        transform: 'skewX(10deg)'
+                      }} />
+
+                      {/* TEXT INFO */}
+                      <div style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transform: 'skewX(10deg)',
+                        marginRight: '15px'
+                      }}>
+                        <span style={{
+                          fontFamily: "'ZCOOL KuaiLe', sans-serif",
+                          fontSize: '1.2rem',
+                          color: '#000',
+                          lineHeight: 1
+                        }}>
+                          {COLORS.find(c => c.value === currentVal)?.name || "自定义颜色 (Custom)"}
+                        </span>
+                        <span style={{
+                          fontFamily: "'Anton', sans-serif",
+                          fontSize: '0.9rem',
+                          color: '#666',
+                          marginTop: '4px',
+                          letterSpacing: '1px'
+                        }}>
+                          {currentVal.toUpperCase()}
+                        </span>
+                      </div>
+
+                      {/* EDIT ICON */}
+                      <div style={{ transform: 'skewX(10deg)' }}>
+                        <svg viewBox="0 0 24 24" style={{ width: '24px', height: '24px', fill: '#000' }}>
+                          <path d="M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9c0.83,0,1.5-0.67,1.5-1.5c0-0.39-0.15-0.74-0.39-1.01c-0.23-0.26-0.38-0.61-0.38-0.99 c0-0.83,0.67-1.5,1.5-1.5H16c2.76,0,5-2.24,5-5C21,5.24,16.97,3,12,3z M6.5,12c-0.83,0-1.5-0.67-1.5-1.5S5.67,9,6.5,9 S8,9.67,8,10.5S7.33,12,6.5,12z M9.5,8C8.67,8,8,7.33,8,6.5S8.67,5,9.5,5S11,5.67,11,6.5S10.33,8,9.5,8z M14.5,8 c-0.83,0-1.5-0.67-1.5-1.5S13.67,5,14.5,5S16,5.67,16,6.5S15.33,8,14.5,8z M17.5,12c-0.83,0-1.5-0.67-1.5-1.5S16.67,9,17.5,9 S19,9.67,19,10.5S18.33,12,17.5,12z" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* RANDOM DICE BUTTON FOR COLOR - Centered Below */}
+                  <button className="random-dice-btn" onClick={() => handleRandom()} title="Roll Destiny" style={{ height: '50px', transform: 'none', padding: '0 20px', marginTop: '5px' }}>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="dice-icon">
+                      <path d="M19,3H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V5C21,3.9,20.1,3,19,3z M19,19H5V5h14V19z" />
+                      <circle cx="8" cy="8" r="1.5" />
+                      <circle cx="16" cy="16" r="1.5" />
+                      <circle cx="8" cy="16" r="1.5" />
+                      <circle cx="16" cy="8" r="1.5" />
+                      <circle cx="12" cy="12" r="1.5" />
+                    </svg>
+                    <span className="random-text" style={{ fontSize: '1rem' }}>命运 (RANDOM)</span>
+                  </button>
                 </div>
               ) : step.type === 'tags' ? (
                 <div className="tags-container">
@@ -343,7 +458,7 @@ const InputForm = ({ onSubmit, onCancel }) => {
                   <div className="speech-bubble-wrapper">
                     <input
                       type="text"
-                      className="speech-bubble-input"
+                      className={`speech-bubble-input ${invalidField === getFieldKey() ? 'shake' : ''}`}
                       placeholder={step.placeholder}
                       value={formData[getFieldKey()] || ''}
                       onChange={(e) => handleChange(getFieldKey(), e.target.value)}
@@ -372,13 +487,24 @@ const InputForm = ({ onSubmit, onCancel }) => {
             <div className="card-footer">
               {currentStep > 0 && (
                 <button className="nav-btn prev-btn" onClick={handlePrev}>
-                  ◀ 上一页
+                  <span className="btn-inner">◀ PREV</span>
                 </button>
               )}
-              <span className="page-indicator">{currentStep + 1} / {STEPS.length}</span>
+
+              <div className="nav-center">
+                <span className="page-indicator">{currentStep + 1} / {STEPS.length}</span>
+                {showHint && (
+                  <div className="validation-hint">
+                    命运尚未开启 (INPUT REQUIRED)
+                  </div>
+                )}
+              </div>
+
               {step.type !== 'final' && (
                 <button className="nav-btn next-btn" onClick={handleNext}>
-                  {step.type === 'upload' && !formData.referenceImage ? '跳过 ▶' : '下一页 ▶'}
+                  <span className="btn-inner">
+                    {step.type === 'upload' && !formData.referenceImage ? 'SKIP ▶' : 'NEXT ▶'}
+                  </span>
                 </button>
               )}
             </div>
@@ -411,6 +537,8 @@ const InputForm = ({ onSubmit, onCancel }) => {
             min-height: 60vh;
             position: relative;
             padding-bottom: 50px;
+            /* 恢复对称居中 */
+            transition: all 0.5s ease;
         }
 
         .tarot-card-scene {
@@ -446,78 +574,9 @@ const InputForm = ({ onSubmit, onCancel }) => {
            text-shadow: 2px 2px 0 #000;
         }
 
-        /* LIQUID FILL TBC ARROW */
-        .tbc-container-fixed {
-            position: fixed;
-            /* Container is now a large square to match the 1:1 mask image */
-            /* We pull it down (-100px) so the centered arrow sits at the bottom */
-            bottom: -100px; left: 10px;
-            z-index: 50;
-            width: 300px; height: 300px; 
-            transform-origin: bottom left;
-            display: flex; flex-direction: column; justify-content: flex-end;
-            pointer-events: none; /* Let clicks pass through the huge transparent box */
-        }
-
-        .tbc-mask-container {
-            position: relative;
-            width: 100%; height: 100%; /* Fill the 16:9 box */
-            /* THE MASK MAGIC: Use the STENCIL (Outline + Text) */
-            -webkit-mask-image: url('/assets/tbc_arrow_stencil.png');
-            mask-image: url('/assets/tbc_arrow_stencil.png');
-            /* FORCE STRETCH: Ensure the arrow fills the box 100% to match progress bar geometry */
-            -webkit-mask-size: 100% 100%;
-            mask-size: 100% 100%;
-            -webkit-mask-repeat: no-repeat;
-            mask-repeat: no-repeat;
-            -webkit-mask-position: center;
-            mask-position: center;
-            /* Use Luminance Masking for B&W Stencil (White=See, Black=Hide) */
-            -webkit-mask-mode: luminance;
-            mask-mode: luminance;
-            /* NEON GLOW: Brighter and stronger to stand out on dark bg */
-            filter: drop-shadow(0 0 2px #be00dd) drop-shadow(0 0 8px #be00dd) drop-shadow(0 0 15px #d500f9); 
-        }
-
-        .tbc-mask-base {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            /* The "Empty" State Color: Visible Translucent Gold/White */
-            background: rgba(255, 235, 150, 0.35); 
-        }
-
-        .tbc-mask-fill {
-            position: absolute;
-            top: 0; left: 0; height: 100%;
-            background: linear-gradient(90deg, #d500f9, #FFD700); /* Purple to Gold */
-            /* Width is handled by inline style now */
-            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-            box-shadow: 0 0 20px #d500f9;
-        }
-
-
-
-        /* REPLACED TEXT WITH IMAGE */
-        .tbc-floating-img {
-            position: fixed; /* Fix to screen like the arrow */
-            bottom: 50px; /* Clear the Arrow (20px + 80px*1.5 ~ 140px) */
-            left: 0;
-            width: 250px; /* Adjust size */
-            opacity: 0;
-            transform: translateY(20px) scale(0.8);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            /* BLEND MODE MAGIC: Remove black background */
-            mix-blend-mode: screen; 
-            pointer-events: none;
-        }
-        .tbc-floating-img.visible {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-
         .tarot-card-frame {
             position: relative;
-            width: 400px;
+            width: 540px; /* 拉宽卡片，从 400px 增加到 540px */
             /* FIX: Fixed Height to prevent button jumping */
             height: 600px; 
             
@@ -628,33 +687,40 @@ const InputForm = ({ onSubmit, onCancel }) => {
             letter-spacing: 1px;
         }
 
-        /* INPUTS */
-        /* INPUTS - WEIGHT REDUCTION */
+        /* INPUTS - CENTERING & WEIGHT REDUCTION */
+        .input-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+        }
         .speech-bubble-wrapper {
             position: relative;
-            padding: 10px 0;
-            margin: auto 0; /* Center vertically in the scrollable area */
+            padding: 20px 0;
             width: 100%;
-            display: flex; justify-content: center;
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
             box-sizing: border-box;
-            align-items: flex-end; 
         }
         .speech-bubble-input {
-            width: 100%;
+            width: 95%;
+            max-width: 480px; /* Increased for wider card (540px) */
             box-sizing: border-box;
-            background: transparent; /* Transparent bg */
+            background: transparent; 
             border: none;
-            border-bottom: 4px solid #000; /* Bottom border only */
+            border-bottom: 4px solid #000; 
             border-radius: 0;
-            padding: 10px; /* Symmetrical Padding */
-            font-family: 'ZCOOL KuaiLe', 'Bangers', cursive; /* Use ZCOOL for Chinese support */
+            padding: 10px; 
+            font-family: 'ZCOOL KuaiLe', 'Bangers', cursive; 
             font-size: 2.2rem;
             text-align: center;
             color: #000;
             outline: none;
-            margin-bottom: 20px;
-            box-shadow: none; /* No shadow */
-            letter-spacing: 2px; /* Increased Spacing */
+            box-shadow: none; 
+            letter-spacing: 2px; 
             transition: border-color 0.3s;
         }
         .speech-bubble-input:focus {
@@ -662,21 +728,20 @@ const InputForm = ({ onSubmit, onCancel }) => {
         }
         .speech-bubble-input::placeholder { color: #ccc; font-family: 'Courier New'; font-size: 1.2rem; }
 
-        /* RANDOM DICE BUTTON (Visible Pill - Below Input) */
+        /* RANDOM DICE BUTTON - POSITIONED RELATIVE TO WRAPPER */
         .random-dice-btn {
-            position: absolute;
-            bottom: -45px; /* Moved below the line */
-            right: 0;
+            margin-top: 15px; /* Space below input */
             display: flex; align-items: center; gap: 8px;
             background: #000;
             color: #fff;
             border: 2px solid #fff;
-            padding: 5px 12px;
+            padding: 5px 15px;
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s;
             z-index: 5;
-            box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+            transform: skewX(-15deg);
         }
         .random-dice-btn:hover {
             background: #fff;
@@ -704,6 +769,7 @@ const InputForm = ({ onSubmit, onCancel }) => {
         
         .tarot-input-small {
             width: 100%;
+            box-sizing: border-box; /* CRITICAL: Include padding in width */
             background: transparent;
             border: none;
             border-bottom: 2px solid #000;
@@ -716,8 +782,9 @@ const InputForm = ({ onSubmit, onCancel }) => {
         }
 
         .tarot-input-custom {
-            width: 90%; /* Center alignment fix */
-            background: #f5f5f5; /* Light Gray for Contrast */
+            width: 92%; /* Dynamic width */
+            box-sizing: border-box; /* CRITICAL: Include padding in width */
+            background: #f5f5f5; 
             border: 2px dashed #000;
             border-radius: 8px;
             padding: 15px;
@@ -725,10 +792,10 @@ const InputForm = ({ onSubmit, onCancel }) => {
             font-size: 1.1rem;
             text-align: center;
             outline: none;
-            margin: 20px auto; /* Center horizontally */
-            color: #000; /* Black Text */
+            margin: 20px auto; /* Horizontal centering */
+            color: #000;
             transition: all 0.3s;
-            display: block; /* Ensure margin auto works */
+            display: block; 
         }
         .tarot-input-custom:focus {
             border-color: var(--primary-color);
@@ -748,42 +815,56 @@ const InputForm = ({ onSubmit, onCancel }) => {
         }
         .random-btn-styled:hover { transform: rotate(0deg) scale(1.1); box-shadow: 5px 5px 0 #d500f9; }
 
-        /* COLORS - DIAMONDS - COMPRESSED */
-        .color-grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 10px; }
+        /* COLORS - DIAMONDS - COMPRESSED & POSITIONED */
+        .color-grid { 
+            flex: 1; /* FILL SPACE */
+            display: flex; flex-direction: column; align-items: center; 
+            padding: 5px 10px 15px; 
+            z-index: 5;
+            width: 100%;
+        }
+        .color-swatches-container {
+            display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%;
+            margin-top: 20px; /* Increased margin for wider layout */
+        }
         .color-swatch {
-            width: 40px; height: 40px; /* Reduced from 50px */
+            width: 45px; height: 45px; /* Slightly larger swatches for wider card */
             border: 2px solid #000; 
             cursor: pointer; 
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transform: rotate(45deg); 
-            margin: 8px; /* Reduced from 10px */
+            margin: 10px; 
             box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
         }
-        .color-swatch:hover { 
-            transform: rotate(45deg) scale(1.15); 
-            z-index: 10;
+        .color-label { font-family: 'Cinzel'; font-size: 0.8rem; margin: 8px 0; color: #000; font-weight: bold; text-align: center; }
+        
+        .color-custom-row {
+            margin-top: auto; /* PUSH TO BOTTOM */
+            display: flex; gap: 10px; width: 95%; margin: auto auto 5px; /* Center horizontally */
+            box-sizing: border-box;
         }
-        .color-swatch.selected { 
-            border: 3px solid #fff; 
-            transform: rotate(45deg) scale(1.2); 
-            box-shadow: 0 0 15px currentColor;
-            z-index: 20;
+        .color-picker-input {
+            width: 50px; height: 50px; border: 2px solid #000; border-radius: 8px; cursor: pointer; padding: 0; flex-shrink: 0;
         }
-        .color-label { grid-column: span 4; font-family: 'Cinzel'; font-size: 0.8rem; margin-top: 2px; color: #000; font-weight: bold; }
+        .color-hex-input {
+            flex: 1; margin: 0 !important; height: 50px; padding: 5px 15px !important; font-size: 0.95rem !important;
+        }
 
         /* TAGS - COMPRESSED */
-        .tags-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 2px; }
+        .tags-container {
+            flex: 1; display: flex; flex-direction: column;
+            padding-bottom: 10px;
+        }
+        .tags-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 10px 15px; }
         .tag-chip {
-            padding: 4px 10px; /* Reduced padding */ 
+            padding: 6px 14px; /* Increased padding for wider card */
             background: #fff; 
             color: #000;
             border: 1px solid #000; 
             cursor: pointer; 
             font-family: 'Noto Serif SC', serif;
             font-weight: bold;
-            font-size: 0.8rem; /* Reduced from 0.9rem */
-            transition: all 0.2s;
-            box-shadow: 2px 2px 0 #000;
+            font-size: 0.9rem; /* Back to original comfortable size */
             clip-path: polygon(
                 0% 10%, 5% 0%, 15% 5%, 25% 0%, 35% 5%, 45% 0%, 55% 5%, 65% 0%, 75% 5%, 85% 0%, 95% 5%, 100% 0%, 
                 100% 90%, 95% 100%, 85% 95%, 75% 100%, 65% 95%, 55% 100%, 45% 95%, 35% 100%, 25% 95%, 15% 100%, 5% 95%, 0% 100%
@@ -800,6 +881,14 @@ const InputForm = ({ onSubmit, onCancel }) => {
             transform: scale(1.1) rotate(0deg) !important; 
             box-shadow: 4px 4px 0 #d500f9;
             border-color: #d500f9;
+        }
+
+        .tags-container .tarot-input-custom {
+            margin-top: auto; /* PUSH TO BOTTOM */
+            width: 95%; 
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 5px;
         }
 
         /* UPLOAD - POLAROID/FILM */
@@ -832,17 +921,6 @@ const InputForm = ({ onSubmit, onCancel }) => {
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 20;
             cursor: pointer;
-        }
-        
-        .tape-decoration {
-            position: absolute;
-            top: -15px; right: -25px;
-            width: 100px; height: 40px;
-            background: url('/assets/tape.png') no-repeat center/contain;
-            transform: rotate(45deg);
-            z-index: 10;
-            opacity: 0.9;
-            pointer-events: none;
         }
 
         .polaroid-inner {
@@ -1244,13 +1322,6 @@ const InputForm = ({ onSubmit, onCancel }) => {
             border-top: 1px solid #eee; padding-top: 10px; /* Reduced from 20px */
             height: 45px; /* Tighter footer */
         }
-        .nav-btn {
-            background: none; border: none; font-family: 'Anton'; font-size: 1.2rem; cursor: pointer;
-            color: #000; transition: color 0.2s;
-        }
-        .nav-btn:disabled { color: #ddd; cursor: not-allowed; }
-        .nav-btn:hover:not(:disabled) { color: #d500f9; }
-        .page-indicator { font-family: 'Courier New'; font-weight: bold; }
 
         /* CHAPTER NAVIGATION - FLOW BASED */
         .chapter-nav {
@@ -1335,6 +1406,122 @@ const InputForm = ({ onSubmit, onCancel }) => {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
+        }
+
+        /* NAVIGATION & VALIDATION ENHANCEMENTS */
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: rgba(0,0,0,0.05);
+            border-top: 1px dashed rgba(0,0,0,0.1);
+        }
+
+        .nav-center {
+            position: relative;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .page-indicator {
+            font-family: 'Courier New', monospace;
+            font-weight: 900;
+            color: #000;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        .validation-hint {
+            position: absolute;
+            top: -45px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #d500f9;
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(213, 0, 249, 0.4);
+            animation: hintPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        @keyframes hintPop {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .nav-btn {
+            background: #000;
+            color: #fff;
+            border: 3px solid #000;
+            padding: 0;
+            cursor: pointer;
+            font-family: 'Anton', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            transform: skew(-10deg);
+        }
+
+        .btn-inner {
+            display: block;
+            padding: 8px 18px;
+            background: #000;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            transform: skew(-10deg) translateY(-2px);
+            box-shadow: 5px 5px 0 #d500f9;
+        }
+
+        .nav-btn:active {
+            transform: skew(-10deg) translateY(0);
+            box-shadow: 2px 2px 0 #d500f9;
+        }
+
+        .next-btn .btn-inner {
+            background: linear-gradient(135deg, #222 0%, #000 100%);
+            color: #ffd700;
+        }
+        
+        .next-btn:hover .btn-inner {
+            background: #ffd700;
+            color: #000;
+        }
+
+        .prev-btn .btn-inner {
+            background: transparent;
+            color: #999;
+        }
+
+        .prev-btn:hover .btn-inner {
+            color: #fff;
+        }
+
+        /* SHAKE ANIMATION */
+        .shake {
+            animation: shakeRed 0.4s ease-in-out;
+            border-bottom: 3px solid #ff1744 !important;
+            color: #ff1744 !important;
+        }
+
+        @keyframes shakeRed {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
         }
       `}</style>
       </div>

@@ -2,8 +2,9 @@ import React from 'react';
 import CustomRadar from './CustomRadar';
 import '../styles/variables.css';
 import html2canvas from 'html2canvas';
+import ReactMarkdown from 'react-markdown';
 
-const StandCard = ({ standData }) => {
+const StandCard = ({ standData, onReset }) => {
   if (!standData) return null;
 
   const { name, abilityName, ability, stats } = standData;
@@ -51,6 +52,14 @@ const StandCard = ({ standData }) => {
 
   return (
     <div className="stand-card-container">
+      {/* GLOBAL RETURN BUTTON (Matches InputForm) */}
+      <button onClick={onReset} className="return-btn" title="Return to Title">
+        <svg className="return-arrow" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20,11 L7.83,11 L13.42,5.41 L12,4 L4,12 L12,20 L13.41,18.59 L7.83,13 L20,13 Z" />
+        </svg>
+        <span className="return-text">RETURN</span>
+      </button>
+
       <div style={{ textAlign: 'right', marginBottom: 10 }}>
         <button onClick={handleSaveImage} className="save-btn">💾 保存卡片</button>
       </div>
@@ -124,10 +133,20 @@ const StandCard = ({ standData }) => {
         <div className="info-area">
           <div className="ability-content">
             <h3>『 {abilityName || '能力'} 』</h3>
-            <p>{ability}</p>
+            <div className="markdown-ability">
+              <ReactMarkdown>{ability}</ReactMarkdown>
+            </div>
           </div>
         </div>
 
+      </div>
+
+      {/* RETURN BUTTON (Bottom Action) */}
+      <div className="return-container">
+        <button onClick={onReset} className="action-return-btn">
+          <span>觉醒下一个替身</span>
+          <small>AWAKEN NEXT STAND</small>
+        </button>
       </div>
 
       <style>{`
@@ -138,6 +157,8 @@ const StandCard = ({ standData }) => {
             max-width: 900px;
             font-family: 'Cinzel', serif;
             position: relative;
+            /* 恢复中心对称 */
+            transition: all 0.5s ease;
         }
 
         .stand-card {
@@ -159,16 +180,16 @@ const StandCard = ({ standData }) => {
             height: 600px; 
             overflow: hidden;
             border-bottom: 6px solid #000;
-            background-color: #2b003e; /* Deep Purple Base */
+            background-color: #1a0b2e; /* Deep Dark Purple Base */
         }
 
         .card-bg {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
-            /* Iconic JoJo Gradient: Purple -> Pink -> Gold */
-            background: linear-gradient(135deg, #4a148c 0%, #d500f9 60%, #ffd700 100%);
-            opacity: 0.9;
+            /* Darker, flatter gradient to ensure Stand pops */
+            background: linear-gradient(135deg, #2a0e4e 0%, #000000 100%);
+            opacity: 1; /* Opaque background */
         }
 
         /* Triangle Pattern Overlay */
@@ -182,7 +203,7 @@ const StandCard = ({ standData }) => {
                 linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000);
             background-position: 0 0, 10px 10px;
             background-size: 20px 20px;
-            opacity: 0.1; /* Subtle texture blending */
+            opacity: 0.05; /* Very subtle */
             mix-blend-mode: overlay;
         }
 
@@ -229,10 +250,11 @@ const StandCard = ({ standData }) => {
             margin-bottom: 20px;
             position: relative;
             z-index: 50;
-            padding: 10px;
-            /* Gradient fade for readability */
-            background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, transparent 100%);
-            border-left: 5px solid var(--accent-color); /* Anime Title Marker */
+            padding: 15px 20px;
+            /* Stronger Backdrop for Readability */
+            background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 80%, transparent 100%);
+            border-left: 8px solid var(--accent-color); /* Anime Title Marker */
+            clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%); /* Slight Anime Skew */
         }
 
         .label-row {
@@ -246,12 +268,14 @@ const StandCard = ({ standData }) => {
             line-height: 1;
             color: #fff;
             margin: 5px 0;
-            /* ANIME GLOW STYLE: Used in Part 3/4/5 Titles */
+            /* ANIME GLOW STYLE + Strong Outline */
             text-shadow: 
-                0 0 5px #d500f9,
-                0 0 10px #d500f9,
-                0 0 20px #d500f9,
-                2px 2px 0 #2b003e; /* Hard Shadow */
+                3px 3px 0 #000,
+                -1px -1px 0 #000,  
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000,
+                0 0 10px #d500f9;
             transform: scale(1, 1.1); /* Slight vertical stretch */
         }
 
@@ -386,12 +410,42 @@ const StandCard = ({ standData }) => {
             border-radius: 4px;
         }
 
-        .ability-content p {
+        .ability-content p, .markdown-ability p {
             font-family: 'Noto Serif SC', serif;
             font-size: 1.2rem;
             line-height: 1.6;
             color: #333;
             font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .markdown-ability strong {
+            color: #000;
+            background: linear-gradient(180deg, transparent 60%, rgba(213, 0, 249, 0.2) 60%);
+            padding: 0 2px;
+        }
+
+        .markdown-ability ul, .markdown-ability ol {
+            margin-bottom: 1.5rem;
+            padding-left: 20px;
+        }
+
+        .markdown-ability li {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #444;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .markdown-ability ul li::before {
+            content: '◆';
+            position: absolute;
+            left: -20px;
+            color: #d500f9;
+            font-size: 0.8rem;
         }
         
         /* Save Button */
@@ -399,8 +453,79 @@ const StandCard = ({ standData }) => {
             background: #6a1b9a; color: #fff; border: 3px solid #000;
             font-weight: 900; box-shadow: 4px 4px 0 #000;
             padding: 8px 24px; font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         .save-btn:hover { background: #8e24aa; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #000; }
+
+        /* Return Button */
+        .return-container {
+            margin-top: 30px;
+            text-align: center;
+            padding-bottom: 40px;
+        }
+
+        /* === BOTTOM ACTION BUTTON === */
+        .action-return-btn {
+            background: #000;
+            color: #ffd700;
+            border: 2px solid #ffd700;
+            padding: 10px 30px;
+            font-family: 'Anton', sans-serif;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            line-height: 1.1;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+            transform: skewX(-10deg);
+        }
+        .action-return-btn:hover {
+            background: #ffd700;
+            color: #000;
+            transform: skewX(-10deg) translateY(-2px);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.6);
+        }
+        .action-return-btn small {
+            display: block;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            color: #999;
+            margin-top: 2px;
+        }
+        .action-return-btn:hover small { color: #000; }
+
+        /* === GLOBAL RETURN BUTTON (Matched InputForm) === */
+        .return-btn {
+          position: fixed;
+          top: 30px; left: 30px;
+          background: transparent; /* No background */
+          border: none; /* No border */
+          color: #fff;
+          cursor: pointer;
+          z-index: 2000;
+          display: flex; align-items: center; gap: 8px;
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        .return-btn:hover {
+          transform: translateX(-8px); /* Left Move Animation */
+          color: gold;
+        }
+        .return-arrow { width: 32px; height: 32px; }
+        .return-text { 
+           font-family: 'Anton', sans-serif; 
+           font-size: 1.2rem; 
+           letter-spacing: 1px;
+           text-shadow: 2px 2px 0 #000;
+        }
+
+        /* Responsive Fix for Return Button */
+        @media (max-width: 1100px) {
+           .return-btn {
+              top: 10px; left: 10px;
+           }
+        }
 
         /* === RESPONSIVE === */
         @media (max-width: 768px) {

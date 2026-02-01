@@ -23,7 +23,7 @@ const DonateModal = ({ onClose }) => {
           <div className="coin-bag-container">
             <div className="qr-wrapper">
               {/* Replace with actual sponsor QR if available, or keep placeholder logic */}
-              <img src="/sponsor.png"
+              <img src="/assets/reward_qrcode.png"
                 alt="Donate QR"
                 className="qr-code-img"
                 onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
@@ -34,9 +34,15 @@ const DonateModal = ({ onClose }) => {
             </div>
 
             <div className="coin-pile">
-              <span className="coin c1">🪙</span>
-              <span className="coin c2">🪙</span>
-              <span className="coin c3">🪙</span>
+              <span className="coin c1">
+                <svg viewBox="0 0 24 24" className="coin-svg"><circle cx="12" cy="12" r="10" fill="#FFD700" stroke="#000" strokeWidth="2" /><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#000">G</text></svg>
+              </span>
+              <span className="coin c2">
+                <svg viewBox="0 0 24 24" className="coin-svg"><circle cx="12" cy="12" r="10" fill="#FFD700" stroke="#000" strokeWidth="2" /><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#000">G</text></svg>
+              </span>
+              <span className="coin c3">
+                <svg viewBox="0 0 24 24" className="coin-svg"><circle cx="12" cy="12" r="10" fill="#FFD700" stroke="#000" strokeWidth="2" /><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#000">G</text></svg>
+              </span>
             </div>
           </div>
 
@@ -144,7 +150,9 @@ const DonateModal = ({ onClose }) => {
             display: inline-block; 
             filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.3));
             animation: bounce 2s infinite; 
+            width: 32px; height: 32px; /* Fixed size for SVG container */
         }
+        .coin-svg { width: 100%; height: 100%; }
         .c1 { animation-delay: 0s; }
         .c2 { animation-delay: 0.2s; }
         .c3 { animation-delay: 0.4s; }

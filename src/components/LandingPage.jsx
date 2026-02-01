@@ -45,7 +45,7 @@ const LandingPage = ({ onStart }) => {
 
           <button className="stand-arrow-btn" onClick={handleClick}>
             <div className="btn-inner">
-              <img src="/assets/arrow_gold.png" className="arrow-icon-img" alt="Arrow" />
+              <img src="/assets/stand_arrow.png" className="arrow-icon-img" alt="Arrow" />
               <span className="btn-text">
                 <span>覺醒能力</span>
                 <small>AWAKEN YOUR STAND</small>
@@ -61,7 +61,8 @@ const LandingPage = ({ onStart }) => {
         /* --- LAYOUT & CONTAINER --- */
         .landing-container {
             position: fixed; inset: 0;
-            background: #1a0033;
+            background: #1a0033 no-repeat center center;
+            background-size: cover;
             overflow: hidden;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
@@ -196,22 +197,21 @@ const LandingPage = ({ onStart }) => {
 
         .btn-inner {
             background: #000; /* PURE BLACK BACKGROUND */
-            padding: 15px 60px;
-            display: flex; align-items: center; gap: 20px;
+            padding: 10px 45px; /* Slightly tighter */
+            display: flex; align-items: center; gap: 25px;
             transform: skewX(-20deg); 
             border: 3px solid #FFD700; /* Gold Border */
-            /* Tight 3D Thickness Shadow (Top-Left as requested) */
             box-shadow: -6px -6px 0 #4b0082; 
             position: relative;
             overflow: hidden;
         }
 
         .arrow-icon-img {
-            width: 60px; height: 60px;
+            width: 70px; height: 70px;
             object-fit: contain;
-            transform: skewX(20deg) rotate(-45deg);
-            /* HOLY RELIC GLOW: Brightness + Contrast + Strong Gold Shadow */
-            filter: brightness(1.3) contrast(1.2) drop-shadow(0 0 8px #FFD700);
+            transform: skewX(20deg) rotate(-15deg); /* Adjusted for stand_arrow.png angle */
+            /* Cleaner look: subtle drop shadow, no heavy brightness overrides */
+            filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.4));
         }
 
         .btn-text {

@@ -9,7 +9,7 @@ body {
   /* Gradient to darken bottom-left for UI visibility + Image */
   background-image:
     linear-gradient(to top right, rgba(0, 0, 0, 0.9) 0%, transparent 40%),
-    url('/src/assets/bg_stands_v2.png');
+    url('/assets/jojo_bg_main.png');
 
   /* 'cover' fills the screen without stretching, but crops edges if aspect ratios differ */
   background-size: cover;
@@ -22,8 +22,64 @@ body {
   opacity: 1;
   color: var(--text-color);
   font-family: var(--font-body);
+  /* Prevent main scrollbar */
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* === APP CONTAINER (Internal Scrollable Area) === */
+.app-container {
+  width: 100vw;
+  height: 100vh;
+  overflow-y: auto;
   overflow-x: hidden;
-  min-height: 100vh;
+  position: relative;
+  /* Smooth scrolling for internal navigation */
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar for App Container */
+.app-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.app-container::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border: 1px solid #000;
+  border-radius: 4px;
+}
+
+/* === MODAL OVERLAY === */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  /* Slightly darker for mystery */
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  /* Above TBC arrow (5) and card (50) */
+  animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* Scrollbar Styling */
@@ -43,16 +99,18 @@ body {
 /* === TBC PROGRESS ARROW (To Be Continued) === */
 .tbc-container-fixed {
   position: fixed;
-  bottom: 30px;
-  left: 30px;
-  width: 220px;
-  /* Standard TBC Arrow size */
-  height: 80px;
-  z-index: 100;
+  /* Container is a square to match the 1:1 mask image asset */
+  bottom: -100px;
+  left: 20px;
+  width: 300px;
+  height: 300px;
+  z-index: 5;
+  /* Behind modals */
   pointer-events: none;
-  /* Let clicks pass through to background/stands if needed */
-  filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 1));
-  /* Hard Shadow for Pop */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  filter: drop-shadow(0 0 8px #ffd700) drop-shadow(0 0 20px rgba(213, 0, 249, 0.9)) drop-shadow(4px 4px 0 #000);
 }
 
 .tbc-mask-container {
@@ -60,14 +118,16 @@ body {
   height: 100%;
   position: relative;
   /* THE MASK: Cuts the box into the Arrow Shape */
-  mask-image: url('/assets/tbc_arrow_cutout_1769880682262.png');
-  -webkit-mask-image: url('/assets/tbc_arrow_cutout_1769880682262.png');
-  mask-size: contain;
-  -webkit-mask-size: contain;
+  mask-image: url('/assets/tbc_arrow_stencil.png');
+  -webkit-mask-image: url('/assets/tbc_arrow_stencil.png');
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
   mask-repeat: no-repeat;
   -webkit-mask-repeat: no-repeat;
-  mask-position: left center;
-  -webkit-mask-position: left center;
+  mask-position: center;
+  -webkit-mask-position: center;
+  mask-mode: luminance;
+  -webkit-mask-mode: luminance;
 }
 
 /* 1. Ghost Background (Empty Arrow) */
@@ -77,8 +137,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(40, 10, 40, 0.8);
-  /* Dark purple backing */
+  background-color: rgba(255, 235, 150, 0.4);
+  /* Brighter golden ghost backing */
 }
 
 /* 2. Progress Fill (Animated Color) */
@@ -87,8 +147,110 @@ body {
   top: 0;
   left: 0;
   height: 100%;
-  /* JoJo Gradient: Yellow -> Orange for the Arrow Body */
-  background: linear-gradient(90deg, #aa00ff, #ffd600);
+  /* JoJo Gradient: Gold to Pink/Purple */
+  background: linear-gradient(90deg, #ffeb3b, #d500f9);
   transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  /* Bouncy fill */
+  box-shadow: 0 0 20px #d500f9, 0 0 40px #ffeb3b;
+}
+
+/* === DEATH / RETIRED SCREEN === */
+.death-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle, #5e0000 0%, #000000 90%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+  /* Topmost */
+  animation: deathFadeIn 0.5s ease-out;
+}
+
+.retired-text {
+  font-family: 'Bangers', cursive;
+  font-size: 8rem;
+  color: #d32f2f;
+  text-shadow:
+    5px 5px 0 #000,
+    -2px -2px 0 #000,
+    0 0 20px rgba(255, 0, 0, 0.5);
+  -webkit-text-stroke: 2px #000;
+  margin: 0;
+  transform: rotate(-5deg) scale(1);
+  animation: retiredImpact 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.death-message {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 2rem;
+  color: #fff;
+  margin-top: 20px;
+  text-shadow: 2px 2px 0 #000;
+  opacity: 0;
+  animation: fadeInText 1s ease-out 0.5s forwards;
+}
+
+.death-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  opacity: 0;
+  animation: fadeInText 1s ease-out 0.8s forwards;
+}
+
+.try-again-btn {
+  background: transparent;
+  border: 3px solid #d32f2f;
+  color: #d32f2f;
+  padding: 15px 40px;
+  font-family: 'Anton', sans-serif;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0;
+  animation: fadeInText 1s ease-out 1.2s forwards;
+}
+
+.try-again-btn:hover {
+  background: #d32f2f;
+  color: #fff;
+  box-shadow: 0 0 20px #d32f2f;
+  transform: scale(1.1);
+}
+
+@keyframes deathFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes retiredImpact {
+  from {
+    transform: rotate(-10deg) scale(3);
+    opacity: 0;
+  }
+
+  to {
+    transform: rotate(-5deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInText {
+  to {
+    opacity: 1;
+  }
 }

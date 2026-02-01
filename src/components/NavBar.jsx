@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../styles/variables.css';
 
-const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onToggleFAQ }) => {
+const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onToggleFAQ, isHistoryOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -10,21 +10,23 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onTogg
       <div className={`zipper-nav-container ${isOpen ? 'open' : ''}`}>
 
         {/* THE ZIPPER HANDLE (ALWAYS VISIBLE, SLIDES WITH MENU) */}
-        <div className="zipper-handle-sticky" onClick={() => setIsOpen(!isOpen)} title="Sticky Fingers!">
-          <svg viewBox="0 0 60 120" className="handle-svg">
-            <defs>
-              <linearGradient id="giantGold" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#FFF700" />
-                <stop offset="100%" stopColor="#DAA520" />
-              </linearGradient>
-              <filter id="heavyShadow">
-                <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="#000" floodOpacity="0.8" />
-              </filter>
-            </defs>
-            <path d="M10,10 H50 L55,90 L30,110 L5,90 Z" fill="url(#giantGold)" stroke="#000" strokeWidth="3" filter="url(#heavyShadow)" />
-            <path d="M22,25 H38 L40,70 L30,80 L20,70 Z" fill="#1a0b2e" stroke="#000" strokeWidth="2" />
-          </svg>
-        </div>
+        {!isHistoryOpen && (
+          <div className="zipper-handle-sticky" onClick={() => setIsOpen(!isOpen)} title="Sticky Fingers!">
+            <svg viewBox="0 0 60 120" className="handle-svg">
+              <defs>
+                <linearGradient id="giantGold" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#FFF700" />
+                  <stop offset="100%" stopColor="#DAA520" />
+                </linearGradient>
+                <filter id="heavyShadow">
+                  <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="#000" floodOpacity="0.8" />
+                </filter>
+              </defs>
+              <path d="M10,10 H50 L55,90 L30,110 L5,90 Z" fill="url(#giantGold)" stroke="#000" strokeWidth="3" filter="url(#heavyShadow)" />
+              <path d="M22,25 H38 L40,70 L30,80 L20,70 Z" fill="#1a0b2e" stroke="#000" strokeWidth="2" />
+            </svg>
+          </div>
+        )}
 
         {/* MENU CONTENT PAN (BEHIND THE ZIPPER) */}
         <div className="zipper-panel">
@@ -35,6 +37,14 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onTogg
               <div className="menu-text-group">
                 <span className="menu-en">INTRO</span>
                 <span className="menu-cn">简介</span>
+              </div>
+            </div>
+            {/* HISTORY */}
+            <div className="menu-item" onClick={() => { onToggleHistory(); setIsOpen(false); }}>
+              <img src="/assets/icon_tarot_history.png" className="menu-icon-img" alt="History" />
+              <div className="menu-text-group">
+                <span className="menu-en">HISTORY</span>
+                <span className="menu-cn">历史</span>
               </div>
             </div>
             {/* DONATE */}
