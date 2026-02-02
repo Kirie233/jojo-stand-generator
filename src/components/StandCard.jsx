@@ -128,12 +128,62 @@ const StandCard = ({ standData, onReset }) => {
 
         {/* === BOTTOM INFO AREA (Auto Height) === */}
         <div className="info-area">
-          <div className="ability-content">
-            <h3>『 {abilityName || '能力'} 』</h3>
-            <div className="markdown-ability">
-              <ReactMarkdown>{ability}</ReactMarkdown>
+          {standData.panel ? (
+            /* --- NEW STRUCTURED UI (Tech HUD) --- */
+            <div className="tech-hud-container">
+
+              {/* 1. HUD Header: Type & Summary */}
+              <div className="hud-header">
+                <div className="hud-top-row">
+                  <h3 className="hud-title">『 {abilityName || standData.panel?.abilityName || '能力解析'} 』</h3>
+                  <span className="type-badge">{standData.type || '未知类型'}</span>
+                </div>
+                <div className="hud-desc-box">
+                  <p className="hud-summary">{standData.panel.long_desc || standData.panel.desc}</p>
+                  {standData.panel.battleCry && (
+                    <div className="battle-cry-sticker">{standData.panel.battleCry}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Mechanics Grid */}
+              <div className="mechanics-grid">
+                {standData.panel.mechanics.map((mech, i) => (
+                  <div key={i} className="mech-card">
+                    <div className="mech-card-title">{mech.title}</div>
+                    <div className="mech-card-body">{mech.content}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 3. Limitations (Warning System) */}
+              {standData.panel.limitations && standData.panel.limitations.length > 0 && (
+                <div className="warning-system">
+                  <div className="warning-label">⚠ SYSTEM RESTRICTIONS / 射程与代价</div>
+                  <ul className="warning-list">
+                    {standData.panel.limitations.map((limit, i) => (
+                      <li key={i}>{limit}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* 4. Quote Footer */}
+              {standData.panel.quote && (
+                <div className="quote-footer">
+                  "{standData.panel.quote}"
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            /* --- LEGACY MARKDOWN FALLBACK --- */
+            <div className="ability-content">
+              <h3>『 {abilityName || '能力'} 』</h3>
+              <div className="markdown-ability">
+                <ReactMarkdown>{ability}</ReactMarkdown>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
@@ -515,6 +565,176 @@ const StandCard = ({ standData, onReset }) => {
              .radar-group { margin: 0 auto; margin-top: 200px; /* Push down to clear image */ }
              .user-info-right { bottom: auto; top: 400px; right: 10px; } 
              /* This is complex on mobile; simplified stack is better */
+        }
+
+        /* ========================================= */
+        /* === TECH HUD STYLES (STRUCTURED AI) === */
+        /* ========================================= */
+        
+        .tech-hud-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* --- HEADER & TYPE --- */
+        .hud-header {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .hud-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+
+        .hud-title {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            padding: 5px 20px;
+            font-size: 1.5rem;
+            transform: skewX(-15deg);
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+        }
+
+        .type-badge {
+            font-family: 'Anton', sans-serif;
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 2px 10px;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 2px 2px 0 #000;
+        }
+
+        .hud-desc-box {
+            position: relative;
+            background: rgba(0,0,0,0.05); /* Very light grey */
+            border-left: 4px solid #6a1b9a; /* Purple accent */
+            padding: 10px 15px;
+            font-family: 'Noto Serif SC', serif;
+            font-weight: bold;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            color: #333;
+        }
+        
+        .battle-cry-sticker {
+            position: absolute;
+            top: -15px;
+            right: 0px;
+            background: #d500f9;
+            color: #fff;
+            font-family: 'Bangers', cursive;
+            font-size: 1.2rem;
+            padding: 2px 10px;
+            transform: rotate(3deg);
+            box-shadow: 2px 2px 0 #000;
+            z-index: 10;
+        }
+
+        /* --- MECHANICS GRID --- */
+        .mechanics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2 Columns */
+            gap: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .mechanics-grid { grid-template-columns: 1fr; }
+        }
+
+        .mech-card {
+            border: 2px solid #000;
+            background: #fff;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .mech-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
+        }
+
+        .mech-card-title {
+            background: #000;
+            color: #ffd700;
+            font-family: 'Anton', sans-serif;
+            font-size: 1rem;
+            padding: 5px 10px;
+            letter-spacing: 1px;
+        }
+
+        .mech-card-body {
+            padding: 10px;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #444;
+            font-weight: 600;
+        }
+
+        /* --- WARNING SYSTEM --- */
+        .warning-system {
+            margin-top: 5px;
+            border: 2px solid #d32f2f;
+            background: rgba(211, 47, 47, 0.05);
+            position: relative;
+            padding: 15px;
+        }
+        
+        .warning-label {
+            position: absolute;
+            top: -12px;
+            left: 10px;
+            background: #d32f2f;
+            color: #fff;
+            font-family: 'Anton', sans-serif;
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            letter-spacing: 1px;
+        }
+
+        .warning-list {
+            margin: 0;
+            padding-left: 20px;
+            list-style-type: none; 
+        }
+
+        .warning-list li {
+            position: relative;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.95rem;
+            color: #b71c1c; /* Dark Red */
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .warning-list li::before {
+            content: '!';
+            position: absolute;
+            left: -20px;
+            font-weight: 900;
+            color: #d32f2f;
+        }
+
+        /* --- QUOTE FOOTER --- */
+        .quote-footer {
+            text-align: center;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1.2rem;
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ccc;
         }
       `}</style>
     </div >

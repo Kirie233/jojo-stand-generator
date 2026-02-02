@@ -91,24 +91,47 @@ const _generateStandProfile = async (inputs) => {
 
       const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请设计一个符合JOJO世界观的替身(Stand)。\n要求：能力设计要有创意且易于理解，符合荒木飞吕彦的风格。\n请返回一个合法的 JSON 对象。`;
       const userPromptText = `
-  用户特征:
-  1. 替身使者: "${inputs.userName || 'Unknown'}"
-  2. 音乐引用(决定命名): "${inputs.song}"
-  3. 代表色(决定视觉): "${inputs.color}"
-  4. 精神特质 / 欲望(决定能力核心): "${inputs.personality}"
-        ${inputs.referenceImage ? "5. [重要] 请参考我提供的图片，将其中的视觉元素（如服装风格、姿势、物品）融入到替身的外貌描述中。" : ""}
+  User Characteristics:
+  1. Stand User: "${inputs.userName || 'Unknown'}"
+  2. Musical Reference (Name Origin): "${inputs.song}"
+  3. Color Theme (Visuals): "${inputs.color}"
+  4. Mental Trait / Desire (Core Ability): "${inputs.personality}"
+  ${inputs.referenceImage ? "5. [IMPORTANT] Reference the attached image for visual elements (pose, fashion, items)." : ""}
 
-        请返回 JSON:
+  Please return a VALID JSON object with this exact structure:
   {
-    "name": "替身名 (音乐引用+译名)",
-      "abilityName": "能力名",
-        "ability": "能力详细描述。基于'${inputs.personality}' ${inputs.referenceImage ? "并结合参考图特征" : ""} 设计。请严格遵守格式：\n【能力概述】...\n【详细机制】...\n【限制/代价】...",
-          "stats": { 
-            "power": "评级 (A=极强, B=强, C=普通, D=弱, E=极弱, None=无, ∞=无限)。⚠️严禁全A面板！必须遵循等价交换原则：强力能力(A)必须伴随弱项(D/E/None)。请大胆使用 D 和 E 甚至 None，特别是对于非战斗型替身。", 
-            "speed": "评级", "range": "评级", "durability": "评级", "precision": "评级", "potential": "评级" 
-          },
-    "appearance": "基于'${inputs.color}'色调${inputs.referenceImage ? "及参考图视觉元素" : ""}的详细外貌描述",
-      "shout": "替身吼叫"
+    "name": "Stand Name (Musical Ref + Cool Chinese Translation)",
+    "type": "Stand Type (e.g., Close-Range Power, Long-Range, Automatic, Phenomenon, Hive)",
+    "panel": {
+      "abilityName": "Ability Name (Short Kanji Name, e.g. '败者食尘')",
+      "desc": "One-line core ability summary for the HUD header.",
+      "long_desc": "A detailed paragraph explaining the lore, visual manifestation, and usage of the ability (2-3 sentences). Make it sound like an encyclopedic entry.",
+      "mechanics": [
+        {
+          "title": "Ability Name 1",
+          "content": "Detailed description of the mechanic. Explain how it works, what it looks like, and its effect. (3-4 sentences to fill the card)."
+        },
+        {
+          "title": "Ability Name 2 (Optional)",
+          "content": "Detailed description of a secondary sub-ability or application. (3-4 sentences)."
+        }
+      ],
+      "limitations": [
+        "Weakness 1 (e.g. Range limit)",
+        "Weakness 2 (e.g. Activity condition)"
+      ],
+      "battleCry": "Stand Cry (e.g. ORA ORA, ARI ARI)",
+      "quote": "A cool, short quote or catchphrase representing the Stand's philosophy."
+    },
+    "stats": { 
+      "power": "Rank (A/B/C/D/E/None/∞). NO ALL-A STATS. Strong abilities must have weak stats elsewhere.", 
+      "speed": "Rank", 
+      "range": "Rank", 
+      "durability": "Rank", 
+      "precision": "Rank", 
+      "potential": "Rank" 
+    },
+    "appearance": "Detailed visual description based on '${inputs.color}'${inputs.referenceImage ? " and the reference image" : ""}. Do NOT describe text/letters on the stand."
   }
   `;
 
@@ -225,7 +248,7 @@ export const generateStandImage = async (appearance) => {
 
   console.log("Generating Image Model:", imageModel);
 
-  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nCOMPOSITION: Epic full body shot, Dynamic 'JoJo Pose'. \n\nBACKGROUND: Cinematic Atmosphere, Scenery linked to the Stand's ability (e.g. burning city, frozen wasteland, clock tower, cosmic void, biomechanical lab), Dramatic Lighting, Depth of Field. \n\nStyle tags: Anime Character Sheet, Thick Black Lines, Heavy Hatching, Hyper-muscular, Vibrant Colors, Movie Poster aesthetic. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo, low quality, pixelated.`;
+  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nCOMPOSITION: Epic full body shot, Dynamic 'JoJo Pose'. CLEAN IMAGE, NO TEXT, NO LABELS. \n\nBACKGROUND: Cinematic Atmosphere, Scenery linked to the Stand's ability (e.g. burning city, frozen wasteland, clock tower, cosmic void, biomechanical lab), Dramatic Lighting, Depth of Field. \n\nStyle tags: Anime Character Sheet, Thick Black Lines, Heavy Hatching, Hyper-muscular, Vibrant Colors, Movie Poster aesthetic. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo, copyright, alphabet, numbers, low quality, pixelated.`;
 
   // 1. Determine API Strategy based on Model Name
   const isGemini = imageModel.toLowerCase().includes('gemini');
