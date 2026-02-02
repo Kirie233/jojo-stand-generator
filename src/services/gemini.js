@@ -225,7 +225,7 @@ export const generateStandImage = async (appearance) => {
 
   console.log("Generating Image Model:", imageModel);
 
-  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nCOMPOSITION: Position the character slightly to the RIGHT of center. CRITICAL: Leave the BOTTOM-RIGHT corner empty (negative space) for text overlay. Do not place heavy details, feet, or effects in the absolute bottom-right area. \n\nStyle tags: Anime Character Sheet, Full Body Reference, White Background, Simple Background, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Dynamic 'JoJo Pose', Vibrant Colors. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo, bottom right details.`;
+  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nCOMPOSITION: Epic full body shot, Dynamic 'JoJo Pose'. \n\nBACKGROUND: Cinematic Atmosphere, Scenery linked to the Stand's ability (e.g. burning city, frozen wasteland, clock tower, cosmic void, biomechanical lab), Dramatic Lighting, Depth of Field. \n\nStyle tags: Anime Character Sheet, Thick Black Lines, Heavy Hatching, Hyper-muscular, Vibrant Colors, Movie Poster aesthetic. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo, low quality, pixelated.`;
 
   // 1. Determine API Strategy based on Model Name
   const isGemini = imageModel.toLowerCase().includes('gemini');

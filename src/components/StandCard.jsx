@@ -28,9 +28,9 @@ const StandCard = ({ standData, onReset }) => {
   const translatedLabels = {
     power: '破坏力',
     speed: '速度',
-    range: '射程',
+    range: '射程距离',
     durability: '持续力',
-    precision: '精密性',
+    precision: '精密动作性',
     potential: '成长性'
   };
 
@@ -68,11 +68,16 @@ const StandCard = ({ standData, onReset }) => {
 
         {/* === TOP VISUAL AREA (Fixed Height) === */}
         <div className="visual-area">
-          {/* Background */}
-          <div className="card-bg"></div>
+          {/* Background: Blurred Clone */}
+          <div
+            className="card-bg"
+            style={standData.imageUrl ? { backgroundImage: `url(${standData.imageUrl})` } : {}}
+          ></div>
+
+          {/* Scrim Overlay */}
           <div className="texture-overlay"></div>
 
-          {/* STAND IMAGE (Full Width Background Layer) */}
+          {/* STAND IMAGE (Main Visual) */}
           {standData.imageUrl ? (
             <div
               className="stand-full-bg"
@@ -86,45 +91,37 @@ const StandCard = ({ standData, onReset }) => {
           {/* Layout Container for Separation */}
           <div className="visual-layout">
 
-            {/* LEFT ZONE (Text & Radar) */}
-            <div className="zone-left">
-              <div className="header-group">
-                <div className="label-row">
-                  <span className="label-bracket">[STAND NAME]</span>
-                  <span className="label-cn">[替身名]</span>
-                </div>
-                <h1 className="main-name">{mainName}</h1>
-                {subName && <h2 className="sub-name">{subName}</h2>}
-              </div>
-
-              <div className="radar-group">
-                <div className="radar-label">STATISTICS</div>
-                <CustomRadar stats={stats} labels={translatedLabels} />
-              </div>
+            {/* RADAR (Floating in the center-left area) */}
+            <div className="radar-container">
+              <CustomRadar stats={stats} labels={translatedLabels} />
             </div>
 
-            {/* Reference Image (Catalyst) - Top Right Absolute */}
+            {/* TOP RIGHT: CATALYST (Floating) */}
             {standData.referenceImage && (
               <div className="catalyst-box-floating">
-                <div className="catalyst-header">
-                  <span>[CATALYST]</span>
-                  <span>[触媒]</span>
-                </div>
                 <img src={standData.referenceImage} alt="Ref" />
               </div>
             )}
 
-            {/* RIGHT ZONE (Master Name Only) */}
-            <div className="zone-right">
-              {/* Stand Master (Moved to Bottom Right of Right Zone) */}
-              <div className="user-info-right">
-                <div className="label-row-sm" style={{ justifyContent: 'flex-end' }}>
-                  <span className="label-cn-sm">[替身使者]</span>
-                  <span className="label-bracket-sm">[STAND MASTER]</span>
-                </div>
-                <h2 className="user-name-right">{standData.userName || 'YOU'}</h2>
+            {/* CORNER INFO: BOTTOM LEFT (MASTER) */}
+            <div className="corner-info master">
+              <div className="label-line">
+                <span className="en">[STAND MASTER]</span>
+                <span className="cn">「替身使者」</span>
               </div>
+              <h1 className="display-name">{standData.userName || 'YOU'}</h1>
             </div>
+
+            {/* CORNER INFO: BOTTOM RIGHT (STAND) */}
+            <div className="corner-info stand">
+              <div className="label-line">
+                <span className="cn">「替身名字」</span>
+                <span className="en">[STAND NAME]</span>
+              </div>
+              <h1 className="display-name">{mainName}</h1>
+              {subName && <h2 className="display-sub-name">{subName}</h2>}
+            </div>
+
           </div>
         </div>
 
@@ -173,205 +170,187 @@ const StandCard = ({ standData, onReset }) => {
             border-radius: 30px; /* GOLDEN WIND ROUNDING */
         }
 
-        /* --- BACKGROUND: JOJO STYLE --- */
+        /* --- BACKGROUND: CINEMATIC AI --- */
         .visual-area {
             position: relative;
             width: 100%;
             height: 600px; 
             overflow: hidden;
             border-bottom: 6px solid #000;
-            background-color: #1a0b2e; /* Deep Dark Purple Base */
+            background-color: #000; 
         }
 
+        /* 1. Base Layer: Blurred Clone (Fills gaps if aspect ratio differs) */
         .card-bg {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
-            /* Darker, flatter gradient to ensure Stand pops */
-            background: linear-gradient(135deg, #2a0e4e 0%, #000000 100%);
-            opacity: 1; /* Opaque background */
+            background-size: cover;
+            background-position: center;
+            filter: blur(20px) brightness(0.5);
+            transform: scale(1.1); /* Remove white edges from blur */
         }
 
-        /* Triangle Pattern Overlay */
-        .texture-overlay {
-            position: absolute;
-            z-index: 2;
-            width: 100%; height: 100%;
-            /* CSS Triangle Pattern */
-            background-image: 
-                linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000),
-                linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000);
-            background-position: 0 0, 10px 10px;
-            background-size: 20px 20px;
-            opacity: 0.05; /* Very subtle */
-            mix-blend-mode: overlay;
-        }
-
-        /* --- VISUAL LAYOUT --- */
-        .visual-layout {
-            position: relative;
-            z-index: 20; /* Above BG */
-            display: flex;
-            width: 100%; height: 100%;
-        }
-
-        /* --- STAND IMAGE (Background Layer) --- */
+        /* 2. Main Visual Layer: The Generated Image */
         .stand-full-bg {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             background-size: cover;
-            background-position: top center;
-            mix-blend-mode: normal; /* True Colors */
+            background-position: center;
             z-index: 10;
-            /* Fade bottom slightly for text area integration */
-            mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+            /* No Mask - Show full environment */
+            mix-blend-mode: normal;
         }
-        
-        /* Remove the spotlight fix since we are in normal mode now */
+
+        /* 3. Text Protection Layer (The Scrim) */
+        .texture-overlay {
+            position: absolute;
+            z-index: 15; /* Above Image, Below Text */
+            width: 100%; height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.9) 0%,     /* Top Darkness for Title */
+                rgba(0,0,0,0.4) 20%,
+                rgba(0,0,0,0.0) 40%,    /* Clear Center for Stand */
+                rgba(0,0,0,0.0) 60%,
+                rgba(0,0,0,0.6) 80%,
+                rgba(0,0,0,0.95) 100%   /* Bottom Darkness for User/Stats */
+            );
+            pointer-events: none;
+            mix-blend-mode: normal; /* Normal overlay */
+            opacity: 1;
+        }
+
+        /* Vignette specifically for corners */
+        .texture-overlay::after {
+            content: '';
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background: radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+            mix-blend-mode: multiply;
+        }
         .card-bg::after {
             display: none;
         }
 
-        /* --- LEFT ZONE: NAME & RADAR --- */
-        .zone-left {
-            width: 45%;
-            padding: 30px;
+        /* --- VISUAL LAYOUT CONTAINER --- */
+        .visual-layout {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 50;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            pointer-events: none; /* Click through */
-        }
-        
-        /* STAND NAME header */
-        .header-group {
-            pointer-events: auto;
-            text-align: left;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 50;
-            padding: 15px 20px;
-            /* Stronger Backdrop for Readability */
-            background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 80%, transparent 100%);
-            border-left: 8px solid var(--accent-color); /* Anime Title Marker */
-            clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%); /* Slight Anime Skew */
-        }
-
-        .label-row {
-            display: none; /* Hide standard label, use integrated */
-        }
-
-        .main-name {
-            font-family: 'Noto Serif SC', serif; /* ANIME SERIF */
-            font-weight: 900;
-            font-size: 4rem;
-            line-height: 1;
-            color: #fff;
-            margin: 5px 0;
-            /* ANIME GLOW STYLE + Strong Outline */
-            text-shadow: 
-                3px 3px 0 #000,
-                -1px -1px 0 #000,  
-                1px -1px 0 #000,
-                -1px 1px 0 #000,
-                1px 1px 0 #000,
-                0 0 10px #d500f9;
-            transform: scale(1, 1.1); /* Slight vertical stretch */
-        }
-
-        .sub-name {
-            font-family: 'Noto Serif SC', serif;
-            font-size: 2rem;
-            color: #ffd700; /* Gold */
-            font-weight: 700;
-            text-shadow: 2px 2px 0 #000;
-            margin-top: 5px;
-            letter-spacing: 2px;
-        }
-
-        /* RADAR: Floating HUD / Coin Style */
-        .radar-group {
-            position: relative;
-            width: 300px; 
-            margin-top: auto; 
-            margin-left: 0;
-            /* Remove Paper Styling */
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            transform: rotate(-2deg); 
-            pointer-events: auto;
-            /* Ensure it sits above image */
-            z-index: 50; 
-            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
-        }
-
-        /* Remove old paper texture */
-        .radar-group::before { display: none; }
-        
-        .radar-label {
-            display: none; /* Embedded in chart now or removed for anime accuracy */
-        }
-
-
-        /* --- RIGHT ZONE: MASTER & CATALYST --- */
-        .zone-right {
-            width: 55%;
-            position: relative;
+            justify-content: flex-end; /* Push content to bottom corners */
             pointer-events: none;
         }
 
-        .user-info-right {
-           position: absolute;
-           bottom: 40px;
-           right: 20px;
-           text-align: right;
-           pointer-events: auto;
-           z-index: 50;
-           /* Text Visibility Backdrop */
-           padding: 10px;
-           background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, transparent 70%);
-        }
-        
-        .user-name-right {
-            font-family: 'Noto Serif SC', serif; /* Match Master to Stand */
-            font-size: 3rem;
-            font-weight: 900;
-            color: #fff;
-            line-height: 1;
-            text-shadow: 
-                0 0 5px #00e5ff,
-                0 0 10px #00e5ff,
-                2px 2px 0 #000;
-        }
-        
-        .label-bracket-sm {
-            background: #000; color: #ffd700; padding: 2px 6px; font-weight: bold; 
-            border: 1px solid #fff; margin-bottom: 5px; display: inline-block;
+        /* --- RADAR POSITIONING (Bottom Left) --- */
+        .radar-container {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            /* Removed center-left transform */
+            transform: rotate(-3deg);
+            pointer-events: auto;
+            z-index: 60;
+            filter: drop-shadow(0 0 15px rgba(0,0,0,0.5));
         }
 
-        /* CATALYST IMAGE "Photo" Style */
+        /* --- CORNER INFO BLOCKS --- */
+        .corner-info {
+            position: absolute;
+            z-index: 100;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* TOP LEFT: MASTER */
+        .corner-info.master {
+            top: 40px;
+            left: 40px;
+            text-align: left;
+        }
+
+        /* BOTTOM RIGHT: STAND NAME */
+        .corner-info.stand {
+            bottom: 40px;
+            right: 40px;
+            text-align: right;
+            align-items: flex-end;
+        }
+
+        /* Label Row styling */
+        .label-line {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 5px;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 2px 2px 0 #000;
+            /* Anime Skew */
+            transform: skewX(-10deg);
+        }
+        
+        .label-line .en { color: #ffffffff; } /* Highlight Master/Name tags */
+        .label-line .cn { opacity: 0.9; }
+
+        /* Main Display Names */
+        .display-name {
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 900;
+            font-size: 4rem; /* Larger */
+            line-height: 1;
+            color: #fff;
+            margin: 0;
+            /* Heavy Jojo Outline */
+            -webkit-text-stroke: 2px #000;
+            paint-order: stroke fill;
+            text-shadow: 
+                4px 4px 0px #000,
+                0 0 20px rgba(255, 215, 0, 0.6);
+            /* Dynamic Anime Transform */
+            transform: skewX(-10deg) scale(1, 1.05); 
+        }
+
+        .display-sub-name {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 2rem;
+            color: #ffd700;
+            font-weight: 900;
+            margin-top: 5px;
+            /* Fix: Ensure stroke sits behind fill */
+            -webkit-text-stroke: 4px #000;
+            paint-order: stroke fill;
+            text-shadow: 2px 2px 0 #000;
+            letter-spacing: 2px;
+            transform: skewX(-10deg);
+        }
+
+        /* --- CATALYST (Top Right Floating Jewel) --- */
         .catalyst-box-floating {
             position: absolute;
-            top: 25px; right: 25px;
-            width: 110px; height: 110px;
+            top: 25px; 
+            right: 25px;
+            width: 100px; height: 100px;
             background: #000;
-            /* JEWEL STYLE */
-            border: 4px solid var(--accent-color); /* Gold Border */
-            border-radius: 50%; /* Circle */
-            box-shadow: 0 0 15px var(--accent-color), 4px 4px 0 #000;
+            border: 4px solid var(--accent-color);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--accent-color), 5px 5px 0 #000;
             overflow: hidden;
-            z-index: 60;
+            z-index: 120;
+            pointer-events: auto;
             display: flex;
             align-items: center; justify-content: center;
         }
+
         .catalyst-box-floating img {
             width: 100%; height: 100%;
             object-fit: cover;
-            border: none;
-        }
-        .catalyst-header {
-            display: none; /* Clean Look */
         }
 
 
