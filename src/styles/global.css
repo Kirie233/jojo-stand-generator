@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Cinzel:wght@900&family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@900&family=ZCOOL+KuaiLe&display=swap');
 
+body.clean-jojo-body {
+  background-image:
+    linear-gradient(to top right, rgba(0, 0, 0, 0.9) 0%, transparent 40%),
+    url('/assets/jojo_stone_ocean_bg.png');
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -11,18 +17,13 @@ body {
     linear-gradient(to top right, rgba(0, 0, 0, 0.9) 0%, transparent 40%),
     url('/assets/jojo_bg_main.png');
 
-  /* 'cover' fills the screen without stretching, but crops edges if aspect ratios differ */
   background-size: cover;
-
   background-position: center center;
   background-repeat: no-repeat;
-
   background-attachment: fixed;
-  /* Optional: keeps bg fixed while scrolling */
   opacity: 1;
   color: var(--text-color);
   font-family: var(--font-body);
-  /* Prevent main scrollbar */
   overflow: hidden;
   height: 100vh;
   width: 100vw;
@@ -164,31 +165,41 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  /* Center to fit one page */
   align-items: center;
   z-index: 20000;
+  padding: 20px;
+  /* Reduced padding */
+  box-sizing: border-box;
+  overflow: hidden;
+  /* No scroll needed */
   /* Topmost */
   animation: deathFadeIn 0.5s ease-out;
 }
 
 .retired-text {
   font-family: 'Bangers', cursive;
-  font-size: 8rem;
+  font-size: 5rem;
+  /* Reduced from 6rem */
   color: #d32f2f;
   text-shadow:
     5px 5px 0 #000,
     -2px -2px 0 #000,
     0 0 20px rgba(255, 0, 0, 0.5);
   -webkit-text-stroke: 2px #000;
-  margin: 0;
+  margin: 5px 0;
+  /* Tightened margin */
   transform: rotate(-5deg) scale(1);
   animation: retiredImpact 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .death-message {
   font-family: 'Noto Serif SC', serif;
-  font-size: 2rem;
+  font-size: 1.5rem;
+  /* Reduced from 2rem */
   color: #fff;
-  margin-top: 20px;
+  margin-top: 10px;
+  /* Reduced from 20px */
   text-shadow: 2px 2px 0 #000;
   opacity: 0;
   animation: fadeInText 1s ease-out 0.5s forwards;
@@ -196,9 +207,11 @@ body {
 
 .death-sub {
   font-family: 'Cinzel', serif;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
+  /* Reduced from 1.2rem */
   color: #666;
-  margin-bottom: 40px;
+  margin-bottom: 25px;
+  /* Reduced margin */
   text-transform: uppercase;
   letter-spacing: 4px;
   opacity: 0;
@@ -252,5 +265,46 @@ body {
 @keyframes fadeInText {
   to {
     opacity: 1;
+  }
+}
+
+/* === DEATH IMAGE ANIMATION === */
+/* === DEATH IMAGE ANIMATION === */
+.death-image-container {
+  width: 500px;
+  /* Fixed width */
+  max-width: 90vw;
+  /* Responsive safeguard */
+  height: auto;
+  /* Let height match image aspect ratio */
+  max-height: 60vh;
+  /* Prevent getting too tall */
+  margin-bottom: 30px;
+  opacity: 0;
+  transform: scale(0.8);
+  animation: imageReveal 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s forwards;
+  box-shadow: 0 0 30px #d32f2f, inset 0 0 20px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border-radius: 12px;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.death-image {
+  width: 100%;
+  height: auto;
+  /* Maintain aspect ratio */
+  display: block;
+  /* Remove inline gap */
+  object-fit: contain;
+  background: transparent;
+}
+
+@keyframes imageReveal {
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }

@@ -89,49 +89,59 @@ const _generateStandProfile = async (inputs) => {
     } else {
       // --- DIRECT CLIENT-SIDE CALL ---
 
-      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请设计一个符合JOJO世界观的替身(Stand)。\n要求：能力设计要有创意且易于理解，符合荒木飞吕彦的风格。\n请返回一个合法的 JSON 对象。`;
-      const userPromptText = `
-  User Characteristics:
-  1. Stand User: "${inputs.userName || 'Unknown'}"
-  2. Musical Reference (Name Origin): "${inputs.song}"
-  3. Color Theme (Visuals): "${inputs.color}"
-  4. Mental Trait / Desire (Core Ability): "${inputs.personality}"
-  ${inputs.referenceImage ? "5. [IMPORTANT] Reference the attached image for visual elements (pose, fashion, items)." : ""}
+      const systemPrompt = `你是一位严谨的《JOJO的奇妙冒险》替身数据录入员，正在为“JOJO百科 (JoJo Wiki)”撰写词条。
+你的任务是基于用户提供的关键词，生成一份**专业、客观且详实**的替身档案。
 
-  Please return a VALID JSON object with this exact structure:
+核心写作风格严格参照【白金之星】的百科词条：
+1. **百科全书口吻**：使用第三人称。语气客观、冷静，避免过多的主观修饰（如“太强了”、“无敌”），而是通过**具体的表现描写**来体现强大。例如：“能够徒手接住近距离发射的子弹”、“视力足以在照片中分辨出苍蝇”。
+2. **精确的术语**：在描述属性时，使用标准的JOJO术语（如：破坏力、速度、射程距离、持续力、精密动作性、成长性）。
+3. **能力深度解析**：不要只写“控制火”，要写出**机制**（例如：“能够随意控制热能的流动，将接触物体的温度瞬间提升至燃点”）。
+4. **结构化描述**：将能力拆解为【基本能力】和【衍生应用】，条理清晰。`;
+
+      const userPromptText = `
+  请基于以下数据，生成一份标准的【JOJO百科替身词条】：
+
+  【档案元数据】
+  1. 替身使者 (User): "${inputs.userName || 'Unknown'}"
+  2. 命名来源 (Name Origin): "${inputs.song}" (由此决定替身名)
+  3. 视觉色调 (Color): "${inputs.color}"
+  4. 核心欲望 (Core Desire): "${inputs.personality}" (由此推导能力机制)
+  ${inputs.referenceImage ? "5. [视觉参考] 请参考附图特征进行外貌描写。" : ""}
+
+  请返回一个严格符合 JSON 格式的对象（不要使用 Markdown 代码块）：
   {
-    "name": "Stand Name (Musical Ref + Cool Chinese Translation)",
-    "type": "Stand Type (e.g., Close-Range Power, Long-Range, Automatic, Phenomenon, Hive)",
+    "name": "替身名 (英文名 + 官方译名风格的中文名，如 'Star Platinum (白金之星)')",
+    "type": "替身类型 (如：近距离力量型、远距离自动操纵型、索敌型)",
     "panel": {
-      "abilityName": "Ability Name (Short Kanji Name, e.g. '败者食尘')",
-      "desc": "One-line core ability summary for the HUD header.",
-      "long_desc": "A detailed paragraph explaining the lore, visual manifestation, and usage of the ability (2-3 sentences). Make it sound like an encyclopedic entry.",
+      "abilityName": "能力名 (四字熟语或简洁短语，如 '时间暂停'、'黄金体验')",
+      "desc": "【能力摘要】一句话概括核心功能，类似百科的顶部简介。",
+      "long_desc": "【替身简介】一段详实的百科式描述。包含替身的外观特征（基于色调）、出现方式以及能力的整体概述。请用说明文的口吻，描述其独特的压迫感或神圣感。",
       "mechanics": [
         {
-          "title": "Ability Name 1",
-          "content": "Detailed description of the mechanic. Explain how it works, what it looks like, and its effect. (3-4 sentences to fill the card)."
+          "title": "基本能力：[机制名称]",
+          "content": "详细解释该能力的工作原理。例如：描述由于速度极快，在普通人眼中如同瞬间移动一般。或者：该能力并非简单的破坏，而是从分子层面重组物质。（约80-100字）"
         },
         {
-          "title": "Ability Name 2 (Optional)",
-          "content": "Detailed description of a secondary sub-ability or application. (3-4 sentences)."
+          "title": "衍生技：[技能名称]",
+          "content": "基于基本能力的进阶应用。描述在战斗中如何灵活运用此能力，或者该能力的某项特殊性质（如：射程虽短但威力足以粉碎钻石）。（约80-100字）"
         }
       ],
       "limitations": [
-        "Weakness 1 (e.g. Range limit)",
-        "Weakness 2 (e.g. Activity condition)"
+        "限制条件 1 (精确描述能力的边界，如：射程距离只有2米)",
+        "弱点/代价 2 (例如：持续发动会消耗大量精神力)"
       ],
-      "battleCry": "Stand Cry (e.g. ORA ORA, ARI ARI)",
-      "quote": "A cool, short quote or catchphrase representing the Stand's philosophy."
+      "battleCry": "战吼 (如：欧拉欧拉 (ORA ORA)、木大木大 (MUDA MUDA))",
+      "quote": "名台词 (一句展现替身使者觉悟或性格的经典发言)"
     },
     "stats": { 
-      "power": "Rank (A/B/C/D/E/None/∞). NO ALL-A STATS. Strong abilities must have weak stats elsewhere.", 
-      "speed": "Rank", 
-      "range": "Rank", 
-      "durability": "Rank", 
-      "precision": "Rank", 
-      "potential": "Rank" 
+      "power": "评级 (A/B/C/D/E/None/∞/?)。参考官方六维图标准。", 
+      "speed": "评级", 
+      "range": "评级", 
+      "durability": "评级", 
+      "precision": "评级", 
+      "potential": "评级" 
     },
-    "appearance": "Detailed visual description based on '${inputs.color}'${inputs.referenceImage ? " and the reference image" : ""}. Do NOT describe text/letters on the stand."
+    "appearance": "【外观描写】基于'${inputs.color}'色调的详细外貌描述。使用百科词条的笔触（如：该替身呈现为人型，全身覆盖着...，头部装饰有...）。"
   }
   `;
 

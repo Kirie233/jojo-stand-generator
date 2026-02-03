@@ -12,18 +12,41 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onTogg
         {/* THE ZIPPER HANDLE (ALWAYS VISIBLE, SLIDES WITH MENU) */}
         {!isHistoryOpen && (
           <div className="zipper-handle-sticky" onClick={() => setIsOpen(!isOpen)} title="Sticky Fingers!">
-            <svg viewBox="0 0 60 120" className="handle-svg">
+            <svg viewBox="0 0 70 140" className="handle-svg">
               <defs>
-                <linearGradient id="giantGold" x1="0" y1="0" x2="1" y2="1">
+                {/* PREMIUM METALLIC GOLD GRADIENT */}
+                <linearGradient id="stickyGold" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="#FFF700" />
-                  <stop offset="100%" stopColor="#DAA520" />
+                  <stop offset="50%" stopColor="#FFD700" />
+                  <stop offset="100%" stopColor="#B8860B" />
                 </linearGradient>
-                <filter id="heavyShadow">
-                  <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="#000" floodOpacity="0.8" />
+                <filter id="stickyGlow">
+                  <feDropShadow dx="-2" dy="2" stdDeviation="4" floodColor="#ffd700" floodOpacity="0.4" />
                 </filter>
               </defs>
-              <path d="M10,10 H50 L55,90 L30,110 L5,90 Z" fill="url(#giantGold)" stroke="#000" strokeWidth="3" filter="url(#heavyShadow)" />
-              <path d="M22,25 H38 L40,70 L30,80 L20,70 Z" fill="#1a0b2e" stroke="#000" strokeWidth="2" />
+
+              {/* THE ZIPPER BASE (The part that slides) */}
+              <rect x="20" y="0" width="30" height="20" fill="#222" stroke="#000" strokeWidth="1" rx="2" />
+
+              {/* THE PULL TAB - STICKY FINGERS STYLE */}
+              <g filter="url(#stickyGlow)">
+                {/* Main Body of the Pull */}
+                <path
+                  d="M15,20 H55 Q60,20 60,25 V100 Q60,115 45,120 L35,125 L25,120 Q10,115 10,100 V25 Q10,20 15,20 Z"
+                  fill="url(#stickyGold)"
+                  stroke="#000"
+                  strokeWidth="2.5"
+                />
+                {/* The Iconic "Handle Hole" */}
+                <circle cx="35" cy="45" r="12" fill="#1a0b2e" stroke="#000" strokeWidth="1.5" />
+                {/* Detailed inset line for 3D look */}
+                <path
+                  d="M20,70 H50 V95 Q50,105 40,110 L35,112 L30,110 Q20,105 20,95 Z"
+                  fill="rgba(255,255,255,0.15)"
+                  stroke="rgba(0,0,0,0.2)"
+                  strokeWidth="1"
+                />
+              </g>
             </svg>
           </div>
         )}
@@ -98,8 +121,25 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onTogg
             filter: drop-shadow(-2px 2px 5px rgba(0,0,0,0.5));
         }
         .zipper-handle-sticky:hover {
-            transform: scale(1.05); /* Subtle pop */
-            filter: drop-shadow(-4px 4px 8px rgba(0,0,0,0.6));
+            transform: scale(1.15) rotate(-5deg); /* More dynamic hover */
+            filter: drop-shadow(-6px 6px 12px rgba(163, 0, 255, 0.4));
+        }
+
+        /* Ambient Gold Glow Pulse for the "Zipper" hint */
+        .zipper-handle-sticky::before {
+            content: '';
+            position: absolute;
+            inset: 10px;
+            background: rgba(255, 215, 0, 0.25);
+            border-radius: 50%;
+            filter: blur(18px);
+            z-index: -1;
+            animation: handlePulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes handlePulse {
+            from { transform: scale(0.8); opacity: 0.3; }
+            to { transform: scale(1.4); opacity: 0.7; }
         }
 
         /* THE MENU PANEL BACKGROUND */

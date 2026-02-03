@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import CustomRadar from './CustomRadar';
 import '../styles/variables.css';
 import html2canvas from 'html2canvas';
@@ -34,6 +34,13 @@ const StandCard = ({ standData, onReset }) => {
     potential: '成长性'
   };
 
+  useEffect(() => {
+    // Apply cleaner JOJO background and hide overflow to prevent scroll jumping
+    document.body.classList.add('clean-jojo-body');
+    return () => {
+      document.body.classList.remove('clean-jojo-body');
+    };
+  }, []);
   const handleSaveImage = async () => {
     const element = document.querySelector('.stand-card');
     if (!element) return;
@@ -60,8 +67,61 @@ const StandCard = ({ standData, onReset }) => {
         <span className="return-text">RETURN</span>
       </button>
 
-      <div style={{ textAlign: 'right', marginBottom: 10 }}>
-        <button onClick={handleSaveImage} className="save-btn">💾 保存卡片</button>
+      {/* WHITESNAKE PREMIUM IMMERSIVE HUB - Hand-Held V3.1 (Fixed Conflict) */}
+      <div className="whitesnake-handheld-root">
+        {/* CHARACTER BASE (Empty Hand for Interactive Placement) */}
+        <div className="whitesnake-hand-character">
+          <img src="/assets/whitesnake_empty_hand_premium-removebg-preview.png" alt="Whitesnake" />
+
+          <div className="interactive-hand-zone">
+            {/* Visual Disc (Memory) */}
+            {standData.imageUrl && (
+              <div className="hand-slot slot-memory">
+                <button
+                  className="disc-trigger-btn"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.download = `JOJO_ART_${mainName.replace(/\s+/g, '_')}.png`;
+                    link.href = standData.imageUrl;
+                    link.click();
+                  }}
+                >
+                  <div className="flat-metallic-disc">
+                    <div className="disc-art-layer" style={{ backgroundImage: `url(${standData.imageUrl})` }}></div>
+                    <div className="disc-spindle"></div>
+                    <div className="disc-glint"></div>
+                  </div>
+                </button>
+                <div className="slot-action-label">
+                  <span className="icon">📸</span>
+                  <div className="text">
+                    <span className="label-cn">提取影像</span>
+                    <span className="label-en">MEMORY DISC</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Data Disc (Stand) */}
+            <div className="hand-slot slot-stand">
+              <button className="disc-trigger-btn" onClick={handleSaveImage}>
+                <div className="flat-metallic-disc">
+                  <div className="disc-art-layer" style={{ backgroundImage: `url(${standData.imageUrl})` }}></div>
+                  <div className="disc-spindle"></div>
+                  <div className="disc-glint"></div>
+                </div>
+              </button>
+              <div className="slot-action-label">
+                <span className="icon">💽</span>
+                <div className="text">
+                  <span className="label-cn">导出磁碟</span>
+                  <span className="label-en">STAND DISC</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div className="stand-card">
@@ -84,8 +144,15 @@ const StandCard = ({ standData, onReset }) => {
               style={{ backgroundImage: `url(${standData.imageUrl})` }}
             ></div>
           ) : (
-            /* Loading State (Only if no image yet) */
-            <div className="loading-overlay">GENERATING...</div>
+            /* Loading State (Tech HUD Style) */
+            <div className="tech-loading-overlay">
+              <div className="scanner-line"></div>
+              <div className="tech-grid-bg"></div>
+              <div className="loading-text-group">
+                <span className="tech-text">INITIALIZING VISUALS...</span>
+                <span className="tech-sub">SYNCING SOUL DATA</span>
+              </div>
+            </div>
           )}
 
           {/* Layout Container for Separation */}
@@ -186,15 +253,15 @@ const StandCard = ({ standData, onReset }) => {
           )}
         </div>
 
-      </div>
+      </div >
 
       {/* RETURN BUTTON (Bottom Action) */}
-      <div className="return-container">
+      < div className="return-container" >
         <button onClick={onReset} className="action-return-btn">
           <span>觉醒下一个替身</span>
           <small>AWAKEN NEXT STAND</small>
         </button>
-      </div>
+      </div >
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Serif+SC:wght@700;900&family=Bangers&display=swap');
@@ -404,48 +471,209 @@ const StandCard = ({ standData, onReset }) => {
         }
 
 
-        /* --- BOTTOM ABILITY AREA --- */
+        /* --- BOTTOM ABILITY AREA: DARK MODE STAND PROFILE (V5.5) --- */
         .info-area {
-            background: #fff;
+            background: #0d0316; /* Deep Midnight Ebony */
             position: relative;
-            /* Rounded Top Right Corner Integration */
-            border-top: 6px solid #000;
-            border-top-right-radius: 60px;
-            padding: 30px;
-            margin-top: -2px; /* Connect lines */
-        }
-        
-        .ability-content {
-            background: transparent;
-            padding: 10px;
-            border: none;
-            clip-path: none;
+            /* Premium Metallic Gold Border */
+            border: 4px solid #ffd700;
+            outline: 1px solid #000;
+            outline-offset: -8px;
+            border-top-right-radius: 40px;
+            border-bottom-left-radius: 40px;
+            padding: 40px;
+            margin-top: 20px;
+            box-shadow: 20px 20px 0 rgba(0,0,0,0.8);
+            /* CRITICAL: Allow cards to pop out */
+            overflow: visible; 
+            color: #fff;
         }
 
-        /* Stylized Ability Header: Arrow Shape */
-        .ability-content h3 {
+        /* Subtle Dark Screentone Accents */
+        .info-area::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(rgba(255, 215, 0, 0.05) 1px, transparent 1px);
+            background-size: 12px 12px;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .tech-hud-container {
             position: relative;
-            background: #000;
-            color: #fff;
-            padding: 8px 30px;
-            display: inline-block;
+            z-index: 2;
+        }
+
+        /* High-Contrast Header */
+        .hud-header {
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .hud-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
-            font-size: 1.6rem;
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.3);
+        }
+
+        .hud-title {
+            color: #ffd700;
+            font-size: 2.2rem;
+            margin: 0;
+            line-height: 1;
+            transform: skewX(-12deg);
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        .type-badge {
+            background: #ffd700;
+            color: #000;
+            padding: 4px 15px;
+            font-family: 'Anton', sans-serif;
+            font-size: 1rem;
+            transform: skewX(-10deg);
+            font-weight: bold;
+        }
+
+        .hud-summary {
+            color: #eee;
+            font-size: 1.25rem;
+            line-height: 1.7;
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 500;
+        }
+
+        .mech-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 5px solid #ffd700;
+            padding: 20px;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+            overflow: hidden; /* For scan line */
+            border-radius: 0 10px 10px 0;
+        }
+
+        /* --- Option D: SPW Deep Scan Effects --- */
+        
+        /* Data Background Overlay */
+        .mech-card::before {
+            content: '01011010 11001010 10101111 00110011';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: rgba(255, 215, 0, 0.03);
+            white-space: pre-wrap;
+            word-break: break-all;
+            padding: 10px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 0;
+        }
+
+        /* Scanning Line */
+        .mech-card::after {
+            content: '';
+            position: absolute;
+            top: -100%; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #d500f9, transparent);
+            box-shadow: 0 0 15px #d500f9;
+            z-index: 2;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .mech-card:hover {
+            transform: scale(1.04) translateY(-5px);
+            /* Slightly lighter background for better legibility contrast */
+            background: rgba(71, 250, 35, 1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 0 15px rgba(255, 215, 0, 0.15);
+            z-index: 10;
+        }
+
+        .mech-card:hover::before {
+            opacity: 0.6; /* Softer data texture */
+        }
+
+        .mech-card:hover::after {
+            opacity: 1;
+            /* Brighter cyan/white scan line for high visibility */
+            background: linear-gradient(90deg, transparent, #00f2ff, #fff, #00f2ff, transparent);
+            animation: spwScan 1.2s infinite linear;
+        }
+
+        @keyframes spwScan {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+
+        .mech-card-title {
+            color: #ffd700;
+            font-weight: 900;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
             text-transform: uppercase;
-            /* Skewed Tech Label */
-            transform: skewX(-15deg);
-            clip-path: none;
-            border-radius: 4px;
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .mech-card-body {
+            color: #ccc;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        /* Warning System: High Contrast Red/Gold */
+        .warning-system {
+            background: rgba(211, 47, 47, 0.1);
+            border: 2px solid #d32f2f;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 0 20px rgba(211, 47, 47, 0.2);
+        }
+
+        .warning-label {
+            color: #ff5252;
+            font-family: 'Anton', sans-serif;
+            font-weight: bold;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .warning-list li {
+            color: #ff9e9e;
+            font-family: 'Noto Serif SC', serif;
+            font-weight: bold;
+            margin-bottom: 8px;
+            list-style: none;
+            position: relative;
         }
 
         .ability-content p, .markdown-ability p {
             font-family: 'Noto Serif SC', serif;
             font-size: 1.2rem;
-            line-height: 1.6;
-            color: #333;
+            line-height: 1.7;
+            color: #111;
             font-weight: bold;
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
+            /* Readability: No Skew */
+            transform: none !important;
         }
 
         .markdown-ability strong {
@@ -489,32 +717,40 @@ const StandCard = ({ standData, onReset }) => {
 
         /* Return Button */
         .return-container {
-            margin-top: 30px;
-            text-align: center;
-            padding-bottom: 40px;
+            margin-top: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 80px;
+            width: 100%;
         }
 
-        /* === BOTTOM ACTION BUTTON === */
+        /* === BOTTOM ACTION BUTTON (V5.0 Premium) === */
         .action-return-btn {
-            background: #000;
-            color: #ffd700;
-            border: 2px solid #ffd700;
-            padding: 10px 30px;
-            font-family: 'Anton', sans-serif;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            line-height: 1.1;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
-            transform: skewX(-10deg);
-        }
-        .action-return-btn:hover {
             background: #ffd700;
             color: #000;
-            transform: skewX(-10deg) translateY(-2px);
-            box-shadow: 6px 6px 0 rgba(0,0,0,0.6);
+            border: 4px solid #000;
+            padding: 15px 60px;
+            font-family: 'Anton', sans-serif;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            line-height: 1.0;
+            box-shadow: 10px 10px 0 rgba(0,0,0,1);
+            transform: skewX(-12deg);
+            text-transform: uppercase;
+            font-weight: 900;
         }
+        .action-return-btn:hover {
+            background: #fff;
+            color: #d500f9;
+            transform: skewX(-12deg) translateY(-5px) scale(1.05);
+            box-shadow: 15px 15px 0 #000;
+            border-color: #d500f9;
+        }
+        .action-return-btn span { font-size: 2rem; display: block; }
+        .action-return-btn small { font-size: 0.9rem; letter-spacing: 5px; opacity: 0.8; margin-top: 5px; }
         .action-return-btn small {
             display: block;
             font-size: 0.7rem;
@@ -736,6 +972,238 @@ const StandCard = ({ standData, onReset }) => {
             padding-top: 10px;
             border-top: 1px dashed #ccc;
         }
+
+        /* --- WHITESNAKE PREMIUM HANDHELD HUB (V3) --- */
+        .stand-card-container {
+            margin-left: 400px !important;
+            transition: all 0.5s ease;
+            position: relative;
+            padding: 60px 40px;
+            width: calc(100vw - 400px);
+            min-height: 100vh;
+        }
+
+        /* --- WHITESNAKE POLISHED SIDEBAR (V4.8) --- */
+        .whitesnake-handheld-root {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 380px;
+            height: 550px;
+            z-index: 200;
+            pointer-events: none;
+            opacity: 1;
+        }
+
+        .whitesnake-hand-character {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            animation: characterHover 8s ease-in-out infinite;
+        }
+
+        /* ANIME-ACCURATE WISPY AURA (Silhouette Masking) */
+        .whitesnake-hand-character::after {
+            content: '';
+            position: absolute;
+            inset: -30px; 
+            background: #a300ff;
+            -webkit-mask-image: url('/assets/whitesnake_empty_hand_premium-removebg-preview.png');
+            mask-image: url('/assets/whitesnake_empty_hand_premium-removebg-preview.png');
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: bottom center;
+            mask-position: bottom center;
+            filter: blur(40px);
+            opacity: 0.5;
+            z-index: -1;
+            animation: auraPulse 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes auraPulse {
+            from { opacity: 0.3; filter: blur(30px); transform: scale(0.95); }
+            to { opacity: 0.7; filter: blur(50px); transform: scale(1.05); }
+        }
+
+        @keyframes characterHover {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.01); }
+        }
+
+        .whitesnake-hand-character img {
+            width: 100%; height: 100%; object-fit: contain;
+            object-position: bottom center;
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(0 0 10px rgba(163, 0, 255, 0.5));
+        }
+
+        .interactive-hand-zone {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .hand-slot {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 60;
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        /* Sidebar Disc Layout: Side-by-side on the lower palm (Anti-overlap) */
+        .slot-memory {
+            left: 15%;
+            top: 68%;
+            transform: rotate(-3deg);
+        }
+        .slot-stand {
+            left: 52%;
+            top: 68%;
+            transform: rotate(3deg);
+        }
+
+        .hand-slot:hover {
+            transform: scale(1.15) translateY(-20px) rotate(0deg);
+            z-index: 100;
+        }
+
+        .disc-trigger-btn {
+            background: none; border: none; padding: 0; cursor: pointer;
+            width: 65px; /* Miniature scale for palm nesting */
+            height: 65px;
+            position: relative;
+        }
+
+        .flat-metallic-disc {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ddd 0%, #fff 40%, #bbb 100%);
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .hand-slot:hover .flat-metallic-disc {
+            transform: rotate(5deg);
+            box-shadow: 0 0 30px rgba(163, 0, 255, 0.6);
+        }
+
+        .disc-art-layer {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+            mix-blend-mode: hard-light;
+            opacity: 0.6;
+            mask-image: radial-gradient(circle, black 35%, transparent 90%);
+        }
+
+        .disc-spindle {
+            position: absolute; top: 50%; left: 50%;
+            width: 14px; height: 14px; border-radius: 50%;
+            background: #000; border: 3px solid #777;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .disc-glint {
+            position: absolute; inset: 0;
+            background: conic-gradient(from 0deg, transparent, rgba(255,255,255,0.5), transparent 30%);
+            animation: discReflect 3s linear infinite;
+            mix-blend-mode: overlay;
+        }
+        @keyframes discReflect { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .slot-action-label {
+            margin-top: 10px;
+            background: rgba(13, 3, 22, 0.95);
+            border: 1px solid #ffd700;
+            padding: 5px 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+            opacity: 0.8;
+            transform: skewX(-10deg);
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .hand-slot:hover .slot-action-label {
+            opacity: 1;
+            background: #25093a;
+            transform: skewX(-10deg) translateY(-3px) scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .slot-action-label .icon { font-size: 1rem; }
+        .slot-action-label .label-cn { display: block; font-family: 'Noto Serif SC', serif; font-size: 0.8rem; color: #fff; line-height: 1; font-weight: 900; }
+        .slot-action-label .label-en { display: block; font-family: 'Anton', sans-serif; font-size: 0.6rem; color: #ffd700; letter-spacing: 1px; margin-top: 2px; }
+
+        /* --- TECH LOADING OVERLAY --- */
+        .tech-loading-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 20;
+            background: #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        
+        .tech-grid-bg {
+            position: absolute; inset: 0;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.3;
+        }
+        
+        .scanner-line {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 5px;
+            background: #00ffff;
+            box-shadow: 0 0 15px #00ffff;
+            animation: scanDown 2s linear infinite;
+            z-index: 5;
+        }
+        @keyframes scanDown { 0% { top: -10%; } 100% { top: 110%; } }
+        
+        .loading-text-group {
+            z-index: 10;
+            text-align: center;
+            border: 2px solid #00ffff;
+            padding: 20px 40px;
+            background: rgba(0,0,0,0.8);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+        
+        .tech-text {
+            display: block;
+            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            color: #00ffff;
+            font-weight: bold;
+            letter-spacing: 2px;
+            animation: blinkText 1s infinite alternate;
+        }
+        .tech-sub {
+            display: block;
+            font-family: 'Anton', sans-serif;
+            font-size: 0.9rem;
+            color: #fff;
+            margin-top: 5px;
+            opacity: 0.7;
+            letter-spacing: 4px;
+        }
+        @keyframes blinkText { from { opacity: 0.6; } to { opacity: 1; } }
       `}</style>
     </div >
   );

@@ -132,6 +132,30 @@ const StandGenerator = () => {
     }
   };
 
+  // --- LOADING MESSAGE LOGIC ---
+  const [loadingMsg, setLoadingMsg] = useState("正在从精神彼岸召唤替身...");
+
+  useEffect(() => {
+    if (!loading) return;
+
+    const messages = [
+      "正在解析精神波纹... (Analyzing Spirit Ripple)",
+      "正在构建替身能力... (Constructing Stand Ability)",
+      "正在生成面板参数... (Generating Stats)",
+      "由荒木飞吕彦亲笔绘制中... (Araki is Drawing)",
+      "替身使者觉醒中... (User Awakening)",
+      "正在抵抗箭的排斥反应... (Resisting the Arrow)"
+    ];
+
+    let i = 0;
+    const interval = setInterval(() => {
+      setLoadingMsg(messages[i % messages.length]);
+      i++;
+    }, 2500); // Change every 2.5s
+
+    return () => clearInterval(interval);
+  }, [loading]);
+
   // --- RENDER HELPERS ---
   const renderContent = () => {
     if (loading) {
@@ -148,7 +172,7 @@ const StandGenerator = () => {
             <div className="loading-bar-container">
               <div className="loading-bar-fill"></div>
             </div>
-            <p className="loading-status">正在从精神彼岸召唤替身...</p>
+            <p className="loading-status">{loadingMsg}</p>
           </div>
         </div>
       );
@@ -173,12 +197,43 @@ const StandGenerator = () => {
       case 'DEATH':
         return (
           <div className="death-screen">
+            <div className="death-illustration-wrapper">
+              <img src="/assets/black_sabbath_arrow.png" alt="Rejected by the Arrow" className="death-img-main" />
+            </div>
             <h1 className="retired-text">RETIRED</h1>
             <p className="death-message">箭拒绝了你... 你的精神力太弱了。</p>
-            <p className="death-sub">The Arrow rejected you.</p>
+            <p className="death-sub">THE ARROW REJECTED YOU.</p>
             <button className="try-again-btn" onClick={handleReset}>
               再次挑战 (TRY AGAIN)
             </button>
+            <style>{`
+              .death-illustration-wrapper {
+                width: 400px; /* Further reduced from 420px */
+                max-width: 80vw;
+                max-height: 40vh; /* Further reduced */
+                margin-bottom: 15px;
+                filter: drop-shadow(0 0 25px rgba(255, 0, 0, 0.4));
+                animation: pulseGlow 3s ease-in-out infinite;
+                display: flex;
+                justify-content: center;
+              }
+              .death-img-main {
+                width: 100%;
+                height: 100%;
+                object-fit: cover; /* Changed from contain to cover to fill container */
+                border-radius: 12px;
+                border: 3px solid #d32f2f;
+                box-shadow: 0 0 20px rgba(0,0,0,1);
+              }
+              @keyframes pulseGlow {
+                0%, 100% { filter: drop-shadow(0 0 25px rgba(255, 0, 0, 0.4)); }
+                50% { filter: drop-shadow(0 0 45px rgba(255, 0, 0, 0.7)); }
+              }
+              .try-again-btn {
+                font-size: 1.2rem !important; /* Force smaller font */
+                padding: 10px 30px !important;
+              }
+            `}</style>
           </div>
         );
 

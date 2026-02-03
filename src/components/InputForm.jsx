@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../styles/variables.css';
-import standArrowImg from '../assets/stand_arrow.png';
 
 const EXAMPLES_SONG = [
   "白金之星 (Star Platinum)", "世界 (The World)", "杀手皇后 (Killer Queen)", "绯红之王 (King Crimson)", "黄金体验 (Gold Experience)",

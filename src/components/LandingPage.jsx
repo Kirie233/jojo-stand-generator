@@ -7,7 +7,7 @@ const LandingPage = ({ onStart }) => {
     setClicked(true);
     setTimeout(() => {
       onStart();
-    }, 1000);
+    }, 600);
   };
 
   return (
@@ -66,6 +66,10 @@ const LandingPage = ({ onStart }) => {
             overflow: hidden;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
+            /* CRITICAL FIX: Smooth transition for exit animation */
+            transition: opacity 0.6s ease-out, transform 0.6s ease-in; 
+            opacity: 1;
+            transform: scale(1);
         }
 
         /* --- BACKGROUND EFFECTS --- */
@@ -162,7 +166,7 @@ const LandingPage = ({ onStart }) => {
         }
 
         .action-title {
-            font-family: 'ZCOOL KuaiLe', cursive;
+            font-family: 'Noto Serif SC', serif; /* Elegant serif font with clear strokes */
             font-size: 3rem;
             
             /* PURE WHITE - Force clean fill */
@@ -170,8 +174,8 @@ const LandingPage = ({ onStart }) => {
             -webkit-text-fill-color: #FFFFFF; /* Override any potential gradient clips */
             background: none; /* Ensure no texture background */
             
-            /* Black Stroke (4px) */
-            -webkit-text-stroke: 4px #000;
+            /* Black Stroke (3px - balanced between style and clarity) */
+            -webkit-text-stroke: 3px #000;
             paint-order: stroke fill;
             
             /* Purple Outer Glow */
@@ -179,7 +183,7 @@ const LandingPage = ({ onStart }) => {
             
             font-weight: 900;
             margin: 0;
-            letter-spacing: 2px;
+            letter-spacing: 5px; /* Increased for serif font */
             position: relative;
             z-index: 100;
         }

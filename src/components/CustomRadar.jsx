@@ -10,9 +10,10 @@ const CustomRadar = ({ stats, labels }) => {
 
   // Grade Mapping
   const gradeToNumber = (grade) => {
-    const map = { 'NONE': 0, 'E': 1, 'D': 2, 'C': 3, 'B': 4, 'A': 5, '∞': 6 };
-    const cleanBox = grade?.replace(/[^A-D∞E]/gi, '').toUpperCase() || 'E';
+    const map = { 'NONE': 0, 'E': 1, 'D': 2, 'C': 3, 'B': 4, 'A': 5, '∞': 6, '?': 0 };
+    const cleanBox = grade?.replace(/[^A-D∞E?]/gi, '').toUpperCase() || 'E';
     if (grade?.includes('∞')) return 6;
+    if (grade?.includes('?')) return 0; // Unknown stats don't extend the polygon
     if (grade?.toUpperCase() === 'NONE') return 0;
     return map[cleanBox] || map[grade?.charAt(0).toUpperCase()] || 1;
   };
