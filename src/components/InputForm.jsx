@@ -52,8 +52,8 @@ const STEPS = [
     id: 'SONG',
     question: "灵魂的旋律？",
     sub: "THE LOVERS (恋人) - VI",
-    plain: "输入一首你喜欢的歌曲名或歌手",
-    placeholder: "Killer Queen / Michael Jackson",
+    plain: "输入你喜欢的专辑、歌曲或歌手",
+    placeholder: "Made in Heaven / Queen (Album)",
     random: EXAMPLES_SONG
   },
   {
@@ -1164,7 +1164,7 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
 
 
         .ritual-circle-new {
-            width: 250px; height: 250px; /* Scaled down from 280px */
+            width: 250px; height: 250px; /* Reverted to original size */
             display: flex; align-items: center; justify-content: center;
             position: relative;
             z-index: 2; 
@@ -1172,7 +1172,7 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
         }
 
         .ritual-arrow-multiply {
-            width: 100%;
+            width: 200%;
             height: auto;
             /* Removed internal blend mode, handled by parent */
             /* mix-blend-mode: multiply; */
