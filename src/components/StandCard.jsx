@@ -10,7 +10,7 @@ import MobileStandCard from './MobileStandCard';
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = React.useState(false); // Revert to auto-detect
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 1200);
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -21,6 +21,14 @@ const useIsMobile = () => {
 const StandCard = ({ standData, onReset }) => {
   const isMobile = useIsMobile();
 
+  useEffect(() => {
+    // Apply cleaner JOJO background and hide overflow to prevent scroll jumping
+    document.body.classList.add('clean-jojo-body');
+    return () => {
+      document.body.classList.remove('clean-jojo-body');
+    };
+  }, []);
+
   if (!standData) return null;
 
   // === MOBILE RENDER PATH ===
@@ -30,7 +38,6 @@ const StandCard = ({ standData, onReset }) => {
 
   // === DESKTOP RENDER PATH (Existing) ===
   const { name, abilityName, ability, stats } = standData;
-
 
   // Helper: Parse Name (English vs Chinese)
   const parseName = (rawName) => {
@@ -56,14 +63,6 @@ const StandCard = ({ standData, onReset }) => {
     precision: '精密动作性',
     potential: '成长性'
   };
-
-  useEffect(() => {
-    // Apply cleaner JOJO background and hide overflow to prevent scroll jumping
-    document.body.classList.add('clean-jojo-body');
-    return () => {
-      document.body.classList.remove('clean-jojo-body');
-    };
-  }, []);
   const handleSaveImage = async () => {
     const element = document.querySelector('.stand-card');
     if (!element) return;
@@ -161,11 +160,21 @@ const StandCard = ({ standData, onReset }) => {
           <div className="texture-overlay"></div>
 
           {/* STAND IMAGE (Main Visual) */}
-          {standData.imageUrl ? (
+          {standData.imageUrl && standData.imageUrl !== 'FAILED' ? (
             <div
               className="stand-full-bg"
               style={{ backgroundImage: `url(${standData.imageUrl})` }}
             ></div>
+          ) : standData.imageUrl === 'FAILED' ? (
+            /* Failed State (Tech HUD Style) */
+            <div className="tech-loading-overlay failed">
+              <div className="tech-grid-bg"></div>
+              <div className="loading-text-group">
+                <span className="tech-text error">SYNCHRONIZATION FAILED</span>
+                <span className="tech-sub">SPIRITUAL ENERGY INSUFFICIENT FOR VISUALIZATION</span>
+                <p className="tech-hint">替身雏形已现，但具体样貌未能观测 (AI绘图失败)</p>
+              </div>
+            </div>
           ) : (
             /* Loading State (Tech HUD Style) */
             <div className="tech-loading-overlay">
@@ -238,7 +247,7 @@ const StandCard = ({ standData, onReset }) => {
 
               {/* 2. Mechanics Grid */}
               <div className="mechanics-grid">
-                {standData.panel.mechanics.map((mech, i) => (
+                {standData.panel.mechanics && standData.panel.mechanics.map((mech, i) => (
                   <div key={i} className="mech-card">
                     <div className="mech-card-title">{mech.title}</div>
                     <div className="mech-card-body">{mech.content}</div>
@@ -268,9 +277,9 @@ const StandCard = ({ standData, onReset }) => {
           ) : (
             /* --- LEGACY MARKDOWN FALLBACK --- */
             <div className="ability-content">
-              <h3>『 {abilityName || '能力'} 』</h3>
+              <h3>『 {abilityName || '能力解析中...'} 』</h3>
               <div className="markdown-ability">
-                <ReactMarkdown>{ability}</ReactMarkdown>
+                {ability ? <ReactMarkdown>{ability}</ReactMarkdown> : <p style={{ opacity: 0.5, fontStyle: 'italic' }}>正在从精神彼岸解析替身档案 (Downloading Soul Data...)</p>}
               </div>
             </div>
           )}
@@ -1293,6 +1302,26 @@ const StandCard = ({ standData, onReset }) => {
             letter-spacing: 4px;
         }
         @keyframes blinkText { from { opacity: 0.6; } to { opacity: 1; } }
+
+        .tech-loading-overlay.failed {
+            background: radial-gradient(circle at center, #2a0505 0%, #000 100%);
+            border: 2px solid #ff0000;
+        }
+        .tech-text.error {
+            color: #ff3d00;
+            text-shadow: 0 0 15px rgba(255, 61, 0, 0.4);
+            animation: shake 0.2s infinite alternate;
+        }
+        .tech-hint {
+            color: #777;
+            font-size: 0.8rem;
+            margin-top: 15px;
+            font-family: 'Noto Serif SC', serif;
+        }
+        @keyframes shake {
+            from { transform: translateX(-2px); }
+            to { transform: translateX(2px); }
+        }
       `}</style>
     </div >
   );

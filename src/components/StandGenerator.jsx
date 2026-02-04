@@ -7,7 +7,7 @@ import NavBar from './NavBar';
 import DonateModal from './DonateModal';
 import HelpModal from './HelpModal';
 import FAQModal from './FAQModal';
-import { generateStandProfile, generateStandImage, getCachedStand, saveCachedStand } from '../services/gemini';
+import { generateStandProfile, generateStandImage, getCachedStand, saveCachedStand, generateFastVisualConcept } from '../services/gemini';
 import { saveStandToDB, getAllStandsFromDB, initDB } from '../services/db';
 import '../styles/variables.css';
 
@@ -99,31 +99,57 @@ const StandGenerator = () => {
     }
 
     try {
-      // Generate Text
-      const data = await generateStandProfile(inputs);
-      setStandData({ ...data, userName: inputs.userName });
-      setGameState('RESULT'); // Show Text first
+      // 1. PHASE 1: Generate Fast Visual Concept (Name + Appearance)
+      // This is extremely fast (~2-3s) and allows us to start drawing earlier.
+      const concept = await generateFastVisualConcept(inputs);
+      console.log("Fast Visual Concept ready:", concept);
 
-      // Generate Image in background
-      if (data.appearance) {
-        generateStandImage(data.appearance).then(async (imageUrl) => {
-          const finalImageUrl = imageUrl || null;
-          const fullData = {
-            ...data,
-            imageUrl: finalImageUrl,
-            userName: inputs.userName,
-            referenceImage: inputs.referenceImage,
-            timestamp: Date.now(),
-            id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
-          };
+      // 2. PHASE 2: Parallelized Tasks
+      // Trigger drawing and full profile writing at the same time.
+      const imageTask = generateStandImage(concept.appearance);
+      const profileTask = generateStandProfile(inputs, concept);
 
-          // Update State & Cache
-          setStandData(fullData);
-          saveCachedStand(inputs, fullData);
-          await saveStandToDB(fullData);
-          setHistory(await getAllStandsFromDB());
-        });
-      }
+      // Update UI with initial name so user sees progress
+      setStandData({
+        name: concept.name,
+        userName: inputs.userName,
+        imageUrl: null // Loading spinner
+      });
+      setGameState('RESULT');
+
+      // 3. Update Text Content as soon as BIO arrives
+      profileTask.then(fullProfile => {
+        setStandData(prev => ({
+          ...prev,
+          ...fullProfile,
+          userName: inputs.userName
+        }));
+      });
+
+      // 4. Update Image Content as soon as it arrives
+      imageTask.then(async (imageUrl) => {
+        const finalImageUrl = imageUrl || 'FAILED';
+
+        // Wait for profile (usually already there) to save to DB
+        const finalProfile = await profileTask;
+        const finalizedData = {
+          ...finalProfile,
+          imageUrl: finalImageUrl,
+          userName: inputs.userName,
+          referenceImage: inputs.referenceImage,
+          timestamp: Date.now(),
+          id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
+        };
+
+        setStandData(finalizedData);
+        saveCachedStand(inputs, finalizedData);
+        await saveStandToDB(finalizedData);
+        setHistory(await getAllStandsFromDB());
+      }).catch(err => {
+        console.error("Image logic failed:", err);
+        setStandData(prev => ({ ...prev, imageUrl: 'FAILED' }));
+      });
+
     } catch (err) {
       console.error(err);
       setError("替身觉醒失败... 你的精神力还不够强吗？(API Error)");

@@ -37,12 +37,17 @@ const MobileStandCard = ({ standData, onReset }) => {
 
       {/* 2. MAIN VISUAL (Standard IMG Block) */}
       <div className="mobile-visual">
-        {standData.imageUrl ? (
+        {standData.imageUrl && standData.imageUrl !== 'FAILED' ? (
           <img
             src={standData.imageUrl}
             alt="Stand Visual"
             className="mobile-main-img"
           />
+        ) : standData.imageUrl === 'FAILED' ? (
+          <div className="mobile-loading-placeholder failed">
+            <span className="error-text">VISUALIZATION FAILED</span>
+            <small>精神力暂时无法维持形态 (AI Image Failed)</small>
+          </div>
         ) : (
           <div className="mobile-loading-placeholder">
             <span>L O A D I N G . . .</span>
@@ -88,7 +93,7 @@ const MobileStandCard = ({ standData, onReset }) => {
 
             {/* Mechanics */}
             <div className="mobile-mech-list">
-              {standData.panel.mechanics.map((mech, i) => (
+              {standData.panel.mechanics && standData.panel.mechanics.map((mech, i) => (
                 <div key={i} className="mobile-mech-item">
                   <div className="mech-title">{mech.title}</div>
                   <div className="mech-body">{mech.content}</div>
@@ -99,7 +104,7 @@ const MobileStandCard = ({ standData, onReset }) => {
         ) : (
           /* Markdown Fallback */
           <div className="mobile-markdown-content">
-            <ReactMarkdown>{ability}</ReactMarkdown>
+            {ability ? <ReactMarkdown>{ability}</ReactMarkdown> : <p style={{ opacity: 0.5, fontStyle: 'italic' }}>正在从星尘中解读替身能力... (Parsing Bio)</p>}
           </div>
         )}
       </div>
@@ -175,8 +180,15 @@ const MobileStandCard = ({ standData, onReset }) => {
                 }
 
                 .mobile-loading-placeholder {
-                    height: 300px; display: flex; align-items: center; justify-content: center;
-                    color: #00ffff; font-family: 'Courier New';
+                    height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    color: #00ffff; font-family: 'Courier New'; gap: 10px;
+                }
+                .mobile-loading-placeholder.failed {
+                    background: radial-gradient(circle at center, #2a0505 0%, #000 100%);
+                    color: #ff3d00; border-bottom: 2px solid #ff0000;
+                }
+                .error-text {
+                    font-weight: bold; font-size: 1.2rem; text-shadow: 0 0 10px rgba(255, 61, 0, 0.5);
                 }
 
                 .mobile-name-badge {

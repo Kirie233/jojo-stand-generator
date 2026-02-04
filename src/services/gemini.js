@@ -1,11 +1,45 @@
 const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
 const getBaseUrl = () => import.meta.env.VITE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
 
-export const generateStandProfile = async (inputs) => {
-  return retryOperation(() => _generateStandProfile(inputs));
+export const generateStandProfile = async (inputs, premadeConcept = null) => {
+  return retryOperation(() => _generateStandProfile(inputs, premadeConcept));
 };
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const extractJSON = (text) => {
+  try {
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
+
+    // Attempt simple extract first
+    const candidate = text.substring(jsonStart, jsonEnd + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch (e) {
+      // If simple fails, try to find the first complete object
+      // (Handles cases where there's junk AFTER the main JSON)
+      let depth = 0;
+      let start = -1;
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === '{') {
+          if (depth === 0) start = i;
+          depth++;
+        } else if (text[i] === '}') {
+          depth--;
+          if (depth === 0 && start !== -1) {
+            return JSON.parse(text.substring(start, i + 1));
+          }
+        }
+      }
+      throw e; // Re-throw if loop fails
+    }
+  } catch (err) {
+    console.error("JSON Extraction Failed:", err, "\nRaw Text:", text);
+    throw new Error("API 返回了无法解析的格式 (JSON Error)");
+  }
+};
 
 const retryOperation = async (operation, retries = 3) => {
   for (let i = 0; i < retries; i++) {
@@ -25,7 +59,49 @@ const retryOperation = async (operation, retries = 3) => {
   }
 };
 
-const _generateStandProfile = async (inputs) => {
+/**
+ * PHASE 1: Fast Visual Concept
+ * Returns just Name and Appearance prompt to kick off image gen ASAP.
+ */
+export const generateFastVisualConcept = async (inputs) => {
+  return retryOperation(async () => {
+    const apiKey = getApiKey();
+    const baseUrl = getBaseUrl();
+    const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+    const url = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+
+    const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
+    
+    用户特征:
+    1. 引用: "${inputs.song}"
+    2. 色调: "${inputs.color}"
+    3. 特质: "${inputs.personality}"
+
+    要求：
+    1. 名字必须符合 JOJO 风格。
+    2. 外貌描述要包含比例、材质、基于'${inputs.color}'制定的装饰，直接描述视觉特征，不要描述文字或符号。
+
+    只需返回以下 JSON (严禁 Markdown 代码块):
+    {
+      "name": "替身名 (中英文)",
+      "appearance": "详细且具体的绘画提示描述..."
+    }`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+
+    if (!response.ok) throw new Error("Fast Visual Concept Failed");
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("API response is empty");
+    return extractJSON(text);
+  });
+};
+
+const _generateStandProfile = async (inputs, premadeConcept = null) => {
   const apiKey = getApiKey();
 
   // Only enforce API Key in Development (Client-side)
@@ -112,7 +188,8 @@ const _generateStandProfile = async (inputs) => {
   2. 命名来源 (Name Origin): "${inputs.song}" (由此决定替身名)
   3. 视觉色调 (Color): "${inputs.color}"
   4. 核心欲望 (Core Desire): "${inputs.personality}" (由此推导能力机制)
-  ${inputs.referenceImage ? "5. [视觉参考] 请参考附图特征进行外貌描写。" : ""}
+  ${premadeConcept ? `5. 已确认概念: 替身名为"${premadeConcept.name}", 基础外观为"${premadeConcept.appearance}"。请在此基础上进行深度百科创作并扩充外貌细节。` : ""}
+  ${inputs.referenceImage ? "6. [视觉参考] 请参考附图特征进行外貌描写。" : ""}
 
   ⚠️ 严格指令：
   1. **能力强度随机化 (Gacha System)**：**严禁将所有替身都设计得很强！** 请模拟“抽卡”体验，替身强度必须在【S级 (时间/因果律)】到【E级 (几乎无用/仅仅是啦啦队)】之间大幅波动。允许生成像“幸存者 (Survivor)”这种对他人都没用甚至对自己有害的弱替身，或者像“嘿呀 (Hey Ya!)”这种只能给人加油的替身。**弱替身也是JOJO世界的重要组成部分。**
@@ -251,14 +328,7 @@ const _generateStandProfile = async (inputs) => {
 
     if (!text) throw new Error("API response is empty or has unrecognized format. Check console logs.");
 
-    // Clean up json
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}');
-    if (jsonStart === -1 || jsonEnd === -1) throw new Error("Invalid JSON format");
-
-    const jsonString = text.substring(jsonStart, jsonEnd + 1);
-    return JSON.parse(jsonString);
-
+    return extractJSON(text);
   } catch (err) {
     console.error("Stand Generation Failed:", err);
     throw err;

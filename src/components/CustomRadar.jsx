@@ -27,7 +27,7 @@ const CustomRadar = ({ stats, labels }) => {
   const calculatePoints = () => {
     return keys.map((key, i) => {
       const angle = getAngle(i);
-      const val = gradeToNumber(stats[key]);
+      const val = stats ? gradeToNumber(stats[key]) : 0;
       const normalized = Math.min(val, 6) / 6;
       const r = normalized * chartRadius;
       const x = center + r * Math.cos(angle);
@@ -126,7 +126,7 @@ const CustomRadar = ({ stats, labels }) => {
             WebkitFontSmoothing: 'antialiased'
           }}
         >
-          {stats[key]}
+          {stats ? stats[key] : '-'}
         </text>
       );
     });
