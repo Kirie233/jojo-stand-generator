@@ -355,7 +355,8 @@ const StandGenerator = () => {
           }
           .kars-drifter {
               position: relative;
-              width: 450px; height: 450px; /* Increased size to match reference scale */
+              width: 300px; height: 300px; /* Reduced from 450px for mobile safety */
+              max-width: 80vw; max-height: 80vw;
               animation: space-float 15s ease-in-out infinite;
               margin-bottom: 20px;
           }
@@ -366,27 +367,27 @@ const StandGenerator = () => {
               border-radius: 10px;
           }
           .menacing-text {
-              position: absolute; font-family: 'ZCOOL KuaiLe'; font-size: 5rem; color: #fff;
+              position: absolute; font-family: 'ZCOOL KuaiLe'; font-size: 3rem; color: #fff;
               text-shadow: 0 0 15px rgba(213, 0, 249, 0.8), 2px 2px 0 #000; opacity: 0.5;
           }
           .menacing-text.left { top: 10%; left: -10%; animation: menace-float 4s ease-in-out infinite; }
           .menacing-text.right { bottom: 10%; right: -10%; animation: menace-float 4s ease-in-out infinite reverse; }
 
-          .kars-message-box { text-align: center; position: relative; z-index: 10; padding-bottom: 20px; }
+          .kars-message-box { text-align: center; position: relative; z-index: 10; padding-bottom: 20px; width: 100%; }
           .kars-main-text {
-              font-family: 'ZCOOL KuaiLe'; font-size: 3.5rem; color: #fff;
+              font-family: 'ZCOOL KuaiLe'; font-size: 2.5rem; color: #fff;
               text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 3px 3px 0 #000;
               margin-bottom: 0px;
               letter-spacing: 2px;
           }
           .kars-sub-text {
-              font-family: 'Anton'; font-size: 1.4rem; color: #b0bec5;
-              letter-spacing: 6px; margin-bottom: 25px; opacity: 0.9;
+              font-family: 'Anton'; font-size: 1.2rem; color: #b0bec5;
+              letter-spacing: 4px; margin-bottom: 25px; opacity: 0.9;
               text-transform: uppercase;
           }
           
           .loading-bar-container {
-              width: 350px; height: 2px; background: rgba(255,255,255,0.05);
+              width: 80vw; max-width: 350px; height: 2px; background: rgba(255,255,255,0.05);
               margin: 15px auto; border-radius: 1px; overflow: hidden;
           }
           .loading-bar-fill {

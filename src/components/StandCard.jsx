@@ -4,10 +4,33 @@ import '../styles/variables.css';
 import html2canvas from 'html2canvas';
 import ReactMarkdown from 'react-markdown';
 
+import MobileStandCard from './MobileStandCard';
+
+// Hook for mobile detection
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = React.useState(false); // Revert to auto-detect
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 1200);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  return isMobile;
+};
+
 const StandCard = ({ standData, onReset }) => {
+  const isMobile = useIsMobile();
+
   if (!standData) return null;
 
+  // === MOBILE RENDER PATH ===
+  if (isMobile) {
+    return <MobileStandCard standData={standData} onReset={onReset} />;
+  }
+
+  // === DESKTOP RENDER PATH (Existing) ===
   const { name, abilityName, ability, stats } = standData;
+
 
   // Helper: Parse Name (English vs Chinese)
   const parseName = (rawName) => {

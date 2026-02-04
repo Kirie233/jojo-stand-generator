@@ -1,0 +1,286 @@
+import React from 'react';
+import CustomRadar from './CustomRadar';
+import ReactMarkdown from 'react-markdown';
+import '../styles/variables.css';
+
+const MobileStandCard = ({ standData, onReset }) => {
+  if (!standData) return null;
+  const { name, abilityName, ability, stats } = standData;
+
+  // Helper: Parse Name
+  const parseName = (rawName) => {
+    if (!rawName) return { main: 'UNKNOWN', sub: '' };
+    const match = rawName.match(/^(.*?)\s*[(（](.*?)[)）]/);
+    if (match) return { main: match[1], sub: match[2] };
+    return { main: rawName, sub: '' };
+  };
+  const { main: mainName, sub: subName } = parseName(name);
+
+  const translatedLabels = {
+    power: '破坏力',
+    speed: '速度',
+    range: '射程距离',
+    durability: '持续力',
+    precision: '精密动作性',
+    potential: '成长性'
+  };
+
+  return (
+    <div className="mobile-stand-root">
+      {/* 1. TOP NAV BAR */}
+      <div className="mobile-header">
+        <button onClick={onReset} className="mobile-back-btn">
+          <span className="arrow">◀</span> RETURN
+        </button>
+        <div className="mobile-title">STAND PROFILE</div>
+      </div>
+
+      {/* 2. MAIN VISUAL (Standard IMG Block) */}
+      <div className="mobile-visual">
+        {standData.imageUrl ? (
+          <img
+            src={standData.imageUrl}
+            alt="Stand Visual"
+            className="mobile-main-img"
+          />
+        ) : (
+          <div className="mobile-loading-placeholder">
+            <span>L O A D I N G . . .</span>
+          </div>
+        )}
+
+        {/* Floating Name Badge */}
+        <div className="mobile-name-badge">
+          <div className="badge-row">
+            <span className="badge-label-en">STAND NAME</span>
+            <span className="badge-label-cn">替身名</span>
+          </div>
+          <h1 className="name-main">{mainName}</h1>
+          {subName && <h2 className="name-sub">{subName}</h2>}
+
+          <div className="badge-row spaced-top">
+            <span className="badge-label-en">STAND MASTER</span>
+            <span className="badge-label-cn">本体</span>
+          </div>
+          <div className="user-name">{standData.userName || 'Unknown User'}</div>
+        </div>
+      </div>
+
+      {/* 3. RADAR CHART (Centered) */}
+      <div className="mobile-radar-section">
+        <CustomRadar stats={stats} labels={translatedLabels} />
+      </div>
+
+      {/* 4. ABILITY INFO (Vertical Flow) */}
+      <div className="mobile-info-section">
+        {/* Ability Header */}
+        <div className="mobile-section-title">
+          <span className="icon">⚡</span>
+          {abilityName || standData.panel?.abilityName || '能力解析'}
+        </div>
+
+        {standData.panel ? (
+          /* Structured Panel */
+          <div className="mobile-panel-content">
+            <div className="desc-box">
+              {standData.panel.long_desc || standData.panel.desc}
+            </div>
+
+            {/* Mechanics */}
+            <div className="mobile-mech-list">
+              {standData.panel.mechanics.map((mech, i) => (
+                <div key={i} className="mobile-mech-item">
+                  <div className="mech-title">{mech.title}</div>
+                  <div className="mech-body">{mech.content}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* Markdown Fallback */
+          <div className="mobile-markdown-content">
+            <ReactMarkdown>{ability}</ReactMarkdown>
+          </div>
+        )}
+      </div>
+
+      {/* 5. WHITESNAKE ACTION BAR (Fixed Bottom) */}
+      <div className="mobile-action-bar">
+        <div className="action-fab" onClick={() => {
+          const link = document.createElement('a');
+          link.download = `JOJO_${mainName.replace(/\s+/g, '_')}.png`;
+          link.href = standData.imageUrl;
+          link.click();
+        }}>
+          <span className="icon">📸</span>
+          <span className="label">保存图片</span>
+        </div>
+
+        <div className="action-fab primary" onClick={onReset}>
+          <span className="icon">♻</span>
+          <span className="label">下一替身</span>
+        </div>
+      </div>
+
+      {/* CSS IN JS FOR MOBILE ISOLATION */}
+      <style>{`
+                .mobile-stand-root {
+                    width: 100%;
+                    min-height: 100vh;
+                    background: #000;
+                    color: #fff;
+                    padding-bottom: 100px; /* Space for Action Bar */
+                    font-family: 'Noto Serif SC', serif;
+                    overflow-x: hidden;
+                    position: absolute;
+                    top: 0; left: 0;
+                    z-index: 9999; /* Force Top */
+                }
+
+                .mobile-header {
+                    position: sticky; top: 0; z-index: 1000;
+                    background: rgba(0,0,0,0.8);
+                    backdrop-filter: blur(10px);
+                    padding: 10px 15px;
+                    display: flex; justify-content: space-between; align-items: center;
+                    border-bottom: 1px solid #333;
+                }
+
+                .mobile-back-btn {
+                    background: none; border: 1px solid #ffd700;
+                    color: #ffd700; padding: 5px 12px;
+                    border-radius: 20px; font-family: 'Anton';
+                    font-size: 0.9rem;
+                }
+
+                .mobile-title {
+                    font-family: 'Anton'; color: #666; letter-spacing: 2px;
+                }
+
+                .mobile-visual {
+                    position: relative;
+                    width: 100%;
+                    background: #111;
+                    /* Min height to prevent collapse */
+                    min-height: 300px; 
+                }
+
+                .mobile-main-img {
+                    width: 100%;
+                    height: auto;
+                    display: block;
+                    /* Ensure visibility */
+                    object-fit: contain;
+                    max-height: 60vh;
+                }
+
+                .mobile-loading-placeholder {
+                    height: 300px; display: flex; align-items: center; justify-content: center;
+                    color: #00ffff; font-family: 'Courier New';
+                }
+
+                .mobile-name-badge {
+                    background: linear-gradient(to top, #000 10%, rgba(0,0,0,0.8) 50%, transparent 100%);
+                    padding: 60px 20px 20px 20px;
+                    position: absolute; bottom: 0; left: 0; right: 0;
+                    text-align: left;
+                }
+
+                .badge-row {
+                    display: flex; align-items: baseline; gap: 8px;
+                    margin-bottom: 2px;
+                }
+                .badge-row.spaced-top { margin-top: 15px; }
+
+                .badge-label-en {
+                    font-family: 'Anton'; color: #ffd700; font-size: 0.8rem; letter-spacing: 1px;
+                }
+                .badge-label-cn {
+                    font-family: 'Noto Serif SC'; color: #ccc; font-size: 0.8rem; font-weight: bold;
+                }
+
+                .name-main {
+                    font-family: 'Anton'; font-weight: 400; /* Anton is bold by default */
+                    font-size: 3rem; color: #fff; margin: 0;
+                    text-shadow: 3px 3px 0 #6a1b9a; /* Purple Shadow */
+                    line-height: 1;
+                    text-transform: uppercase;
+                }
+                .name-sub {
+                    font-family: 'Noto Serif SC'; font-size: 1.1rem;
+                    color: #fff; margin: 2px 0 0 0;
+                    opacity: 0.9;
+                }
+                .user-name {
+                    font-family: 'Anton'; color: #fff; margin-top: 2px; font-size: 1.5rem;
+                    text-shadow: 2px 2px 0 #333;
+                }
+
+                .mobile-radar-section {
+                    display: flex; justify-content: center;
+                    padding: 20px 0;
+                    background: radial-gradient(circle, #222 0%, #000 70%);
+                    border-bottom: 4px solid #ffd700;
+                }
+
+                .mobile-info-section {
+                    padding: 20px;
+                    background: #1a0b2e;
+                }
+
+                .mobile-section-title {
+                    font-family: 'ZCOOL KuaiLe', cursive;
+                    font-size: 1.8rem; color: #ffd700;
+                    margin-bottom: 15px;
+                    border-left: 5px solid #d500f9;
+                    padding-left: 10px;
+                    display: flex; align-items: center; gap: 10px;
+                }
+
+                .desc-box {
+                    font-size: 1rem; line-height: 1.6; color: #ddd;
+                    margin-bottom: 20px;
+                    background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;
+                }
+
+                .mobile-mech-item {
+                    margin-bottom: 15px;
+                    border: 1px solid #444; background: rgba(255,255,255,0.05);
+                    border-radius: 8px; overflow: hidden;
+                }
+                .mech-title {
+                    background: #000; color: #ffd700; padding: 8px 15px;
+                    font-family: 'Anton'; letter-spacing: 1px;
+                }
+                .mech-body {
+                    padding: 12px 15px; font-size: 0.95rem; color: #ccc;
+                }
+
+                .mobile-markdown-content p {
+                    margin-bottom: 10px; font-size: 1rem; line-height: 1.5;
+                }
+
+                .mobile-action-bar {
+                    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+                    background: #222;
+                    border: 2px solid #ffd700;
+                    border-radius: 50px;
+                    padding: 10px 20px;
+                    display: flex; gap: 30px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+                    z-index: 2000;
+                    width: max-content;
+                }
+
+                .action-fab {
+                    display: flex; flex-direction: column; align-items: center;
+                    color: #fff; font-size: 0.7rem; gap: 5px; cursor: pointer;
+                }
+                .action-fab .icon { font-size: 1.5rem; }
+                .action-fab.primary { color: #ffd700; }
+            `}</style>
+    </div>
+  );
+};
+
+export default MobileStandCard;
