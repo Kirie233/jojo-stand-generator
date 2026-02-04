@@ -235,6 +235,24 @@ const LandingPage = ({ onStart }) => {
         }
 
         .exit-anim { opacity: 0; transform: scale(1.1); }
+
+        /* === RESPONSIVE LANDING === */
+        @media (max-width: 768px) {
+            .main-logo { font-size: 5rem; }
+            .sub-logo { font-size: 1.5rem; }
+            .hat-layer { top: 35%; width: 90%; opacity: 0.6; } /* Move hat up and fade */
+            .logo-section { margin-top: 10vh; }
+            .controls-section { margin-bottom: 15vh; gap: 20px; }
+            .action-title { font-size: 1.8rem; -webkit-text-stroke: 1.5px #000; letter-spacing: 2px; }
+            
+            .btn-inner { padding: 8px 25px; gap: 15px; }
+            .arrow-icon-img { width: 50px; height: 50px; }
+            .btn-text span { font-size: 1.4rem; } 
+            .btn-text small { font-size: 0.7rem; }
+            
+            /* SFX Scaling */
+            .sfx-layer span { font-size: 3rem; }
+        }
       `}</style>
     </div>
   );

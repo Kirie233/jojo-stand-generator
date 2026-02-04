@@ -141,12 +141,12 @@ const _generateStandProfile = async (inputs) => {
       "quote": "名台词 (一句展现替身使者觉悟或性格的经典发言)"
     },
     "stats": { 
-      "power": "评级 (A/B/C/D/E/None/∞/?)。参考官方六维图标准。", 
+      "power": "评级 (A/B/C/D/E/None/∞/?)。⚠️注意：JOJO中不存在'S'级面板，最高为'A'或'∞'！请严格遵守标准六维。", 
       "speed": "评级", 
       "range": "评级", 
-      "durability": "评级", 
-      "precision": "评级", 
-      "potential": "评级" 
+      "durability": "评级 (A=硬度极高, E=脆弱)", 
+      "precision": "评级 (A=机械般精密, E=盲目)", 
+      "potential": "成长性 (A=潜力无穷, E=完成体)" 
     },
     "appearance": "【外观描写】基于'${inputs.color}'色调的详细外貌描述。使用百科词条的笔触（如：该替身呈现为人型，全身覆盖着...，头部装饰有...）。"
   }

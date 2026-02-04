@@ -29,6 +29,22 @@ body {
   width: 100vw;
 }
 
+/* === RESPONSIVE VARIABLES === */
+:root {
+  --scale-factor: 1;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --scale-factor: 0.8;
+  }
+
+  body {
+    font-size: 14px;
+    /* Base downscale */
+  }
+}
+
 /* === APP CONTAINER (Internal Scrollable Area) === */
 .app-container {
   width: 100vw;

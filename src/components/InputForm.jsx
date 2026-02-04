@@ -1508,19 +1508,52 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
             color: #fff;
         }
 
-        /* SHAKE ANIMATION */
-        .shake {
-            animation: shakeRed 0.4s ease-in-out;
-            border-bottom: 3px solid #ff1744 !important;
-            color: #ff1744 !important;
+        /* RITUAL CIRCLE ANIMATIONS */
+        .ritual-circle-new {
+            width: 140px; height: 140px;
+            display: flex; align-items: center; justify-content: center;
+            animation: float 3s ease-in-out infinite;
+            z-index: 20;
         }
 
-        @keyframes shakeRed {
-            0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-10px); }
-            40% { transform: translateX(10px); }
-            60% { transform: translateX(-10px); }
-            80% { transform: translateX(10px); }
+        /* === RESPONSIVE INPUT FORM === */
+        @media (max-width: 768px) {
+            .tarot-card-frame {
+                width: 90%;
+                max-width: 100%;
+                height: 550px; /* Reduced height for mobile */
+                padding: 15px;
+            }
+            
+            .card-header { padding-left: 0; text-align: center; }
+            .card-question { font-size: 1.5rem; text-align: center; border-left: none; padding-left: 0; width: 100%; } /* Center title */
+            .card-plain { font-size: 1rem; text-align: center; }
+            
+            .speech-bubble-input { font-size: 1.5rem; width: 85%; }
+            
+            /* Color Grid Adaptation */
+            .color-grid { justify-content: center; }
+            .color-swatches-container { justify-content: center; gap: 8px; }
+            .color-swatch { width: 35px; height: 35px; }
+            
+            /* Tags Adaptation */
+            .tags-grid { gap: 6px; justify-content: center; }
+            .tag-chip { padding: 4px 10px; font-size: 0.9rem; }
+            
+            /* Upload Area */
+            .spirit-photo-box { height: 280px; }
+            
+            /* Footer */
+            .card-footer { padding: 15px 20px; }
+            .page-indicator { font-size: 1rem; }
+            .nav-btn .btn-inner { padding: 8px 12px; font-size: 0.8rem; }
+            
+            /* Return Button */
+             .return-btn { top: 15px; left: 15px; }
+             
+            /* Ritual Button */
+            .text-cn { font-size: 1.6rem; }
+            .kana { font-size: 1.5rem; display: none; } /* Hide extra symbols on very small screens */
         }
       `}</style>
       </div>

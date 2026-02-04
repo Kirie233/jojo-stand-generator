@@ -792,15 +792,81 @@ const StandCard = ({ standData, onReset }) => {
            }
         }
 
-        /* === RESPONSIVE === */
-        @media (max-width: 768px) {
-             .visual-area { height: auto; min-height: 700px; }
-             .visual-layout { flex-direction: column-reverse; }
-             .zone-left, .zone-right { width: 100%; }
-             .header-group { text-align: center; margin-top: 20px; }
-             .radar-group { margin: 0 auto; margin-top: 200px; /* Push down to clear image */ }
-             .user-info-right { bottom: auto; top: 400px; right: 10px; } 
-             /* This is complex on mobile; simplified stack is better */
+        /* === RESPONSIVE & MOBILE ADAPTATION === */
+        @media (max-width: 1100px) {
+             /* Reset Container Layout to Center */
+             .stand-card-container {
+                 margin-left: auto !important;
+                 margin-right: auto !important;
+                 width: 95% !important;
+                 padding: 70px 10px 220px 10px; /* Space for Top Return & Bottom Hand */
+                 min-height: auto;
+             }
+
+             /* Reposition Whitesnake Hand to Bottom Center */
+             .whitesnake-handheld-root {
+                 width: 320px;
+                 height: 400px; /* Compact height */
+                 top: auto;
+                 bottom: -80px; /* Peek from bottom */
+                 left: 50%;
+                 transform: translateX(-50%);
+                 opacity: 0.95;
+                 pointer-events: none; /* Let clicks pass through empty areas */
+             }
+             
+             /* Re-enable pointer events for interactive children */
+             .whitesnake-hand-character, .interactive-hand-zone {
+                 pointer-events: none;
+             }
+             .hand-slot {
+                 pointer-events: auto;
+             }
+
+             /* Adjust Disc Positions for Bottom Layout */
+             .slot-memory { left: 5%; top: 30%; transform: rotate(-10deg); }
+             .slot-stand { left: 70%; top: 30%; transform: rotate(10deg); }
+             
+             /* Visual Area Adaptation */
+             .visual-area { 
+                 height: 450px; /* Standard Mobile Height */
+             }
+             
+             /* Fonts */
+             .display-name { font-size: 2.5rem; }
+             .display-sub-name { font-size: 1.2rem; }
+             
+             /* Tech HUD: Use Grid 1 Col */
+             .mechanics-grid { grid-template-columns: 1fr; }
+             
+             /* Adjust Radar Position */
+             .radar-container {
+                 transform: scale(0.8) translateY(20px);
+                 left: 10px; bottom: 10px;
+             }
+             
+             /* Return Button */
+             .return-btn {
+                 background: rgba(0,0,0,0.5); /* Add BG for readability */
+                 padding: 5px 10px;
+                 border-radius: 20px;
+             }
+             
+             /* Bottom Action Button (Awaken Next) - Move above the hand */
+             .return-container {
+                position: relative;
+                z-index: 150;
+                margin-top: 20px;
+                padding-bottom: 20px;
+                margin-bottom: 100px; /* Clear the hand */
+             }
+        }
+
+        /* Mobile Landscape Specific */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .visual-area { height: 300px; }
+            .radar-container { transform: scale(0.6); bottom: -20px; left: 0; }
+            .corner-info.stand { transform: scale(0.8); right: 10px; bottom: 10px; }
         }
 
         /* ========================================= */
