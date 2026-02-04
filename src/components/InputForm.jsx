@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../styles/variables.css';
 
 const EXAMPLES_SONG = [
-  "Sheer Heart Attack (Album)", "In a Silent Way (Album)", "Dirty Deeds Done Dirt Cheap (Album)", "Purple Rain (Album)", "The Wall (Album)",
-  "Thriller (Album)", "Pet Sounds (Album)", "Rubber Soul (Album)", "A Hard Day's Night (Album)", "Led Zeppelin IV (Album)",
-  "Killer Queen", "Gold Experience", "Sticky Fingers", "Made in Heaven", "Spiral Staircase",
-  "Roundabout", "Walk Like an Egyptian", "Last Train Home", "Freak'n You",
-  "Great Days", "Bloody Stream", "Fighting Gold", "Modern Crusaders"
+  "蓬勃肝火 (Sheer Heart Attack) - Album", "沈默方式 (In a Silent Way) - Album", "恶行易施 (Dirty Deeds Done Dirt Cheap) - Album", "紫雨 (Purple Rain) - Album", "迷墙 (The Wall) - Album",
+  "战栗 (Thriller) - Album", "宠物之声 (Pet Sounds) - Album", "橡胶灵魂 (Rubber Soul) - Album", "一夜狂欢 (A Hard Day's Night) - Album", "齐柏林飞艇 IV (Led Zeppelin IV) - Album",
+  "杀手皇后 (Killer Queen)", "黄金体验 (Gold Experience)", "钢链手指 (Sticky Fingers)", "天堂制造 (Made in Heaven)", "螺旋阶梯 (Spiral Staircase)",
+  "回旋曲 (Roundabout)", "像埃及人一样走路 (Walk Like an Egyptian)", "归途列车 (Last Train Home)", "任性的你 (Freak'n You)",
+  "美好时光 (Great Days)", "血色波纹 (Bloody Stream)", "背叛者的安魂曲 (Uragirimono no Requiem)", "黄金之风 (Fighting Gold)", "现代十字军 (Modern Crusaders)"
 ];
 const EXAMPLES_NAME = [
   "乔纳森·乔斯达", "迪奥·布兰度", "乔瑟夫·乔斯达", "西撒·谢皮利", "空条承太郎",
