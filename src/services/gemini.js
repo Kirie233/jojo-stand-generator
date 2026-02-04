@@ -98,6 +98,7 @@ const _generateStandProfile = async (inputs) => {
 3. **能力深度解析**：不要只写“控制火”，要写出**机制**（例如：“能够随意控制热能的流动，将接触物体的温度瞬间提升至燃点”）。
 4. **结构化描述**：将能力拆解为【基本能力】和【衍生应用】，条理清晰。`;
 
+
       const userPromptText = `
   请基于以下数据，生成一份标准的【JOJO百科替身词条】：
 
@@ -107,6 +108,12 @@ const _generateStandProfile = async (inputs) => {
   3. 视觉色调 (Color): "${inputs.color}"
   4. 核心欲望 (Core Desire): "${inputs.personality}" (由此推导能力机制)
   ${inputs.referenceImage ? "5. [视觉参考] 请参考附图特征进行外貌描写。" : ""}
+
+  ⚠️ 严格指令：
+  1. **能力强度随机化 (Gacha System)**：**严禁将所有替身都设计得很强！** 请模拟“抽卡”体验，替身强度必须在【S级 (时间/因果律)】到【E级 (几乎无用/仅仅是啦啦队)】之间大幅波动。允许生成像“幸存者 (Survivor)”这种对他人都没用甚至对自己有害的弱替身，或者像“嘿呀 (Hey Ya!)”这种只能给人加油的替身。**弱替身也是JOJO世界的重要组成部分。**
+  2. **形态多样性**：不要局限于人型！JOJO 的魅力在于不可预测。请根据“宿命特质”自由构筑形态。它可以是经典的【人型】，通过物品显现的【器物型】，甚至是【空间】、【现象】、【微观群落】或【概念规则】。**请务必打破常规，创造出令人意想不到的独特存在形式。**
+  3. **独立意志与异质性**：请大胆设计具有【自主意识】的替身（如“性感手枪”会对话、有情绪），或是【自动律法型】（如“奇迹与你”代表灾厄本身），甚至【脱离控制型】（如“银色战车镇魂曲”）。替身不一定完全听命于使者，它可能是宿主深层欲望的独立具象化。
+  4. **格式清洗**：返回的 JSON 字段值中**绝对禁止**包含如“【替身简介】”、“【基本能力】”等带方括号的指示性标题，直接输出内容即可。
 
   请返回一个严格符合 JSON 格式的对象（不要使用 Markdown 代码块）：
   {
@@ -143,6 +150,7 @@ const _generateStandProfile = async (inputs) => {
     },
     "appearance": "【外观描写】基于'${inputs.color}'色调的详细外貌描述。使用百科词条的笔触（如：该替身呈现为人型，全身覆盖着...，头部装饰有...）。"
   }
+  ⚠️ 严格指令：返回的 JSON 字段值中**绝对禁止**包含如“【替身简介】”、“【基本能力】”等带方括号的指示性标题，直接输出内容即可。
   `;
 
       const isGemini = modelId.toLowerCase().includes('gemini');
@@ -258,7 +266,17 @@ export const generateStandImage = async (appearance) => {
 
   console.log("Generating Image Model:", imageModel);
 
-  const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nCOMPOSITION: Epic full body shot, Dynamic 'JoJo Pose'. CLEAN IMAGE, NO TEXT, NO LABELS. \n\nBACKGROUND: Cinematic Atmosphere, Scenery linked to the Stand's ability (e.g. burning city, frozen wasteland, clock tower, cosmic void, biomechanical lab), Dramatic Lighting, Depth of Field. \n\nStyle tags: Anime Character Sheet, Thick Black Lines, Heavy Hatching, Hyper-muscular, Vibrant Colors, Movie Poster aesthetic. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo, copyright, alphabet, numbers, low quality, pixelated.`;
+  const prompt = `Create a stylized concept art illustration for a 'Stand' from JoJo's Bizarre Adventure, in the signature style of Hirohiko Araki.
+  
+  The Stand's appearance features: ${appearance}.
+
+  Please interpret this design with a focus on bizarre, surreal, and high-fashion aesthetics. The form should adapt to the stand's concept—it can be a humanoid figure, a robotic entity, a creature, or an inorganic object. There is no fixed rule for the body type; choose the form that best fits the description provided.
+
+  Use thick, expressive ink linework and heavy dramatic cross-hatching typical of manga art. The coloring should be vibrant and bold, with slight color shifts (JoJo palettes). 
+  
+  Composition: A full-body view of the Stand in a dynamic, dramatic pose. The background should be a cinematic, surreal environment that complements the Stand's power.
+  
+  Constraints: Ensure the image is clean with NO text, NO speech bubbles, and NO interface elements. Avoid generic bodybuilding physiques unless specified.`;
 
   // 1. Determine API Strategy based on Model Name
   const isGemini = imageModel.toLowerCase().includes('gemini');
