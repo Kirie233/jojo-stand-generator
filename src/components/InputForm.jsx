@@ -2,18 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../styles/variables.css';
 
 const EXAMPLES_SONG = [
-  "蓬勃肝火 (Sheer Heart Attack) - Album", "沈默方式 (In a Silent Way) - Album", "恶行易施 (Dirty Deeds Done Dirt Cheap) - Album", "紫雨 (Purple Rain) - Album", "迷墙 (The Wall) - Album",
-  "战栗 (Thriller) - Album", "宠物之声 (Pet Sounds) - Album", "橡胶灵魂 (Rubber Soul) - Album", "一夜狂欢 (A Hard Day's Night) - Album", "齐柏林飞艇 IV (Led Zeppelin IV) - Album",
-  "杀手皇后 (Killer Queen)", "黄金体验 (Gold Experience)", "钢链手指 (Sticky Fingers)", "天堂制造 (Made in Heaven)", "螺旋阶梯 (Spiral Staircase)",
-  "回旋曲 (Roundabout)", "像埃及人一样走路 (Walk Like an Egyptian)", "归途列车 (Last Train Home)", "任性的你 (Freak'n You)",
-  "美好时光 (Great Days)", "血色波纹 (Bloody Stream)", "背叛者的安魂曲 (Uragirimono no Requiem)", "黄金之风 (Fighting Gold)", "现代十字军 (Modern Crusaders)"
+  "枯萎穿心攻击 (Sheer Heart Attack) - Album", "黄金体验 (Gold Experience) - Album", "紫烟 (Purple Rain) - Album", "奇迹与你 (Wonder of U)",
+  "杀手皇后 (Killer Queen)", "钢链手指 (Sticky Fingers)", "天堂制造 (Made in Heaven)", "石之自由 (Stone Free)",
+  "白金之星 (Star Platinum)", "疯狂钻石 (Crazy Diamond)", "牙 (Tusk)", "软又湿 (Soft & Wet)",
+  "廉价把戏 (D4C)", "绯红之王 (King Crimson)", "回旋曲 (Roundabout)", "任性的你 (Freak'n You)",
+  "美好时光 (Great Days)", "血色波纹 (Bloody Stream)", "黄金之风 (Fighting Gold)"
 ];
 const EXAMPLES_NAME = [
-  "乔纳森·乔斯达", "迪奥·布兰度", "乔瑟夫·乔斯达", "西撒·谢皮利", "空条承太郎",
-  "花京院典明", "简·皮埃尔·波鲁纳雷夫", "东方仗助", "吉良吉影",
-  "岸边露伴", "乔鲁诺·乔巴纳", "布鲁诺·布加拉提", "迪亚波罗", "盖多·米斯达",
-  "空条徐伦", "恩里克·普奇", "乔尼·乔斯达", "杰洛·谢皮利", "法尼·瓦伦泰",
-  "迪亚哥·布兰度", "透龙", "广濑康穗", "东方定助"
+  "空条承太郎 (Jotaro Kujo)", "迪奥·布兰度 (DIO)", "东方仗助 (Josuke Higashikata)", "吉良吉影 (Yoshikage Kira)", "乔鲁诺·乔巴纳 (Giorno Giovanna)",
+  "布鲁诺·布加拉提 (Bruno Bucciarati)", "空条徐伦 (Jolyne Cujoh)", "恩里克·普奇 (Enrico Pucci)", "乔尼·乔斯达 (Johnny Joestar)", "杰洛·谢皮利 (Gyro Zeppeli)",
+  "法尼·瓦伦泰 (Funny Valentine)", "东方定助 (Josuke Higashikata - P8)", "广濑康穗 (Yasuho Hirose)", "透龙 (Tooru)", "空条仗世文 (Josefumi Kujo)"
 ];
 const COLORS = [
   { name: "Star Platinum Purple (白金之星紫)", value: "#7B1FA2" },
