@@ -2,12 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../styles/variables.css';
 
 const EXAMPLES_SONG = [
-  "白金之星 (Star Platinum)", "世界 (The World)", "杀手皇后 (Killer Queen)", "绯红之王 (King Crimson)", "黄金体验 (Gold Experience)",
-  "石之自由 (Stone Free)", "肮脏肮脏的低价把戏 (D4C)", "透龙 (Wonder of U)", "天堂制造 (Made in Heaven)",
-  "牙 (Tusk)", "软又湿 (Soft & Wet)", "疯狂钻石 (Crazy Diamond)", "钢链手指 (Sticky Fingers)", "银色战车 (Silver Chariot)",
-  "回音 (Echoes)", "天堂之门 (Heaven's Door)", "天气预报 (Weather Report)", "碎球 (Ball Breaker)", "骇人恶兽 (Scary Monsters)",
+  "Sheer Heart Attack (Album)", "In a Silent Way (Album)", "Dirty Deeds Done Dirt Cheap (Album)", "Purple Rain (Album)", "The Wall (Album)",
+  "Thriller (Album)", "Pet Sounds (Album)", "Rubber Soul (Album)", "A Hard Day's Night (Album)", "Led Zeppelin IV (Album)",
+  "Killer Queen", "Gold Experience", "Sticky Fingers", "Made in Heaven", "Spiral Staircase",
   "Roundabout", "Walk Like an Egyptian", "Last Train Home", "Freak'n You",
-  "Great Days", "Bloody Stream", "Sono Chi no Sadame", "Fighting Gold", "Modern Crusaders"
+  "Great Days", "Bloody Stream", "Fighting Gold", "Modern Crusaders"
 ];
 const EXAMPLES_NAME = [
   "乔纳森·乔斯达", "迪奥·布兰度", "乔瑟夫·乔斯达", "西撒·谢皮利", "空条承太郎",
