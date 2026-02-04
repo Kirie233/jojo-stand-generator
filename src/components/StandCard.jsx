@@ -621,7 +621,7 @@ const StandCard = ({ standData, onReset }) => {
         .mech-card:hover {
             transform: scale(1.04) translateY(-5px);
             /* Slightly lighter background for better legibility contrast */
-            background: rgba(71, 250, 35, 1);
+            background: rgba(209, 177, 255, 1);
             box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 0 15px rgba(255, 215, 0, 0.15);
             z-index: 10;
         }
