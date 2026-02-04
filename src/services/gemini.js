@@ -65,6 +65,7 @@ const retryOperation = async (operation, retries = 3) => {
  */
 export const generateFastVisualConcept = async (inputs) => {
   return retryOperation(async () => {
+    console.log("🚀 [Phase 1] Inputs:", inputs);
     const apiKey = getApiKey();
     const baseUrl = getBaseUrl();
     const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
@@ -73,18 +74,30 @@ export const generateFastVisualConcept = async (inputs) => {
     const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
     
     用户特征:
-    1. 引用: "${inputs.song}"
+    1. 引用: "${inputs.song}"(可能暗示了外形，如Aerosmith->飞机)
     2. 色调: "${inputs.color}"
-    3. 特质: "${inputs.personality}"
+    3. 特质: "${inputs.personality}"(贪婪->群体型? 暴力->力量型? 阴险->远距离型?)
+
+    **核心任务：请先分析【特质】与【歌曲暗示】，智能决定最匹配的替身形态（不局限于人形！）。**
+    - 如果特质是“守护/复仇”，可能是**铠甲/穿戴型**。
+    - 如果特质是“收集/扩散”，可能是**群体型/现象型**。
+    - 如果特质是“精准/暗杀”，可能是**器物/机械型**。
+    - 如果输入包含“载具/建筑/巨大”概念，务必设计为**凭依型/巨物型 (Bound Type)** (如一艘船、一辆车、一座塔)。
+    - 只有当特质是“直接战斗/压倒性力量”时，才设计为**强壮的人形**。
 
     要求：
     1. 名字必须符合 JOJO 风格。
     2. 外貌描述要包含比例、材质、基于'${inputs.color}'制定的装饰，直接描述视觉特征，不要描述文字或符号。
+    3. **头部设计特别指令**：
+       - **仅当**判定为[强壮人形]时，头部设计应多样化：可参考**古典雕塑(希腊像)**、**机械面具(无机质)**、或**抽象几何(面部有条纹/拉链/网格)**。重要的是**荒木线(Araki Lines)**的阴影刻画，而非模仿特定角色。
+       - **如果是[群体型/小器物]**，头部必须参考《性感手枪》或《收成者》，设计为**卡通/吉祥物**风格，严禁写实人脸！
+    4. **创新性**：如果特质非常独特，请大胆设计非人型（如一本书、一艘船、一团烟雾）。
 
     只需返回以下 JSON (严禁 Markdown 代码块):
     {
+      "reasoning": "简短分析思路...例如：用户特质是[贪婪]，歌曲暗示了[群体]，所以我决定设计一个[COLONY]类型的替身。",
       "name": "替身名 (中英文)",
-      "appearance": "详细且具体的绘画提示描述..."
+      "appearance": "[TYPE: 请在此处大写填入类型] 详细且具体的绘画提示描述..."
     }`;
 
     const response = await fetch(url, {
@@ -97,7 +110,9 @@ export const generateFastVisualConcept = async (inputs) => {
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new Error("API response is empty");
-    return extractJSON(text);
+    const result = extractJSON(text);
+    console.log("📝 [Phase 1] JSON Result:", result);
+    return result;
   });
 };
 
@@ -193,7 +208,14 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
 
   ⚠️ 严格指令：
   1. **能力强度随机化 (Gacha System)**：**严禁将所有替身都设计得很强！** 请模拟“抽卡”体验，替身强度必须在【S级 (时间/因果律)】到【E级 (几乎无用/仅仅是啦啦队)】之间大幅波动。允许生成像“幸存者 (Survivor)”这种对他人都没用甚至对自己有害的弱替身，或者像“嘿呀 (Hey Ya!)”这种只能给人加油的替身。**弱替身也是JOJO世界的重要组成部分。**
-  2. **形态多样性**：不要局限于人型！JOJO 的魅力在于不可预测。请根据“宿命特质”自由构筑形态。它可以是经典的【人型】，通过物品显现的【器物型】，甚至是【空间】、【现象】、【微观群落】或【概念规则】。**请务必打破常规，创造出令人意想不到的独特存在形式。**
+  2. **形态多样性**：不要局限于人型！JOJO 的魅力在于不可预测。请根据“宿命特质”自由构筑形态。它可以是：
+     - **传统的【人型】** (如白金之星)
+     - **【器物/装备型】** (如手枪、飞机、书本)
+     - **【穿戴一体型】** (像铠甲或紧身衣一样穿在本体身上，如白色相簿)
+     - **【同化型】** (附着在现实物体如船、车、电塔上，如Strength)
+     - **【微观群落/群体型】** (由无数小体组成，如收成者)
+     - **【现象/空间型】** (如天气、影子、镜中世界)
+     **请务必打破常规，创造出令人意想不到的独特存在形式。**
   3. **独立意志与异质性**：请大胆设计具有【自主意识】的替身（如“性感手枪”会对话、有情绪），或是【自动律法型】（如“奇迹与你”代表灾厄本身），甚至【脱离控制型】（如“银色战车镇魂曲”）。替身不一定完全听命于使者，它可能是宿主深层欲望的独立具象化。
   4. **色彩描述禁令**：在描述颜色时，请直接使用具体的色彩名称。**绝对禁止在返回的文本中包含任何十六进制颜色代码 (如 #7B1FA2) 或 RGB 代码。** 保持百科词条的浸入感。
   5. **格式清洗**：返回的 JSON 字段值中**绝对禁止**包含如“【替身简介】”、“【基本能力】”等带方括号的指示性标题，直接输出内容即可。
@@ -201,7 +223,7 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
   请返回一个严格符合 JSON 格式的对象（不要使用 Markdown 代码块）：
   {
     "name": "替身名 (英文名 + 官方译名风格的中文名，如 'Star Platinum (白金之星)')",
-    "type": "替身类型 (如：近距离力量型、远距离自动操纵型、索敌型)",
+    "type": "替身类型 (如：近距离力量型、远距离自动操纵型、群体型、现象型、器物/装备型、规则概念型、无意识暴走型、穿戴/一体化型、同化型(附着于物体)、陷阱/自动触发型、寄生型)",
     "panel": {
       "abilityName": "能力名 (四字熟语或简洁短语，如 '时间暂停'、'黄金体验')",
       "desc": "【能力摘要】一句话概括核心功能，类似百科的顶部简介。",
@@ -336,23 +358,62 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
 };
 
 export const generateStandImage = async (appearance) => {
+  console.log("🎨 [Phase 2] Appearance Input:", appearance);
   const apiKey = getApiKey();
   const baseUrl = getBaseUrl();
   const imageModel = import.meta.env.VITE_IMAGE_MODEL || 'dall-e-3';
 
   console.log("Generating Image Model:", imageModel);
 
-  const prompt = `Create a stylized concept art illustration for a 'Stand' from JoJo's Bizarre Adventure, in the signature style of Hirohiko Araki.
+  const prompt = `**ART STYLE: JAPANESE ANIME / MANGA (JoJo's Bizarre Adventure Style)**
+  
+  Create a high-quality **2D Anime Illustration** of a 'Stand' in the signature style of **Hirohiko Araki**.
   
   The Stand's appearance features: ${appearance}.
+
+  **DESIGN GUIDANCE (JOJO STYLE):**
+  - **IF HUMANOID**: Use these archetypes as **inspiration** (mix and match allowed):
+    1. **Noble Statue**: Heroic, sharp features (Star Platinum).
+    2. **Distorted/Stylized**: Expressive but inhuman (King Crimson, Gold Experience).
+    3. **Mask/Visor**: Mechanical or covered (Hierophant Green).
+    4. **Pattern-Integrated**: Face split by zippers, hearts, or geometric patterns (Sticky Fingers, Crazy Diamond).
+    5. **Monstrous/Skeletal**: Skull-like or void-faced (Cream, Justice).
+    6. **Surreal/Abstract**: No face, just a shape, a shadow, or an eye in a weird place (Grateful Dead, Black Sabbath).
+    **Key**: **Surprise the user.** Do not feel limited by this list. The goal is "Biological Surrealism".
+  - **IF COLONY/TINY (Mascot Type)**:
+    - **REFERENCES**: Sex Pistols (Mista), Harvest (Shigechi).
+    - **STYLE**: Use **"Anime Mascot" aesthetics**. They should look like stylized characters, not realistic humans.
+    - **BODY SHAPE**: **STRICTLY NO MUSCLES**. Use "Potato-shaped", "Pear-shaped", or "Round" bodies with thin noodle limbs.
+    - **PROPORTIONS**: Huge head (1/2 total height), tiny body. Think "Chibi" or "Funko Pop" style.
+    - **NO PHOTOREALISM**: Do not draw realistic mini-men. Keep it 2D, expressive, and exaggerated.
+  - **IF OBJECT/NON-HUMAN**: Focus on "Artifact Quality". If it's a gun/tool, make it ornate (Emperor).
+    - **LIVING PARTS RULE**: If the object has living bullets/missiles (like Sex Pistols), their faces MUST be **"Ugly-Cute Mascots"**.
+    - **STRICT BAN**: Do NOT put "Noble Statue" or "Handsome Human" faces on small objects. They should look like cartoons or emojis.
+  - **IF PHENOMENON (Natural Force)**:
+    - **NO ELEMENTAL GOLEMS**: Do not draw a "Man made of Fire". Draw the element itself satisfyingly (e.g., A swirl of living slime, a floating sun, a claw made of water).
+    - **VIBE**: Abstract, terrifying, formless.
+  - **IF BOUND (Vehicle/Building)**:
+    - **NO SEPARATE GHOST**: The object (Store, Ship, Car) **IS** the Stand. Do NOT draw a character standing next to it.
+    - **INTEGRATION**: The stand features (eyes, mouths, patterns) should be subtly embedded into the object's surface (like a face in the hull), not pasted on top.
+  - **AVOID LITERAL SYMBOLISM**: Do NOT cover the Stand in literal icons of its ability.
+    - If ability is "Time", DO NOT draw clocks all over. Use abstract digital lines or starry voids.
+    - If ability is "Fire", DO NOT just draw a man on fire. Use bird-like armor or heat-haze patterns.
+  - **TEXTURE**: Emphasize unnatural materials—gold plating, stitched leather, rubber, slime, or stone.
+  - **INNOVATION CLAUSE**: If the Stand's concept is unique, **INVENT A NEW FORM**. Do not be afraid to draw a Stand that is made of liquid, smoke, digital glitches, or floating geometric scraps. **Break the silhouette.**
+  - **TEXTURE**: Emphasize unnatural materials—gold plating, stitched leather, rubber, slime, or stone.
 
   Please interpret this design with a focus on bizarre, surreal, and high-fashion aesthetics. The form should adapt to the stand's concept—it can be a humanoid figure, a robotic entity, a creature, or an inorganic object. There is no fixed rule for the body type; choose the form that best fits the description provided.
 
   Use thick, expressive ink linework and heavy dramatic cross-hatching typical of manga art. The coloring should be vibrant and bold, with slight color shifts (JoJo palettes). 
   
-  Composition: A full-body view of the Stand in a dynamic, dramatic pose. The background should be a cinematic, surreal environment that complements the Stand's power.
-  
+  **COMPOSITION & AURA:**
+  - **SPIRIT AURA**: Stands must emit a **"Stand Aura" (Spirit Energy)**. Surround the figure with flame-like, undulating energy outlines (Pink, Blue, or Gold). This is CRITICAL for the "Jojo" look. 
+  - **POSE**: Dynamic, twisted, "Jojo Pose".
+  - **BACKGROUND**: Surreal, psychedelic void or speed lines (Manga effect).
+
   Constraints: Ensure the image is clean with NO text, NO speech bubbles, and NO interface elements. Avoid generic bodybuilding physiques unless specified.`;
+
+  console.log("🖌️ [Phase 2] FINAL IMAGE PROMPT:\n", prompt);
 
   // 1. Determine API Strategy based on Model Name
   const isGemini = imageModel.toLowerCase().includes('gemini');

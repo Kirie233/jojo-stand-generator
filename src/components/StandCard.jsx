@@ -159,12 +159,14 @@ const StandCard = ({ standData, onReset }) => {
           {/* Scrim Overlay */}
           <div className="texture-overlay"></div>
 
-          {/* STAND IMAGE (Main Visual) */}
+          {/* STAND IMAGE (Main Visual - Now using <img> for natural aspect ratio) */}
           {standData.imageUrl && standData.imageUrl !== 'FAILED' ? (
-            <div
-              className="stand-full-bg"
-              style={{ backgroundImage: `url(${standData.imageUrl})` }}
-            ></div>
+            <img
+              className="stand-main-image"
+              src={standData.imageUrl}
+              alt={mainName}
+              loading="eager"
+            />
           ) : standData.imageUrl === 'FAILED' ? (
             /* Failed State (Tech HUD Style) */
             <div className="tech-loading-overlay failed">
@@ -323,10 +325,14 @@ const StandCard = ({ standData, onReset }) => {
         .visual-area {
             position: relative;
             width: 100%;
-            height: 600px; 
+            height: auto; /* Fluid height based on image */
+            min-height: 400px;
             overflow: hidden;
             border-bottom: 6px solid #000;
             background-color: #000; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* 1. Base Layer: Blurred Clone (Fills gaps if aspect ratio differs) */
@@ -340,16 +346,16 @@ const StandCard = ({ standData, onReset }) => {
             transform: scale(1.1); /* Remove white edges from blur */
         }
 
-        /* 2. Main Visual Layer: The Generated Image */
-        .stand-full-bg {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-size: cover;
-            background-position: center;
+        /* 2. Main Visual Layer: The Real Image */
+        .stand-main-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            position: relative;
             z-index: 10;
-            /* No Mask - Show full environment */
-            mix-blend-mode: normal;
+            /* High quality rendering */
+            image-rendering: -webkit-optimize-contrast;
+            object-fit: contain;
         }
 
         /* 3. Text Protection Layer (The Scrim) */
@@ -395,16 +401,19 @@ const StandCard = ({ standData, onReset }) => {
             pointer-events: none;
         }
 
-        /* --- RADAR POSITIONING (Bottom Left) --- */
         .radar-container {
             position: absolute;
-            bottom: 30px;
-            left: 30px;
-            /* Removed center-left transform */
+            bottom: 40px;
+            left: 40px;
             transform: rotate(-3deg);
             pointer-events: auto;
             z-index: 60;
             filter: drop-shadow(0 0 15px rgba(0,0,0,0.5));
+            transition: all 0.3s ease;
+        }
+        .radar-container:hover {
+            transform: scale(1.1) rotate(0deg);
+            z-index: 150;
         }
 
         /* --- CORNER INFO BLOCKS --- */
@@ -416,19 +425,20 @@ const StandCard = ({ standData, onReset }) => {
             flex-direction: column;
         }
 
-        /* TOP LEFT: MASTER */
+        /* TOP LEFT: MASTER (Moved right to avoid return button) */
         .corner-info.master {
-            top: 40px;
-            left: 40px;
+            top: 30px;
+            left: 120px;
             text-align: left;
         }
 
         /* BOTTOM RIGHT: STAND NAME */
         .corner-info.stand {
-            bottom: 40px;
+            bottom: 30px;
             right: 40px;
             text-align: right;
             align-items: flex-end;
+            max-width: 60%; /* Prevent hitting the radar */
         }
 
         /* Label Row styling */
@@ -464,6 +474,9 @@ const StandCard = ({ standData, onReset }) => {
                 0 0 20px rgba(255, 215, 0, 0.6);
             /* Dynamic Anime Transform */
             transform: skewX(-10deg) scale(1, 1.05); 
+            max-width: 100%;
+            overflow: visible;
+            word-wrap: break-word;
         }
 
         .display-sub-name {
@@ -828,23 +841,17 @@ const StandCard = ({ standData, onReset }) => {
         @media (max-width: 1100px) {
              /* Reset Container Layout to Center */
              .stand-card-container {
-                 margin-left: auto !important;
-                 margin-right: auto !important;
-                 width: 95% !important;
-                 padding: 70px 10px 220px 10px; /* Space for Top Return & Bottom Hand */
+                 margin: 20px auto !important;
+                 width: 98% !important;
+                  padding: 20px 5px;
                  min-height: auto;
              }
 
-             /* Reposition Whitesnake Hand to Bottom Center */
              .whitesnake-handheld-root {
                  width: 320px;
-                 height: 400px; /* Compact height */
-                 top: auto;
-                 bottom: -80px; /* Peek from bottom */
-                 left: 50%;
-                 transform: translateX(-50%);
+                 height: 300px;
                  opacity: 0.95;
-                 pointer-events: none; /* Let clicks pass through empty areas */
+                 pointer-events: none;
              }
              
              /* Re-enable pointer events for interactive children */
@@ -1073,25 +1080,45 @@ const StandCard = ({ standData, onReset }) => {
 
         /* --- WHITESNAKE PREMIUM HANDHELD HUB (V3) --- */
         .stand-card-container {
-            margin-left: 400px !important;
+            margin: 20px auto !important;
             transition: all 0.5s ease;
             position: relative;
-            padding: 60px 40px;
-            width: calc(100vw - 400px);
+            padding: 40px 20px; /* Standard padding now */
+            width: 98%;
+            max-width: 1400px;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        /* --- WHITESNAKE POLISHED SIDEBAR (V4.8) --- */
         .whitesnake-handheld-root {
-            position: fixed;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 380px;
-            height: 550px;
-            z-index: 200;
+            position: relative; /* Now occupies space! */
+            margin: 0 auto 40px; /* Centered with bottom gap */
+            width: 500px; 
+            height: 400px; /* Fixed height for the "box" */
+            z-index: 2000;
             pointer-events: none;
             opacity: 1;
+            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .whitesnake-handheld-root:hover {
+            transform: scale(1.02);
+        }
+        
+        .whitesnake-handheld-root {
+            left: 0; /* Reset previous offsets */
+            top: 0;
+            transform: none;
+        }
+        
+        /* Make the whole zone hover-responsive if needed, but let's stick to slots */
+        .whitesnake-handheld-root {
+            pointer-events: none;
+        }
+        .hand-slot, .disc-trigger-btn {
+            pointer-events: auto;
         }
 
         .whitesnake-hand-character {
@@ -1155,15 +1182,22 @@ const StandCard = ({ standData, onReset }) => {
             transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
         }
 
-        /* Sidebar Disc Layout: Side-by-side on the lower palm (Anti-overlap) */
+        /* Labels Normal Orientation */
+        .slot-action-label {
+            transform: skewX(-10deg);
+        }
+        .hand-slot:hover .slot-action-label {
+            transform: skewX(-10deg) translateY(-3px) scale(1.02);
+        }
+        
         .slot-memory {
-            left: 15%;
-            top: 68%;
+            left: 20%;
+            top: 45%;
             transform: rotate(-3deg);
         }
         .slot-stand {
-            left: 52%;
-            top: 68%;
+            left: 45%;
+            top: 65%;
             transform: rotate(3deg);
         }
 
@@ -1174,8 +1208,8 @@ const StandCard = ({ standData, onReset }) => {
 
         .disc-trigger-btn {
             background: none; border: none; padding: 0; cursor: pointer;
-            width: 65px; /* Miniature scale for palm nesting */
-            height: 65px;
+            width: 85px; /* Enlarged from 65px */
+            height: 85px;
             position: relative;
         }
 
@@ -1188,10 +1222,11 @@ const StandCard = ({ standData, onReset }) => {
             border: 3px solid #000;
             box-shadow: 0 10px 25px rgba(0,0,0,0.8);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Removed padding counter-rotate */
         }
 
         .hand-slot:hover .flat-metallic-disc {
-            transform: rotate(5deg);
+            transform: rotate(5deg); /* Normal tilt on hover */
             box-shadow: 0 0 30px rgba(163, 0, 255, 0.6);
         }
 
@@ -1204,7 +1239,6 @@ const StandCard = ({ standData, onReset }) => {
         }
 
         .disc-spindle {
-            position: absolute; top: 50%; left: 50%;
             width: 14px; height: 14px; border-radius: 50%;
             background: #000; border: 3px solid #777;
             transform: translate(-50%, -50%);
