@@ -69,7 +69,7 @@ export const generateFastVisualConcept = async (inputs) => {
     const apiKey = getApiKey();
     const baseUrl = getBaseUrl();
     const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
-    const url = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+    const url = `${baseUrl}/v1beta/models/${modelId}:generateContent`;
 
     const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
     
@@ -102,7 +102,10 @@ export const generateFastVisualConcept = async (inputs) => {
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
 
@@ -427,10 +430,11 @@ export const generateStandImage = async (appearance) => {
   if (isGemini) {
     // --- STRATEGY A: Google Gemini Native API ---
     // Endpoint: /v1beta/models/MODEL_NAME:generateContent
-    url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent?key=${imgApiKey}`;
+    url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent`;
 
     headers = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'x-goog-api-key': imgApiKey
     };
 
     body = {
