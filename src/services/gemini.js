@@ -66,10 +66,11 @@ const retryOperation = async (operation, retries = 3) => {
 export const generateFastVisualConcept = async (inputs) => {
   return retryOperation(async () => {
     console.log("🚀 [Phase 1] Inputs:", inputs);
-    const apiKey = getApiKey();
-    const baseUrl = getBaseUrl();
-    const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
-    const url = `${baseUrl}/v1beta/models/${modelId}:generateContent`;
+
+    // Use Vercel Serverless Function (Proxy)
+    // The browser sends a request to OUR server, not Google.
+    // The Key is added on the server side.
+    const url = '/api/gemini';
 
     const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
     
@@ -103,10 +104,13 @@ export const generateFastVisualConcept = async (inputs) => {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
+        'Content-Type': 'application/json'
+        // NO API KEY HERE! It's added by the server.
       },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      body: JSON.stringify({
+        prompt: prompt,
+        model: import.meta.env.VITE_GEMINI_MODEL // Optional: Tell server which model to use
+      })
     });
 
     if (!response.ok) throw new Error("Fast Visual Concept Failed");
@@ -428,32 +432,22 @@ export const generateStandImage = async (appearance) => {
   let url, body, headers;
 
   if (isGemini) {
-    // --- STRATEGY A: Google Gemini Native API ---
-    // Endpoint: /v1beta/models/MODEL_NAME:generateContent
-    url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent`;
+    // --- STRATEGY A: Google Gemini Native API (VIA PROXY) ---
+    // Use the same secure Vercel backend we created.
+    url = '/api/gemini';
 
     headers = {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': imgApiKey
+      'Content-Type': 'application/json'
+      // NO KEY HERE either!
     };
 
+    // The backend expects { prompt, model }
     body = {
-      contents: [{
-        role: "user",
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        responseModalities: ["TEXT", "IMAGE"]
-      },
-      safetySettings: [
-        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-      ]
+      prompt: prompt,
+      model: imageModel
     };
 
-    console.log("Using Gemini Native Endpoint:", url);
+    // console.log("Using Gemini Native Endpoint via Proxy"); 
 
   } else {
     // --- STRATEGY B: OpenAI Compatible API (DALL-E, etc) ---
