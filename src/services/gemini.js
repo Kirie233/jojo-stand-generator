@@ -395,10 +395,10 @@ export const generateStandImage = async (appearance) => {
   - **IF BOUND (Vehicle/Building)**:
     - **NO SEPARATE GHOST**: The object (Store, Ship, Car) **IS** the Stand. Do NOT draw a character standing next to it.
     - **INTEGRATION**: The stand features (eyes, mouths, patterns) should be subtly embedded into the object's surface (like a face in the hull), not pasted on top.
-  - **AVOID LITERAL SYMBOLISM**: Do NOT cover the Stand in literal icons of its ability.
-    - If ability is "Time", DO NOT draw clocks all over. Use abstract digital lines or starry voids.
-    - If ability is "Fire", DO NOT just draw a man on fire. Use bird-like armor or heat-haze patterns.
-  - **TEXTURE**: Emphasize unnatural materials—gold plating, stitched leather, rubber, slime, or stone.
+  - **AVOID CLUTTER & STACKING**: **STRICTLY PROHIBITED** to stack unrelated items.
+    - **NO GEAR-STACKING**: For Industrial types, do NOT draw a mess of gears. Use **clean hydraulic pistons**, smooth metal plating, or a single large turbine.
+    - **NO CLOCK-STACKING**: For Time types, do NOT cover the body in clocks. Use **one abstract dial**, digital distortion effects, or a starry void skin.
+    - **LESS IS MORE**: Avoid visual noise. The design should be readable and elegant, not a pile of junk.
   - **INNOVATION CLAUSE**: If the Stand's concept is unique, **INVENT A NEW FORM**. Do not be afraid to draw a Stand that is made of liquid, smoke, digital glitches, or floating geometric scraps. **Break the silhouette.**
   - **TEXTURE**: Emphasize unnatural materials—gold plating, stitched leather, rubber, slime, or stone.
 
