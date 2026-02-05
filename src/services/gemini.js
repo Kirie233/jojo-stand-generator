@@ -113,7 +113,16 @@ export const generateFastVisualConcept = async (inputs) => {
       })
     });
 
-    if (!response.ok) throw new Error("Fast Visual Concept Failed");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ [Phase 1] API Error Details:", response.status, errorText);
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(errorJson.error || "Fast Visual Concept Failed");
+      } catch (e) {
+        throw new Error(`API Error ${response.status}: ${errorText}`);
+      }
+    }
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new Error("API response is empty");
