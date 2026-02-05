@@ -22,11 +22,24 @@ export default async function handler(request, response) {
     return response.status(500).json({ error: 'Server Error: API Key not configured' });
   }
 
-  // 3. Parse Frontend Request
-  const { prompt, model } = request.body; // Expect simplified body from frontend
+  // 3. Parse Frontend Request (Robustly)
+  let body = request.body;
+
+  // Vercel sometimes returns body as string if content-type isn't perfectly matched
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      console.error("JSON Parse Error:", e);
+      return response.status(400).json({ error: 'Invalid JSON body' });
+    }
+  }
+
+  const { prompt, model } = body || {};
 
   if (!prompt) {
-    return response.status(400).json({ error: 'Missing prompt' });
+    console.error("Missing Prompt. Body received:", body);
+    return response.status(400).json({ error: 'Missing prompt in request body' });
   }
 
   const modelId = model || 'gemini-2.0-flash';
