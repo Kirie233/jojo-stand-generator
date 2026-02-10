@@ -101,12 +101,7 @@ const StandCard = ({ standData, onReset }) => {
               <div className="hand-slot slot-memory">
                 <button
                   className="disc-trigger-btn"
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.download = `JOJO_ART_${mainName.replace(/\s+/g, '_')}.png`;
-                    link.href = standData.imageUrl;
-                    link.click();
-                  }}
+                  onClick={handleSaveImage}
                 >
                   <div className="flat-metallic-disc">
                     <div className="disc-art-layer" style={{ backgroundImage: `url(${standData.imageUrl})` }}></div>
@@ -126,7 +121,19 @@ const StandCard = ({ standData, onReset }) => {
 
             {/* Data Disc (Stand) */}
             <div className="hand-slot slot-stand">
-              <button className="disc-trigger-btn" onClick={handleSaveImage}>
+              <button
+                className="disc-trigger-btn"
+                onClick={() => {
+                  if (!standData.imageUrl || standData.imageUrl === 'FAILED') {
+                    alert("替身尚未成型，无法提取实体 (No Stand Image)");
+                    return;
+                  }
+                  const link = document.createElement('a');
+                  link.download = `JOJO_ART_${mainName.replace(/\s+/g, '_')}.png`;
+                  link.href = standData.imageUrl;
+                  link.click();
+                }}
+              >
                 <div className="flat-metallic-disc">
                   <div className="disc-art-layer" style={{ backgroundImage: `url(${standData.imageUrl})` }}></div>
                   <div className="disc-spindle"></div>
