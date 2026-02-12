@@ -83,41 +83,8 @@ export const generateFastVisualConcept = async (inputs) => {
       useDirectCall = !!apiKey;
     }
 
-    if (!useDirectCall) {
-      // --- PRODUCTION: Use Serverless Proxy (Secure) ---
-      const url = '/api/gemini';
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: inputs.song,
-          // ⚠️ FIX: Do NOT send modelId if we are in Prod and it's just a default.
-          // Let the Backend use its own GEMINI_MODEL env var.
-          model: useDirectCall ? modelId : undefined
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ [Phase 1] Proxy Error Details:", response.status, errorText);
-        try {
-          const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.error || "Fast Visual Concept Failed");
-        } catch (e) {
-          throw new Error(`API Error ${response.status}: ${errorText}`);
-        }
-      }
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("API response is empty");
-      return extractJSON(text);
-
-    } else {
-      // --- DIRECT CLIENT-SIDE CALL (Dev Only) ---
-      console.log("⚡ Using Direct Client-Side Call for Concept (Fast Mode)");
-
-      const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
+    // --- PROMPT CONSTRUCTION (Shared Logic) ---
+    const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
     
     用户特征:
     1. 引用: "${inputs.song}"(可能暗示了外形，如Aerosmith->飞机)
@@ -145,6 +112,20 @@ export const generateFastVisualConcept = async (inputs) => {
       "name": "替身名 (中英文)",
       "appearance": "[TYPE: 请在此处大写填入类型] 详细且具体的绘画提示描述..."
     }`;
+
+    if (!useDirectCall) {
+      // --- PRODUCTION: Use Serverless Proxy (Secure) ---
+      const url = '/api/gemini';
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: prompt, // ✅ FIX: Now sending the FULL prompt, not just inputs.song
+          // ⚠️ FIX: Do NOT send modelId if we are in Prod and it's just a default.
+          // Let the Backend use its own GEMINI_MODEL env var.
+          model: useDirectCall ? modelId : undefined
+        })
+      });
 
       const isGemini = modelId.toLowerCase().includes('gemini');
       let requestUrl, headers, body;
