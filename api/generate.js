@@ -16,7 +16,7 @@ export default async function handler(req) {
     const baseUrl = process.env.GEMINI_BASE_URL || process.env.VITE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
 
     // Allow overriding models via env vars, formatted for backend
-    const textModel = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
+    const textModel = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
     const imageModel = process.env.IMAGE_MODEL || process.env.VITE_IMAGE_MODEL || 'dall-e-3';
 
     if (!apiKey) {
@@ -32,22 +32,58 @@ export default async function handler(req) {
       const isGemini = textModel.toLowerCase().includes('gemini');
       let url, headers, body;
 
-      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请设计一个符合JOJO世界观的替身(Stand)。\n要求：能力设计要有创意且易于理解，符合荒木飞吕彦的风格。\n请返回一个合法的 JSON 对象。`;
+      const systemPrompt = `你是一位严谨的《JOJO的奇妙冒险》替身数据录入员，正在为“JOJO百科 (JoJo Wiki)”撰写词条。
+      你的任务是基于用户提供的关键词，生成一份**专业、客观且详实**的替身档案。
+      
+      核心写作风格严格参照【白金之星】的百科词条：
+      1. **百科全书口吻**：使用第三人称。语气客观、冷静，避免过多的主观修饰。
+      2. **精确的术语**：在描述属性时，使用标准的JOJO术语。
+      3. **能力深度解析**：写出机制（例如：“能够随意控制热能的流动”）。
+      4. **结构化描述**：将能力拆解为【基本能力】和【衍生应用】。`;
+
       const userPrompt = `
+        请基于以下数据，生成一份标准的【JOJO百科替身词条】：
+
         用户特征:
-        1. 替身使者: "${userName || 'Unknown'}"
-        2. 音乐引用 (决定命名): "${song}"
-        3. 代表色 (决定视觉): "${color}"
-        4. 精神特质/欲望 (决定能力核心): "${personality}"
+        1. 替身使者 (User): "${userName || 'Unknown'}"
+        2. 命名来源 (Name Origin): "${song}"
+        3. 视觉色调 (Color): "${color}"
+        4. 核心欲望 (Core Desire): "${personality}"
 
         请返回 JSON，包含以下字段:
         {
-          "name": "替身名 (格式必须为: English Name (中文译名), 例如: Star Platinum (白金之星))",
-          "abilityName": "能力名",
-          "ability": "能力详细描述。基于'${personality}'设计，要有JOJO式的特色，但要让人能看懂。",
-          "stats": { "power": "A-E", "speed": "A-E", "range": "A-E", "durability": "A-E", "precision": "A-E", "potential": "A-E" },
-          "appearance": "基于'${color}'色调的详细外貌描述，用于后续绘画。",
-          "shout": "替身吼叫"
+          "name": "替身名 (英文名 + 官方译名风格的中文名，如 'Star Platinum (白金之星)')",
+          "type": "替身类型 (如：近距离力量型、远距离自动操纵型、群体型、现象型、器物/装备型、规则概念型、无意识暴走型、穿戴/一体化型、同化型(附着于物体)、陷阱/自动触发型、寄生型)",
+          "panel": {
+            "abilityName": "能力名 (四字熟语或简洁短语，如 '时间暂停'、'黄金体验')",
+            "desc": "【能力摘要】一句话概括核心功能，类似百科的顶部简介。",
+            "long_desc": "【替身简介】一段详实的百科式描述。包含替身的外观特征（基于色调）、出现方式以及能力的整体概述。请用说明文的口吻，描述其独特的压迫感或神圣感。",
+            "mechanics": [
+              {
+                "title": "基本能力：[机制名称]",
+                "content": "详细解释该能力的工作原理。（约80-100字）"
+              },
+              {
+                "title": "衍生技：[技能名称]",
+                "content": "基于基本能力的进阶应用。（约80-100字）"
+              }
+            ],
+            "limitations": [
+              "限制条件 1 (精确描述能力的边界)",
+              "弱点/代价 2"
+            ],
+            "battleCry": "战吼 (如：欧拉欧拉 (ORA ORA)、木大木大 (MUDA MUDA))",
+            "quote": "名台词 (一句展现替身使者觉悟或性格的经典发言)"
+          },
+          "stats": {
+            "power": "A/B/C/D/E/?/∞",
+            "speed": "A/B/C/D/E/?/∞",
+            "range": "A/B/C/D/E/?/∞",
+            "durability": "A/B/C/D/E/?/∞",
+            "precision": "A/B/C/D/E/?/∞",
+            "potential": "A/B/C/D/E/?/∞"
+          },
+          "appearance": "基于'${color}'色调的详细外貌描述，用于后续绘画。使用百科词条的笔触（如：该替身呈现为人型，全身覆盖着...，头部装饰有...）。"
         }
       `;
 
