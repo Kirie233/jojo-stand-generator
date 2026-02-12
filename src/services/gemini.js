@@ -190,7 +190,6 @@ export const generateFastVisualConcept = async (inputs) => {
     const result = extractJSON(text);
     console.log("📝 [Phase 1] JSON Result:", result);
     return result;
-  }
   });
 };
 
