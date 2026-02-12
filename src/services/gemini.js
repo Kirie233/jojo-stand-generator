@@ -147,10 +147,6 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
 
   const baseUrl = getBaseUrl();
   const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
-  const url = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-
-  console.log("Current Model ID:", modelId);
-  console.log("Request URL (masked):", url.replace(apiKey, '***'));
 
   const prompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。
 
@@ -327,6 +323,8 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
       }
 
       console.log("Using Direct Client-Side Call for Text");
+      console.log("Current Model ID:", modelId);
+      console.log("Request URL (masked):", requestUrl.replace(apiKey, '***'));
       response = await fetch(requestUrl, {
         method: 'POST',
         headers: headers,
@@ -473,7 +471,7 @@ export const generateStandImage = async (appearance) => {
       n: 1,
       size: "1024x1024"
     };
-    console.log("Using OpenAI Compatible Endpoint:", url);
+
   }
 
   // 2. Timeout Controller
@@ -502,6 +500,7 @@ export const generateStandImage = async (appearance) => {
     } else {
       // --- DIRECT CLIENT-SIDE CALL (Dev only) ---
       console.log("Using Direct Client-Side Call for Image (Dev Mode)");
+      console.log("Image Endpoint:", url);
       response = await fetch(url, {
         method: 'POST',
         headers: headers,
