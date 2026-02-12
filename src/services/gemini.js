@@ -438,7 +438,7 @@ export const generateStandImage = async (appearance) => {
   console.log("🎨 [Phase 2] Appearance Input:", appearance);
   const apiKey = getApiKey();
   const baseUrl = getBaseUrl();
-  const imageModel = import.meta.env.VITE_IMAGE_MODEL || 'dall-e-3';
+  const imageModel = import.meta.env.VITE_IMAGE_MODEL || 'gemini-2.0-flash';
 
   console.log("Generating Image Model:", imageModel);
 
