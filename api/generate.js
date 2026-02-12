@@ -92,12 +92,17 @@ export default async function handler(req) {
     if (action === 'image') {
       const { appearance } = payload;
       const isGemini = imageModel.toLowerCase().includes('gemini');
+
+      // Support independent Image Provider credentials
+      const imgApiKey = process.env.IMAGE_API_KEY || apiKey;
+      const imgBaseUrl = process.env.IMAGE_BASE_URL || baseUrl;
+
       let url, body, headers;
 
       const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nStyle tags: Anime Character Sheet, Full Body Reference, White Background, Simple Background, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Dynamic 'JoJo Pose', Vibrant Colors. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo.`;
 
       if (isGemini) {
-        url = `${baseUrl}/v1beta/models/${imageModel}:generateContent?key=${apiKey}`;
+        url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent?key=${imgApiKey}`;
         headers = { 'Content-Type': 'application/json' };
         body = {
           contents: [{
@@ -115,10 +120,10 @@ export default async function handler(req) {
           ]
         };
       } else {
-        url = `${baseUrl}/v1/images/generations`;
+        url = `${imgBaseUrl}/v1/images/generations`;
         headers = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${imgApiKey}`
         };
         body = {
           model: imageModel,
