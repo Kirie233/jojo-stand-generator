@@ -92,7 +92,10 @@ export default async function handler(req) {
         url = `${baseUrl}/v1beta/models/${textModel}:generateContent?key=${apiKey}`;
         headers = { 'Content-Type': 'application/json' };
         body = {
-          contents: [{ parts: [{ text: systemPrompt + "\n" + userPrompt }] }]
+          contents: [{ parts: [{ text: systemPrompt + "\n" + userPrompt }] }],
+          generationConfig: {
+            response_mime_type: "application/json"
+          }
         };
       } else {
         // Strategy B: OpenAI Compatible

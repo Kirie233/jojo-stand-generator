@@ -152,7 +152,12 @@ export const generateFastVisualConcept = async (inputs) => {
       if (isGemini) {
         requestUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
         headers = { 'Content-Type': 'application/json' };
-        body = { contents: [{ parts: [{ text: prompt }] }] };
+        body = {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            response_mime_type: "application/json"
+          }
+        };
       } else {
         requestUrl = `${baseUrl}/v1/chat/completions`;
         headers = {
