@@ -104,7 +104,7 @@ const StandCard = ({ standData, onReset }) => {
                   onClick={handleSaveImage}
                 >
                   <div className="flat-metallic-disc">
-                    <div className="disc-art-layer" style={{ backgroundImage: `url(${standData.imageUrl})` }}></div>
+                    <div className="disc-art-layer" style={standData.imageUrl && standData.imageUrl !== 'FAILED' ? { backgroundImage: `url(${standData.imageUrl})` } : {}}></div>
                     <div className="disc-spindle"></div>
                     <div className="disc-glint"></div>
                   </div>
@@ -135,7 +135,7 @@ const StandCard = ({ standData, onReset }) => {
                 }}
               >
                 <div className="flat-metallic-disc">
-                  <div className="disc-art-layer" style={{ backgroundImage: `url(${standData.imageUrl})` }}></div>
+                  <div className="disc-art-layer" style={standData.imageUrl && standData.imageUrl !== 'FAILED' ? { backgroundImage: `url(${standData.imageUrl})` } : {}}></div>
                   <div className="disc-spindle"></div>
                   <div className="disc-glint"></div>
                 </div>
@@ -160,7 +160,7 @@ const StandCard = ({ standData, onReset }) => {
           {/* Background: Blurred Clone */}
           <div
             className="card-bg"
-            style={standData.imageUrl ? { backgroundImage: `url(${standData.imageUrl})` } : {}}
+            style={standData.imageUrl && standData.imageUrl !== 'FAILED' ? { backgroundImage: `url(${standData.imageUrl})` } : {}}
           ></div>
 
           {/* Scrim Overlay */}

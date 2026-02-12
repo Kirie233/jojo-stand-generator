@@ -32,23 +32,65 @@ export default async function handler(req) {
       const isGemini = textModel.toLowerCase().includes('gemini');
       let url, headers, body;
 
-      const systemPrompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请设计一个符合JOJO世界观的替身(Stand)。\n要求：能力设计要有创意且易于理解，符合荒木飞吕彦的风格。\n请返回一个合法的 JSON 对象。`;
-      const userPrompt = `
-        用户特征:
-        1. 替身使者: "${userName || 'Unknown'}"
-        2. 音乐引用 (决定命名): "${song}"
-        3. 代表色 (决定视觉): "${color}"
-        4. 精神特质/欲望 (决定能力核心): "${personality}"
+      const systemPrompt = `你是一位严谨的《JOJO的奇妙冒险》替身数据录入员，正在为"JOJO百科 (JoJo Wiki)"撰写词条。
+你的任务是基于用户提供的关键词，生成一份**专业、客观且详实**的替身档案。
 
-        请返回 JSON，包含以下字段:
-        {
-          "name": "替身名 (格式必须为: English Name (中文译名), 例如: Star Platinum (白金之星))",
-          "abilityName": "能力名",
-          "ability": "能力详细描述。基于'${personality}'设计，要有JOJO式的特色，但要让人能看懂。",
-          "stats": { "power": "A-E", "speed": "A-E", "range": "A-E", "durability": "A-E", "precision": "A-E", "potential": "A-E" },
-          "appearance": "基于'${color}'色调的详细外貌描述，用于后续绘画。",
-          "shout": "替身吼叫"
-        }
+核心写作风格严格参照【白金之星】的百科词条：
+1. **百科全书口吻**：使用第三人称。语气客观、冷静，避免过多的主观修饰。
+2. **精确的术语**：在描述属性时，使用标准的JOJO术语。
+3. **能力深度解析**：不要只写"控制火"，要写出**机制**。
+4. **结构化描述**：将能力拆解为【基本能力】和【衍生应用】，条理清晰。
+请返回一个合法的 JSON 对象。`;
+      const userPrompt = `
+请基于以下数据，生成一份标准的【JOJO百科替身词条】：
+
+【档案元数据】
+1. 替身使者 (User): "${userName || 'Unknown'}"
+2. 命名来源 (Name Origin): "${song}" (由此决定替身名)
+3. 视觉色调 (Color): "${color}"
+4. 核心欲望 (Core Desire): "${personality}" (由此推导能力机制)
+
+⚠️ 严格指令：
+1. **能力强度随机化**：严禁将所有替身都设计得很强！允许生成弱替身。
+2. **形态多样性**：不要局限于人型！
+3. **色彩描述禁令**：绝对禁止在返回的文本中包含任何十六进制颜色代码或RGB代码。
+4. **格式清洗**：返回的 JSON 字段值中绝对禁止包含如"【替身简介】"、"【基本能力】"等带方括号的指示性标题，直接输出内容即可。
+
+请返回一个严格符合 JSON 格式的对象（不要使用 Markdown 代码块）：
+{
+  "name": "替身名 (英文名 + 中文名，如 'Star Platinum (白金之星)')",
+  "type": "替身类型 (如：近距离力量型、远距离自动操纵型、群体型等)",
+  "panel": {
+    "abilityName": "能力名 (四字熟语或简洁短语，如 '时间暂停')",
+    "desc": "一句话概括核心功能",
+    "long_desc": "一段详实的百科式描述，包含替身的外观特征和能力概述",
+    "mechanics": [
+      {
+        "title": "基本能力：[机制名称]",
+        "content": "详细解释该能力的工作原理（约80-100字）"
+      },
+      {
+        "title": "衍生技：[技能名称]",
+        "content": "基于基本能力的进阶应用（约80-100字）"
+      }
+    ],
+    "limitations": [
+      "限制条件 1",
+      "弱点/代价 2"
+    ],
+    "battleCry": "战吼 (如：ORA ORA、MUDA MUDA)",
+    "quote": "名台词"
+  },
+  "stats": {
+    "power": "评级 (A/B/C/D/E/None/∞)",
+    "speed": "评级",
+    "range": "评级",
+    "durability": "评级",
+    "precision": "评级",
+    "potential": "成长性"
+  },
+  "appearance": "基于'${color}'色调的详细外貌描述，用于后续绘画"
+}
       `;
 
       if (isGemini) {
