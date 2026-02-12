@@ -495,22 +495,29 @@ export const generateStandImage = async (appearance) => {
   let url, body, headers;
 
   if (isGemini) {
-    // --- STRATEGY A: Google Gemini Native API (VIA PROXY) ---
-    // Use the same secure Vercel backend we created.
-    url = '/api/gemini';
+    // --- STRATEGY A: Google Gemini ---
+    // ⚠️ CRITICAL FIX: Distinguish between Proxy Path and Direct API Path
+    if (!imgApiKey) {
+      // Case 1: No Local Key -> Must use Proxy (Prod or Dev without key)
+      url = '/api/gemini';
+    } else {
+      // Case 2: Has Local Key -> Use Direct Google API
+      url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent?key=${imgApiKey}`;
+    }
 
-    headers = {
-      'Content-Type': 'application/json'
-      // NO KEY HERE either!
-    };
+    headers = { 'Content-Type': 'application/json' };
 
-    // The backend expects { prompt, model }
+    // Construct Body for Google API
     body = {
-      prompt: prompt,
-      model: imageModel
+      contents: [{
+        role: "user",
+        parts: [{ text: prompt }]
+      }],
+      generationConfig: {
+        responseModalities: ["IMAGE"], // Force Image Mode
+        numberOfGeneratedImages: 1
+      }
     };
-
-    // console.log("Using Gemini Native Endpoint via Proxy"); 
 
   } else {
     // --- STRATEGY B: OpenAI Compatible API (DALL-E, etc) ---
@@ -536,24 +543,27 @@ export const generateStandImage = async (appearance) => {
     let response;
 
     // HYBRID STRATEGY:
-    // 1. If we have a local Key (VITE_...), use Client-Side Call (Fast, avoids Vercel 10s/30s Timeout limit).
-    // 2. If no local Key, use Backend Proxy (Secure, but subject to Vercel Hobby Timeout limits).
-    const useDirectCall = !!imgApiKey;
+    // 1. If we have a local Key (and we are in DEV), use Client-Side Call.
+    // 2. If no local Key, use Backend Proxy (Secure).
+    const useDirectCall = !!imgApiKey && import.meta.env.DEV;
 
-    if (!useDirectCall && import.meta.env.PROD) {
+    if (!useDirectCall) {
       // --- PRODUCTION: Use Serverless Proxy (Secure) ---
+      // Note: We use the specific '/api/generate' handler for images which is optimized
+      console.log("Using Backend Proxy for Image (Secure)");
       response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'image',
-          payload: { appearance }
+          payload: { appearance: prompt } // Re-using prompt as appearance description
         }),
         signal: controller.signal
       });
     } else {
-      // --- DIRECT CLIENT-SIDE CALL (Dev or Prod with Key) ---
+      // --- DIRECT CLIENT-SIDE CALL (Dev Only) ---
       console.log("Using Direct Client-Side Call for Image (Bypassing Proxy Timeout)");
+      // Ensure we are hitting the correct URL (Google API if Gemini, or OpenAI compatible)
       response = await fetch(url, {
         method: 'POST',
         headers: headers,
