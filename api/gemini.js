@@ -43,7 +43,7 @@ export default async function handler(request, response) {
   }
 
   const modelId = model || 'gemini-2.0-flash';
-  const baseUrl = 'https://generativelanguage.googleapis.com';
+  const baseUrl = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
   const url = `${baseUrl}/v1beta/models/${modelId}:generateContent`;
 
   try {
