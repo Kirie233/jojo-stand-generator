@@ -88,14 +88,12 @@
 
 | 变量名 (Key) | 示例值 (Value) | 说明 |
 | :--- | :--- | :--- |
-| `GEMINI_API_KEY` | `sk...` | **[必填]** 后端用 Key |
-| `GEMINI_BASE_URL` | `https://...` | **[选填]** 后端请求地址 |
+| `GEMINI_API_KEY` | `sk...` | **[必填]** 后端代理用 (安全，前端不可见) |
+| `GEMINI_BASE_URL` | `https://...` | **[选填]** 自定义中转/代理地址 |
 | `GEMINI_MODEL` | `gemini-1.5-flash` | **[选填]** 指定思考模型 |
 | `IMAGE_MODEL` | `dall-e-3` | **[选填]** 指定画图模型 |
-| `VITE_GEMINI_API_KEY` | `sk...` | **[混合模式必填]** 前端直连用 (防超时) |
-| `VITE_GEMINI_BASE_URL`| `https://...` | **[混合模式必填]** 前端请求地址 |
 
-> **提示：** 为了防止绘图超时 (504 Error)，强烈建议同时配置 `VITE_` 开头的变量。
+> **安全提示：** 请**不要**在 Vercel 中配置 `VITE_GEMINI_API_KEY`。生产环境会自动使用安全的后端代理模式。
 
 ### 3. 开始部署 (Deploy)
 1.  点击底部的 **Deploy** 按钮。
