@@ -56,7 +56,10 @@ export default async function handler(request, response) {
         'x-goog-api-key': apiKey // Key is injected HERE, inside the server
       },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          response_mime_type: "application/json"
+        }
       })
     });
 
