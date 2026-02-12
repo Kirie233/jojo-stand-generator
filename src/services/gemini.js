@@ -67,10 +67,7 @@ export const generateFastVisualConcept = async (inputs) => {
   return retryOperation(async () => {
     console.log("🚀 [Phase 1] Inputs:", inputs);
 
-    // Use Vercel Serverless Function (Proxy)
-    // The browser sends a request to OUR server, not Google.
-    // The Key is added on the server side.
-    const url = '/api/gemini';
+    // Hybrid strategy: Proxy in production, Direct call in dev with API key
 
     const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
     
@@ -101,17 +98,52 @@ export const generateFastVisualConcept = async (inputs) => {
       "appearance": "[TYPE: 请在此处大写填入类型] 详细且具体的绘画提示描述..."
     }`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-        // NO API KEY HERE! It's added by the server.
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        model: import.meta.env.VITE_GEMINI_MODEL // Optional: Tell server which model to use
-      })
-    });
+    const apiKey = getApiKey();
+    const baseUrl = getBaseUrl();
+    const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+    const useProxy = import.meta.env.PROD || !apiKey;
+
+    let response;
+
+    if (useProxy) {
+      // --- PROXY MODE (Production default, Dev fallback) ---
+      response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: prompt,
+          model: modelId
+        })
+      });
+    } else {
+      // --- DIRECT CLIENT-SIDE CALL (Dev with API Key) ---
+      const isGemini = modelId.toLowerCase().includes('gemini');
+      let directUrl, headers, body;
+
+      if (isGemini) {
+        directUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+        headers = { 'Content-Type': 'application/json' };
+        body = { contents: [{ parts: [{ text: prompt }] }] };
+      } else {
+        directUrl = `${baseUrl}/v1/chat/completions`;
+        headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        };
+        body = {
+          model: modelId,
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" }
+        };
+      }
+
+      console.log("[Phase 1] Direct Call to:", directUrl.replace(apiKey, '***'));
+      response = await fetch(directUrl, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(body)
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -120,11 +152,17 @@ export const generateFastVisualConcept = async (inputs) => {
         const errorJson = JSON.parse(errorText);
         throw new Error(errorJson.error || "Fast Visual Concept Failed");
       } catch (e) {
+        if (e.message.includes("Fast Visual Concept")) throw e;
         throw new Error(`API Error ${response.status}: ${errorText}`);
       }
     }
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    // Handle both Gemini and OpenAI response formats
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text && data.choices?.[0]?.message?.content) {
+      text = data.choices[0].message.content;
+    }
     if (!text) throw new Error("API response is empty");
     const result = extractJSON(text);
     console.log("📝 [Phase 1] JSON Result:", result);
