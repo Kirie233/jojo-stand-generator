@@ -127,50 +127,70 @@ export const generateFastVisualConcept = async (inputs) => {
         })
       });
 
-      const isGemini = modelId.toLowerCase().includes('gemini');
-      let requestUrl, headers, body;
-
-      if (isGemini) {
-        requestUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-        headers = { 'Content-Type': 'application/json' };
-        body = {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            response_mime_type: "application/json"
-          }
-        };
-      } else {
-        requestUrl = `${baseUrl}/v1/chat/completions`;
-        headers = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        };
-        body = {
-          model: modelId,
-          messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" }
-        };
-      }
-
-      const response = await fetch(requestUrl, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(body)
-      });
-
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Direct API Error ${response.status}: ${errorText}`);
+        console.error("❌ [Phase 1] Proxy Error Details:", response.status, errorText);
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.error || "Fast Visual Concept Failed");
+        } catch (e) {
+          throw new Error(`API Error ${response.status}: ${errorText}`);
+        }
       }
 
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || data.choices?.[0]?.message?.content;
       if (!text) throw new Error("API response is empty");
-
-      const result = extractJSON(text);
-      console.log("📝 [Phase 1] JSON Result:", result);
-      return result;
+      return extractJSON(text);
     }
+
+    // --- DIRECT CLIENT-SIDE CALL (Dev Only) ---
+    console.log("⚡ Using Direct Client-Side Call for Concept (Fast Mode)");
+
+    const isGemini = modelId.toLowerCase().includes('gemini');
+    let requestUrl, headers, body;
+
+    if (isGemini) {
+      requestUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+      headers = { 'Content-Type': 'application/json' };
+      body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          response_mime_type: "application/json"
+        }
+      };
+    } else {
+      requestUrl = `${baseUrl}/v1/chat/completions`;
+      headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+      body = {
+        model: modelId,
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" }
+      };
+    }
+
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Direct API Error ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || data.choices?.[0]?.message?.content;
+    if (!text) throw new Error("API response is empty");
+
+    const result = extractJSON(text);
+    console.log("📝 [Phase 1] JSON Result:", result);
+    return result;
+  }
   });
 };
 
