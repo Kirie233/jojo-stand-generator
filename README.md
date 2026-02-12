@@ -52,22 +52,30 @@
 2.  **安装依赖**
     ```bash
     npm install
-    # 推荐使用 pnpm 或 yarn
     ```
 
 3.  **配置环境变量**
-    复制 `.env` 文件（如果没有请新建），并填入你的 API Key：
+    复制 `.env.example` 为 `.env`，并填入你自己的 API Key：
+    ```bash
+    cp .env.example .env
+    ```
+    然后编辑 `.env` 文件：
     ```env
-    # Google Gemini API Key (必须，用于文本和图像生成)
+    # [必填] 你的 API Key
     VITE_GEMINI_API_KEY=your_api_key_here
 
-    # [可选] 自定义 API 地址 (如果你使用中转/代理)
-    VITE_GEMINI_BASE_URL=https://generativelanguage.googleapis.com
+    # [可选] 自定义 API 地址 (如使用中转/代理)
+    # VITE_GEMINI_BASE_URL=https://generativelanguage.googleapis.com
 
     # [可选] 自定义模型
-    VITE_GEMINI_MODEL=gemini-3-flash-preview
-    VITE_IMAGE_MODEL=gemini-3-pro-image-preview
+    # VITE_GEMINI_MODEL=gemini-3-flash-preview
+
+    # [可选] 图片生成独立配置
+    # VITE_IMAGE_API_KEY=your_image_api_key
+    # VITE_IMAGE_BASE_URL=https://your-image-provider.com
+    # VITE_IMAGE_MODEL=gemini-3-pro-image-preview
     ```
+    > ⚠️ `.env` 文件已在 `.gitignore` 中，**不会被提交到仓库**，请放心填写。
 
 4.  **启动替身使者**
     ```bash
@@ -75,27 +83,39 @@
     ```
     访问 `http://localhost:5173` 开始觉醒。
 
-## ☁️ 部署指南 (Deployment Guide)
+## ☁️ 部署指南 (Deployment on Vercel)
+
+### 架构说明
+
+本项目采用 **前后端分离的安全架构**：
+
+- **生产环境**：所有 API 请求通过 Vercel Serverless Functions 代理转发，API Key **仅存在于服务器端**，前端代码中不包含任何密钥。
+- **开发环境**：通过 `.env` 文件中的 `VITE_` 前缀变量直连 API，方便本地调试。
+
+```
+[生产环境] 浏览器 → Vercel Serverless (/api/generate) → AI API
+[开发环境] 浏览器 → 直连 AI API (使用 .env 中的 Key)
+```
 
 ### 1. 导入项目 (Import Project)
 1.  **Fork** 本项目到您的 GitHub 账号。
 2.  登录 [Vercel](https://vercel.com)。
-3.  点击 **"Add New..."** -> **"Project"**。
+3.  点击 **"Add New..."** → **"Project"**。
 4.  选择导入您刚刚 Fork 的 `jojo-stand-generator` 仓库。
 
-### 2. 配置环境变量 (Environment Variables) - ⚠️ 重要步骤
-在 Vercel 的 "Configure Project" 页面，点开 **"Environment Variables"** 选项卡，添加以下变量：
+### 2. 配置环境变量 (Environment Variables)
+在 Vercel 的 **Settings → Environment Variables** 中添加以下变量：
 
 | 变量名 (Key) | 示例值 (Value) | 说明 |
 | :--- | :--- | :--- |
-| `GEMINI_API_KEY` | `sk...` | **[必填]** 后端用 Key |
-| `GEMINI_BASE_URL` | `https://...` | **[选填]** 后端请求地址 |
-| `GEMINI_MODEL` | `gemini-1.5-flash` | **[选填]** 指定思考模型 |
-| `IMAGE_MODEL` | `dall-e-3` | **[选填]** 指定画图模型 |
-| `VITE_GEMINI_API_KEY` | `sk...` | **[混合模式必填]** 前端直连用 (防超时) |
-| `VITE_GEMINI_BASE_URL`| `https://...` | **[混合模式必填]** 前端请求地址 |
+| `GEMINI_API_KEY` | `sk-xxx...` | **[必填]** 文本生成 API Key |
+| `GEMINI_BASE_URL` | `https://api.example.com` | **[选填]** API 地址 (默认 Google 官方) |
+| `GEMINI_MODEL` | `gemini-3-flash-preview` | **[选填]** 文本模型 |
+| `IMAGE_API_KEY` | `sk-xxx...` | **[选填]** 图片 API Key (不填则复用 GEMINI_API_KEY) |
+| `IMAGE_BASE_URL` | `https://img.example.com` | **[选填]** 图片 API 地址 |
+| `IMAGE_MODEL` | `gemini-3-pro-image-preview` | **[选填]** 图片模型 |
 
-> **提示：** 为了防止绘图超时 (504 Error)，强烈建议同时配置 `VITE_` 开头的变量。
+> ⚠️ **请勿在 Vercel 上设置 `VITE_` 前缀的变量！** `VITE_` 前缀的变量会被编译进前端代码，导致 API Key 泄露。不带 `VITE_` 前缀的变量仅在 Serverless Functions 中可用，完全安全。
 
 ### 3. 开始部署 (Deploy)
 1.  点击底部的 **Deploy** 按钮。

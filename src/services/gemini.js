@@ -185,11 +185,13 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
   try {
     let response;
 
-    // HYBRID STRATEGY: Prefer Direct Call if Key exists to reduce Serverless usage
-    const useDirectCall = !!apiKey;
+    // HYBRID STRATEGY:
+    // Production: ALWAYS use Serverless Proxy (Secure, Key stays on server)
+    // Development: Use Direct Call if Key exists (Fast, no proxy needed)
+    const useProxy = import.meta.env.PROD || !apiKey;
 
-    if (!useDirectCall && import.meta.env.PROD) {
-      // --- PRODUCTION: Use Serverless Proxy (Secure) ---
+    if (useProxy) {
+      // --- PROXY MODE (Production default, Dev fallback) ---
       response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -482,12 +484,12 @@ export const generateStandImage = async (appearance) => {
     let response;
 
     // HYBRID STRATEGY:
-    // 1. If we have a local Key (VITE_...), use Client-Side Call (Fast, avoids Vercel 10s/30s Timeout limit).
-    // 2. If no local Key, use Backend Proxy (Secure, but subject to Vercel Hobby Timeout limits).
-    const useDirectCall = !!imgApiKey;
+    // Production: ALWAYS use Serverless Proxy (Secure, Key stays on server)
+    // Development: Use Direct Call if Key exists (Fast, avoids proxy timeout)
+    const useProxy = import.meta.env.PROD || !imgApiKey;
 
-    if (!useDirectCall && import.meta.env.PROD) {
-      // --- PRODUCTION: Use Serverless Proxy (Secure) ---
+    if (useProxy) {
+      // --- PROXY MODE (Production default, Dev fallback) ---
       response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -498,8 +500,8 @@ export const generateStandImage = async (appearance) => {
         signal: controller.signal
       });
     } else {
-      // --- DIRECT CLIENT-SIDE CALL (Dev or Prod with Key) ---
-      console.log("Using Direct Client-Side Call for Image (Bypassing Proxy Timeout)");
+      // --- DIRECT CLIENT-SIDE CALL (Dev only) ---
+      console.log("Using Direct Client-Side Call for Image (Dev Mode)");
       response = await fetch(url, {
         method: 'POST',
         headers: headers,
