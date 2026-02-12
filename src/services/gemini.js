@@ -90,8 +90,10 @@ export const generateFastVisualConcept = async (inputs) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: inputs.song, // Simplified for proxy if needed, or update proxy to handle full payload
-          model: modelId
+          prompt: inputs.song,
+          // ⚠️ FIX: Do NOT send modelId if we are in Prod and it's just a default.
+          // Let the Backend use its own GEMINI_MODEL env var.
+          model: useDirectCall ? modelId : undefined
         })
       });
 

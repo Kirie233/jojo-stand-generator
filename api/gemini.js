@@ -42,7 +42,8 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Missing prompt in request body' });
   }
 
-  const modelId = model || 'gemini-2.0-flash';
+  // Prioritize: 1. Frontend Payload (if specific) -> 2. Backend Env Var -> 3. Default
+  const modelId = model || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
   const baseUrl = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
   const url = `${baseUrl}/v1beta/models/${modelId}:generateContent`;
 
