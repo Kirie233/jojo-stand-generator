@@ -478,26 +478,8 @@ export const generateStandImage = async (appearance) => {
 
   let url, body, headers;
 
-  if (isGemini) {
-    // --- STRATEGY A: Google Gemini Native API (VIA PROXY) ---
-    // Use the same secure Vercel backend we created.
-    url = '/api/gemini';
-
-    headers = {
-      'Content-Type': 'application/json'
-      // NO KEY HERE either!
-    };
-
-    // The backend expects { prompt, model }
-    body = {
-      prompt: prompt,
-      model: imageModel
-    };
-
-    // console.log("Using Gemini Native Endpoint via Proxy"); 
-
-  } else {
-    // --- STRATEGY B: OpenAI Compatible API (DALL-E, etc) ---
+  if (!isGemini) {
+    // --- OpenAI Compatible API (DALL-E, etc) ---
     url = `${imgBaseUrl}/v1/images/generations`;
     headers = {
       'Content-Type': 'application/json',
@@ -509,7 +491,6 @@ export const generateStandImage = async (appearance) => {
       n: 1,
       size: "1024x1024"
     };
-
   }
 
   // 2. Timeout Controller
@@ -535,8 +516,30 @@ export const generateStandImage = async (appearance) => {
         }),
         signal: controller.signal
       });
+    } else if (isGemini) {
+      // --- DIRECT Gemini Image Call (Dev only) ---
+      const geminiUrl = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent`;
+      console.log("Using Direct Gemini Image Call (Dev Mode):", geminiUrl);
+      response = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': imgApiKey
+        },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+          ]
+        }),
+        signal: controller.signal
+      });
     } else {
-      // --- DIRECT CLIENT-SIDE CALL (Dev only) ---
+      // --- DIRECT OpenAI Image Call (Dev only) ---
       console.log("Using Direct Client-Side Call for Image (Dev Mode)");
       console.log("Image Endpoint:", url);
       response = await fetch(url, {
