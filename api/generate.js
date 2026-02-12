@@ -102,8 +102,11 @@ export default async function handler(req) {
       const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nStyle tags: Anime Character Sheet, Full Body Reference, White Background, Simple Background, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Dynamic 'JoJo Pose', Vibrant Colors. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo.`;
 
       if (isGemini) {
-        url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent?key=${imgApiKey}`;
-        headers = { 'Content-Type': 'application/json' };
+        url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent`;
+        headers = {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': imgApiKey
+        };
         body = {
           contents: [{
             role: "user",
@@ -133,6 +136,8 @@ export default async function handler(req) {
         };
       }
 
+      console.log("[Image] Provider:", imgBaseUrl, "| Model:", imageModel, "| isGemini:", isGemini);
+
       const response = await fetch(url, {
         method: 'POST',
         headers: headers,
@@ -142,6 +147,7 @@ export default async function handler(req) {
       const data = await response.json();
 
       if (!response.ok) {
+        console.error("[Image] API Error:", response.status, JSON.stringify(data));
         return new Response(JSON.stringify({ error: data.error || 'Image generation failed', raw: data }), {
           status: response.status,
           headers: { 'Content-Type': 'application/json' }
@@ -154,11 +160,17 @@ export default async function handler(req) {
       if (isGemini) {
         // Gemini format: candidates[0].content.parts[] → find inline_data/inlineData
         const parts = data.candidates?.[0]?.content?.parts || [];
+        console.log("[Image] Gemini parts count:", parts.length, "| Types:", parts.map(p => Object.keys(p)).join(', '));
         const imagePart = parts.find(p => (p.inline_data?.data) || (p.inlineData?.data));
         if (imagePart) {
           const dataObj = imagePart.inline_data || imagePart.inlineData;
           const mimeType = dataObj.mime_type || dataObj.mimeType || 'image/png';
+          imageData = `data:${mimeType};base64,${dataObj.data.substring(0, 50)}...`; // Log truncated
+          console.log("[Image] Found Base64 image, mime:", mimeType, "| data length:", dataObj.data.length);
+          // Return full data (not truncated)
           imageData = `data:${mimeType};base64,${dataObj.data}`;
+        } else {
+          console.warn("[Image] No image found in parts. Raw keys:", JSON.stringify(parts.map(p => Object.keys(p))));
         }
       } else {
         // OpenAI format: data.data[0].url
