@@ -139,11 +139,34 @@ export default async function handler(req) {
         body: JSON.stringify(body)
       });
 
-      // We return the raw provider response to the frontend, 
-      // letting the frontend logic (which is already capable) handle the parsing details.
       const data = await response.json();
-      return new Response(JSON.stringify(data), {
-        status: response.status,
+
+      if (!response.ok) {
+        return new Response(JSON.stringify({ error: data.error || 'Image generation failed', raw: data }), {
+          status: response.status,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Normalize response: extract image data regardless of provider format
+      let imageData = null;
+
+      if (isGemini) {
+        // Gemini format: candidates[0].content.parts[] → find inline_data/inlineData
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        const imagePart = parts.find(p => (p.inline_data?.data) || (p.inlineData?.data));
+        if (imagePart) {
+          const dataObj = imagePart.inline_data || imagePart.inlineData;
+          const mimeType = dataObj.mime_type || dataObj.mimeType || 'image/png';
+          imageData = `data:${mimeType};base64,${dataObj.data}`;
+        }
+      } else {
+        // OpenAI format: data.data[0].url
+        imageData = data.data?.[0]?.url || null;
+      }
+
+      return new Response(JSON.stringify({ imageData }), {
+        status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
     }

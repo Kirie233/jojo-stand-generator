@@ -519,10 +519,15 @@ export const generateStandImage = async (appearance) => {
     }
 
     const data = await response.json();
-    console.log("--- RAW GEMINI IMAGE RESPONSE ---", JSON.stringify(data, null, 2));
+    console.log("--- IMAGE RESPONSE ---", JSON.stringify(data, null, 2));
 
     // 3. Parse Response
-    // 3. Parse Response
+    // If we used the proxy, backend already normalized the response
+    if (useProxy) {
+      return data.imageData || null;
+    }
+
+    // Direct call (Dev only): parse raw provider response
     if (isGemini) {
       const candidate = data.candidates?.[0];
       if (candidate?.finishReason) {
@@ -541,16 +546,13 @@ export const generateStandImage = async (appearance) => {
       }
 
       // B. Look for Image URL in Text (Markdown link)
-      // Some models return text: "Here is the image: ![alt](url)"
       const textParts = parts.filter(p => p.text).map(p => p.text).join('\n');
       if (textParts) {
-        // Check for http link in parens (markdown) or just raw url
         const urlMatch = textParts.match(/https?:\/\/[^\s\)]+(?:\.png|\.jpg|\.jpeg|\.webp)|https?:\/\/oaidalleapiprodscus[^\s\)]+/);
         if (urlMatch) {
           console.log("Found Image URL in text:", urlMatch[0]);
           return urlMatch[0];
         }
-
         console.warn("Gemini returned text but no image found:", textParts);
       }
 
@@ -559,8 +561,6 @@ export const generateStandImage = async (appearance) => {
       // Parse OpenAI Response (URL)
       return data.data?.[0]?.url;
     }
-
-    return null;
 
   } catch (err) {
     console.error("Image Generation Error:", err);
