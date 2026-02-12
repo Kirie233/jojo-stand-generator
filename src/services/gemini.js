@@ -67,12 +67,55 @@ export const generateFastVisualConcept = async (inputs) => {
   return retryOperation(async () => {
     console.log("🚀 [Phase 1] Inputs:", inputs);
 
-    // Use Vercel Serverless Function (Proxy)
-    // The browser sends a request to OUR server, not Google.
-    // The Key is added on the server side.
-    const url = '/api/gemini';
+    // HYBRID STRATEGY: 
+    // PROD: Always use Serverless Proxy (Secure)
+    // DEV: Prefer Direct Client-Side Call if Key exists (Fast Debugging)
+    let apiKey = '';
+    let baseUrl = '';
+    let modelId = 'gemini-2.0-flash';
+    let useDirectCall = false;
 
-    const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
+    if (import.meta.env.DEV) {
+      apiKey = getApiKey();
+      baseUrl = getBaseUrl();
+      // Default to flash for speed in Phase 1
+      modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+      useDirectCall = !!apiKey;
+    }
+
+    if (!useDirectCall) {
+      // --- PRODUCTION: Use Serverless Proxy (Secure) ---
+      const url = '/api/gemini';
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: inputs.song, // Simplified for proxy if needed, or update proxy to handle full payload
+          model: modelId
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ [Phase 1] Proxy Error Details:", response.status, errorText);
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.error || "Fast Visual Concept Failed");
+        } catch (e) {
+          throw new Error(`API Error ${response.status}: ${errorText}`);
+        }
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || data.choices?.[0]?.message?.content;
+      if (!text) throw new Error("API response is empty");
+      return extractJSON(text);
+
+    } else {
+      // --- DIRECT CLIENT-SIDE CALL (Dev Only) ---
+      console.log("⚡ Using Direct Client-Side Call for Concept (Fast Mode)");
+
+      const prompt = `你是一位高效的替身设计助手。请基于以下用户特征，用**最简洁**的语言总结出替身的“名字”和“详细外貌描述”。
     
     用户特征:
     1. 引用: "${inputs.song}"(可能暗示了外形，如Aerosmith->飞机)
@@ -87,7 +130,7 @@ export const generateFastVisualConcept = async (inputs) => {
     - 只有当特质是“直接战斗/压倒性力量”时，才设计为**强壮的人形**。
 
     要求：
-    1. 名字必须符合 JOJO 风格。
+    1. 名字 must comply with JOJO style.
     2. 外貌描述要包含比例、材质、基于'${inputs.color}'制定的装饰，直接描述视觉特征，不要描述文字或符号。
     3. **头部设计特别指令**：
        - **仅当**判定为[强壮人形]时，头部设计应多样化：可参考**古典雕塑(希腊像)**、**机械面具(无机质)**、或**抽象几何(面部有条纹/拉链/网格)**。重要的是**荒木线(Araki Lines)**的阴影刻画，而非模仿特定角色。
@@ -96,39 +139,50 @@ export const generateFastVisualConcept = async (inputs) => {
 
     只需返回以下 JSON (严禁 Markdown 代码块):
     {
-      "reasoning": "简短分析思路...例如：用户特质是[贪婪]，歌曲暗示了[群体]，所以我决定设计一个[COLONY]类型的替身。",
+      "reasoning": "简短分析思路...",
       "name": "替身名 (中英文)",
       "appearance": "[TYPE: 请在此处大写填入类型] 详细且具体的绘画提示描述..."
     }`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-        // NO API KEY HERE! It's added by the server.
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        model: import.meta.env.VITE_GEMINI_MODEL // Optional: Tell server which model to use
-      })
-    });
+      const isGemini = modelId.toLowerCase().includes('gemini');
+      let requestUrl, headers, body;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ [Phase 1] API Error Details:", response.status, errorText);
-      try {
-        const errorJson = JSON.parse(errorText);
-        throw new Error(errorJson.error || "Fast Visual Concept Failed");
-      } catch (e) {
-        throw new Error(`API Error ${response.status}: ${errorText}`);
+      if (isGemini) {
+        requestUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+        headers = { 'Content-Type': 'application/json' };
+        body = { contents: [{ parts: [{ text: prompt }] }] };
+      } else {
+        requestUrl = `${baseUrl}/v1/chat/completions`;
+        headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        };
+        body = {
+          model: modelId,
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" }
+        };
       }
+
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Direct API Error ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || data.choices?.[0]?.message?.content;
+      if (!text) throw new Error("API response is empty");
+
+      const result = extractJSON(text);
+      console.log("📝 [Phase 1] JSON Result:", result);
+      return result;
     }
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("API response is empty");
-    const result = extractJSON(text);
-    console.log("📝 [Phase 1] JSON Result:", result);
-    return result;
   });
 };
 
