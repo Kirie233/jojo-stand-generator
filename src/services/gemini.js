@@ -107,13 +107,13 @@ export const generateFastVisualConcept = async (inputs) => {
 
     if (useProxy) {
       // --- PROXY MODE (Production default, Dev fallback) ---
+      // Only send model if user explicitly configured it, otherwise let backend use its own env vars
+      const proxyBody = { prompt: prompt };
+      if (import.meta.env.VITE_GEMINI_MODEL) proxyBody.model = import.meta.env.VITE_GEMINI_MODEL;
       response = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: prompt,
-          model: modelId
-        })
+        body: JSON.stringify(proxyBody)
       });
     } else {
       // --- DIRECT CLIENT-SIDE CALL (Dev with API Key) ---
