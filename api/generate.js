@@ -141,7 +141,7 @@ export default async function handler(req) {
 
       let url, body, headers;
 
-      const prompt = `(Masterpiece, Best Quality), Jojo's Bizarre Adventure Stand, art by Araki Hirohiko. ${appearance}. \n\nStyle tags: Anime Character Sheet, Full Body Reference, White Background, Simple Background, Bold Black Lines, Heavy Hatching, Dramatic Shading, Hyper-muscular, Dynamic 'JoJo Pose', Vibrant Colors. No humans, focus on the Stand entity. \n\nNEGATIVE PROMPT: text, letters, watermark, signature, username, ui, interface, speech bubble, caption, logo.`;
+      const prompt = `Draw a JoJo's Bizarre Adventure Stand character in the art style of Hirohiko Araki. ${appearance}. The art style should feature bold ink outlines, dramatic cross-hatching shadows, vibrant saturated colors, and an exaggerated dynamic pose. Position the Stand on the right side of the image. Use a dramatic, atmospheric background that fits the Stand's theme. This is a Stand entity, not a human character. Do not include any text, letters, watermarks, or UI elements in the image.`;
 
       if (isGemini) {
         url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent`;
