@@ -42,6 +42,15 @@ body {
   body {
     font-size: 14px;
     /* Base downscale */
+    /* MOBILE FIX: Allow scrolling on mobile devices */
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .app-container {
+    height: auto;
+    min-height: 100vh;
   }
 }
 

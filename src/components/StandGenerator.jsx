@@ -457,6 +457,49 @@ const StandGenerator = () => {
               justify-content: center;
               padding: 20px;
           }
+
+          /* === MOBILE RESPONSIVE LOADING & CONTENT === */
+          @media (max-width: 768px) {
+              .content-area {
+                  padding: 10px;
+                  min-height: auto;
+                  flex-direction: column;
+                  align-items: center;
+              }
+              .kars-drifter {
+                  width: 200px; height: 200px;
+                  margin-bottom: 15px;
+              }
+              .kars-main-text {
+                  font-size: 1.6rem;
+                  letter-spacing: 1px;
+              }
+              .kars-sub-text {
+                  font-size: 0.9rem;
+                  letter-spacing: 2px;
+                  margin-bottom: 15px;
+              }
+              .loading-status {
+                  font-size: 0.8rem;
+              }
+              .menacing-text {
+                  font-size: 2rem;
+              }
+              .error-message {
+                  font-size: 0.85rem;
+                  padding: 10px 20px;
+                  max-width: 90vw;
+              }
+              /* TBC Arrow & Floating Image */
+              .tbc-container-fixed {
+                  width: 180px; height: 180px;
+                  bottom: -60px; left: 10px;
+              }
+              .tbc-floating-img-global {
+                  width: 180px;
+                  bottom: 20px; left: 10px;
+              }
+          }
       `}</style>
     </div>
   );

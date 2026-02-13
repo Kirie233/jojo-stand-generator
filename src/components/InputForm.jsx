@@ -1515,15 +1515,29 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
 
         /* === RESPONSIVE INPUT FORM === */
         @media (max-width: 768px) {
+            /* FIX ROOT CAUSE: Ensure width chain is complete */
+            .tarot-container {
+                width: 100%;
+                min-height: auto;
+                padding-top: 30px;
+                padding-bottom: 30px;
+                justify-content: flex-start;
+            }
+            .tarot-card-scene {
+                width: 100%;
+            }
+
             .tarot-card-frame {
-                width: 90%;
-                max-width: 100%;
-                height: 550px; /* Reduced height for mobile */
+                width: 90%; /* Now works correctly because parent chain has width */
+                max-width: 400px;
+                height: 70vh;
                 padding: 15px;
+                overflow-y: auto; 
+                overflow-x: hidden;
             }
             
             .card-header { padding-left: 0; text-align: center; }
-            .card-question { font-size: 1.5rem; text-align: center; border-left: none; padding-left: 0; width: 100%; } /* Center title */
+            .card-question { font-size: 1.5rem; text-align: center; border-left: none; padding-left: 0; width: 100%; }
             .card-plain { font-size: 1rem; text-align: center; }
             
             .speech-bubble-input { font-size: 1.5rem; width: 85%; }
@@ -1550,7 +1564,44 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
              
             /* Ritual Button */
             .text-cn { font-size: 1.6rem; }
-            .kana { font-size: 1.5rem; display: none; } /* Hide extra symbols on very small screens */
+            .kana { font-size: 1.5rem; display: none; }
+
+            /* FIX: Ritual content vertically centered in card */
+            .arrow-ritual-container {
+                gap: 5px;
+                margin-top: 0;
+                width: 100%;
+                flex: 1; /* Fill available space */
+                justify-content: center; /* Center content vertically */
+                overflow: hidden;
+            }
+            .arrow-visual-wrapper { width: 150px; height: 150px; overflow: visible; }
+            .ritual-circle-new { width: 120px; height: 120px; }
+            .ritual-arrow-multiply { width: 160%; }
+            .aura-rays { width: 200px; height: 200px; }
+            .aura-core { width: 100px; height: 100px; }
+            .aura-particles { width: 180px; height: 180px; }
+            .gogogo-container .go-text { font-size: 1.2rem; }
+            .awakening-btn-final {
+                width: 100%;
+                padding: 8px 0;
+                transform: skewX(-8deg); /* Reduced skew to prevent visual narrowing */
+            }
+            .awakening-btn-final .skew-fix { transform: skewX(8deg); }
+            .text-en { font-size: 0.9rem; letter-spacing: 2px; }
+        }
+
+        /* Extra small screens (iPhone SE etc.) */
+        @media (max-width: 380px) {
+            .tarot-card-frame {
+                width: 95%;
+                padding: 10px;
+                min-height: 400px;
+            }
+            .card-question { font-size: 1.2rem; }
+            .speech-bubble-input { font-size: 1.2rem; }
+            .color-swatch { width: 28px; height: 28px; margin: 6px; }
+            .tag-chip { font-size: 0.8rem; padding: 3px 8px; }
         }
       `}</style>
       </div>

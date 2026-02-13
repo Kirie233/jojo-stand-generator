@@ -218,6 +218,34 @@ const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onTogg
             pointer-events: none;
         }
 
+        /* === MOBILE RESPONSIVE NAVBAR === */
+        @media (max-width: 768px) {
+            .zipper-nav-container {
+                width: 260px; /* Narrower for mobile */
+            }
+            .zipper-handle-sticky {
+                top: 20px;
+                left: -50px;
+                width: 50px; height: 100px;
+            }
+            .menu-list {
+                gap: 25px;
+                padding-right: 20px;
+            }
+            .menu-icon-img {
+                width: 45px; height: 68px;
+            }
+            .menu-cn { font-size: 1.8rem; }
+            .menu-en { font-size: 1.1rem; }
+            .menu-item { gap: 12px; padding: 8px; }
+        }
+
+        @media (max-width: 380px) {
+            .zipper-nav-container { width: 220px; }
+            .menu-cn { font-size: 1.5rem; }
+            .menu-icon-img { width: 35px; height: 55px; }
+        }
+
       `}</style>
     </>
   );
