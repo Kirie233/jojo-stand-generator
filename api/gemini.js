@@ -42,7 +42,7 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Missing prompt in request body' });
   }
 
-  const modelId = model || process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+  const modelId = model || process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
   const baseUrl = process.env.GEMINI_BASE_URL || process.env.VITE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
   const url = `${baseUrl}/v1beta/models/${modelId}:generateContent`;
 

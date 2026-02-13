@@ -100,7 +100,7 @@ export const generateFastVisualConcept = async (inputs) => {
 
     const apiKey = getApiKey();
     const baseUrl = getBaseUrl();
-    const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+    const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
     const useProxy = import.meta.env.PROD || !apiKey;
 
     let response;
@@ -184,7 +184,7 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
 
 
   const baseUrl = getBaseUrl();
-  const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
+  const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
 
   const prompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。
 

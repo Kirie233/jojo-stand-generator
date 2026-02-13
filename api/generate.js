@@ -16,7 +16,7 @@ export default async function handler(req) {
     const baseUrl = process.env.GEMINI_BASE_URL || process.env.VITE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
 
     // Allow overriding models via env vars, formatted for backend
-    const textModel = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
+    const textModel = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
     const imageModel = process.env.IMAGE_MODEL || process.env.VITE_IMAGE_MODEL || 'dall-e-3';
 
     if (!apiKey) {
