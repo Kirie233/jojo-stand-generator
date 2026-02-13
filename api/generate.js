@@ -17,7 +17,7 @@ export default async function handler(req) {
 
     // Allow overriding models via env vars, formatted for backend
     const textModel = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
-    const imageModel = process.env.IMAGE_MODEL || process.env.VITE_IMAGE_MODEL || 'dall-e-3';
+    const imageModel = process.env.IMAGE_MODEL || process.env.VITE_IMAGE_MODEL || 'gemini';
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'Server configuration error: Missing API Key' }), {
@@ -180,46 +180,63 @@ export default async function handler(req) {
 
       console.log("[Image] Provider:", imgBaseUrl, "| Model:", imageModel, "| isGemini:", isGemini);
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(body)
-      });
+      // Use streaming to avoid Edge 25s timeout:
+      // Start sending response immediately, write actual data when Gemini responds.
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
 
-      const data = await response.json();
+      // Launch async processing in background (not awaited)
+      (async () => {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body)
+          });
 
-      if (!response.ok) {
-        console.error("[Image] API Error:", response.status, JSON.stringify(data));
-        return new Response(JSON.stringify({ error: data.error || 'Image generation failed', raw: data }), {
-          status: response.status,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
+          const data = await response.json();
 
-      // Normalize response: extract image data regardless of provider format
-      let imageData = null;
+          if (!response.ok) {
+            console.error("[Image] API Error:", response.status, JSON.stringify(data));
+            await writer.write(new TextEncoder().encode(JSON.stringify({
+              error: data.error || 'Image generation failed', raw: data
+            })));
+            await writer.close();
+            return;
+          }
 
-      if (isGemini) {
-        // Gemini format: candidates[0].content.parts[] → find inline_data/inlineData
-        const parts = data.candidates?.[0]?.content?.parts || [];
-        console.log("[Image] Gemini parts count:", parts.length, "| Types:", parts.map(p => Object.keys(p)).join(', '));
-        const imagePart = parts.find(p => (p.inline_data?.data) || (p.inlineData?.data));
-        if (imagePart) {
-          const dataObj = imagePart.inline_data || imagePart.inlineData;
-          const mimeType = dataObj.mime_type || dataObj.mimeType || 'image/png';
-          imageData = `data:${mimeType};base64,${dataObj.data.substring(0, 50)}...`; // Log truncated
-          console.log("[Image] Found Base64 image, mime:", mimeType, "| data length:", dataObj.data.length);
-          // Return full data (not truncated)
-          imageData = `data:${mimeType};base64,${dataObj.data}`;
-        } else {
-          console.warn("[Image] No image found in parts. Raw keys:", JSON.stringify(parts.map(p => Object.keys(p))));
+          // Normalize response: extract image data regardless of provider format
+          let imageData = null;
+
+          if (isGemini) {
+            const parts = data.candidates?.[0]?.content?.parts || [];
+            console.log("[Image] Gemini parts count:", parts.length);
+            const imagePart = parts.find(p => (p.inline_data?.data) || (p.inlineData?.data));
+            if (imagePart) {
+              const dataObj = imagePart.inline_data || imagePart.inlineData;
+              const mimeType = dataObj.mime_type || dataObj.mimeType || 'image/png';
+              console.log("[Image] Found Base64 image, mime:", mimeType, "| data length:", dataObj.data.length);
+              imageData = `data:${mimeType};base64,${dataObj.data}`;
+            } else {
+              console.warn("[Image] No image found in parts.");
+            }
+          } else {
+            imageData = data.data?.[0]?.url || null;
+          }
+
+          await writer.write(new TextEncoder().encode(JSON.stringify({ imageData })));
+          await writer.close();
+        } catch (err) {
+          console.error("[Image] Stream error:", err);
+          try {
+            await writer.write(new TextEncoder().encode(JSON.stringify({ error: err.message })));
+            await writer.close();
+          } catch (_) { /* writer may already be closed */ }
         }
-      } else {
-        // OpenAI format: data.data[0].url
-        imageData = data.data?.[0]?.url || null;
-      }
+      })();
 
-      return new Response(JSON.stringify({ imageData }), {
+      // Return response immediately (starts the 300s streaming window)
+      return new Response(readable, {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
