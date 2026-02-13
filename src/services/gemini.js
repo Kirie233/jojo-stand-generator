@@ -92,6 +92,7 @@ export const generateFastVisualConcept = async (inputs) => {
        - 自动追踪型：黑色安息日、透明死神、廉价把戏
        - 现象型：波希米亚狂想曲、天气预报、D4C
        - 独立行动型：臭名昭著的大敌、滚石
+       - 以上只是部分示例，你完全可以设计出不属于任何分类的全新替身。
 
     返回 JSON（严禁 Markdown 代码块）:
     {
