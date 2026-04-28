@@ -538,20 +538,21 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
             flex-direction: column;
         }
 
-        /* TOP LEFT: MASTER (Moved right to avoid return button) */
+        /* TOP LEFT: MASTER */
         .corner-info.master {
-            top: 30px;
-            left: 120px;
+            top: 18px;
+            left: 24px;
             text-align: left;
+            max-width: min(46%, 560px);
         }
 
         /* BOTTOM RIGHT: STAND NAME */
         .corner-info.stand {
-            bottom: 30px;
-            right: 40px;
+            bottom: 22px;
+            right: 24px;
             text-align: right;
             align-items: flex-end;
-            max-width: 60%; /* Prevent hitting the radar */
+            max-width: min(38%, 430px); /* Prevent hitting the radar and image focal point */
         }
 
         /* Label Row styling */
@@ -560,12 +561,13 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
             gap: 4px;
             margin-bottom: 5px;
             font-family: 'Noto Serif SC', serif;
-            font-size: 1.2rem;
+            font-size: clamp(0.82rem, 1.15vw, 1.05rem);
             font-weight: 900;
             color: rgba(255,255,255,0.9);
             text-shadow: 2px 2px 0 #000;
             /* Anime Skew */
             transform: skewX(-10deg);
+            flex-wrap: wrap;
         }
         
         .label-line .en { color: #ffffffff; } /* Highlight Master/Name tags */
@@ -575,35 +577,36 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
         .display-name {
             font-family: 'Noto Serif SC', serif;
             font-weight: 900;
-            font-size: 4rem; /* Larger */
-            line-height: 1;
+            font-size: clamp(1.85rem, 3.1vw, 3.25rem);
+            line-height: 1.05;
             color: #fff;
             margin: 0;
             /* Heavy Jojo Outline */
-            -webkit-text-stroke: 2px #000;
+            -webkit-text-stroke: 1.5px #000;
             paint-order: stroke fill;
             text-shadow: 
-                4px 4px 0px #000,
+                3px 3px 0px #000,
                 0 0 20px rgba(255, 215, 0, 0.6);
             /* Dynamic Anime Transform */
             transform: skewX(-10deg) scale(1, 1.05); 
             max-width: 100%;
-            overflow: visible;
-            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            word-break: keep-all;
         }
 
         .display-sub-name {
             font-family: 'Noto Serif SC', serif;
-            font-size: 2rem;
+            font-size: clamp(1.05rem, 1.8vw, 1.75rem);
             color: #ffd700;
             font-weight: 900;
             margin-top: 5px;
             /* Fix: Ensure stroke sits behind fill */
-            -webkit-text-stroke: 4px #000;
+            -webkit-text-stroke: 2px #000;
             paint-order: stroke fill;
             text-shadow: 2px 2px 0 #000;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             transform: skewX(-10deg);
+            overflow-wrap: anywhere;
         }
 
         /* --- CATALYST (Top Right Floating Jewel) --- */
@@ -1026,8 +1029,10 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
              }
              
              /* Fonts */
-             .display-name { font-size: 2.5rem; }
-             .display-sub-name { font-size: 1.2rem; }
+             .corner-info.master { top: 14px; left: 16px; max-width: 52%; }
+             .corner-info.stand { right: 16px; bottom: 16px; max-width: 44%; }
+             .display-name { font-size: clamp(1.35rem, 5vw, 2.2rem); }
+             .display-sub-name { font-size: clamp(0.9rem, 3vw, 1.15rem); }
              
              /* Tech HUD: Use Grid 1 Col */
              .mechanics-grid { grid-template-columns: 1fr; }
