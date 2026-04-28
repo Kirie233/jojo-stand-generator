@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import '../styles/variables.css';
 import { downloadUrl, parseStandName, STAND_STAT_LABELS } from '../utils/stand';
 
-const MobileStandCard = ({ standData, onReset }) => {
+const MobileStandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnly }) => {
   if (!standData) return null;
   const { name, abilityName, ability, stats } = standData;
 
@@ -24,6 +24,57 @@ const MobileStandCard = ({ standData, onReset }) => {
     downloadUrl(standData.imageUrl, `JOJO_${mainName.replace(/\s+/g, '_')}.png`);
   };
   const { main: mainName, sub: subName } = parseStandName(name);
+  const handleToggleImageOnly = onToggleImageOnly || (() => {});
+
+  if (imageOnlyMode) {
+    return (
+      <div className="mobile-image-only-root">
+        <button className="mobile-image-toggle restore" type="button" onClick={handleToggleImageOnly}>
+          显示UI
+        </button>
+        {hasDownloadableImage ? (
+          <img src={standData.imageUrl} alt="Stand Visual" className="mobile-image-only-img" />
+        ) : (
+          <div className="mobile-image-only-placeholder">IMAGE LOADING</div>
+        )}
+        <style>{`
+          .mobile-image-only-root {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .mobile-image-only-img {
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+            background: #000;
+          }
+          .mobile-image-only-placeholder {
+            color: #ffd700;
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 3px;
+          }
+          .mobile-image-toggle {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            z-index: 10001;
+            background: rgba(0,0,0,0.78);
+            border: 2px solid #ffd700;
+            border-radius: 4px;
+            color: #ffd700;
+            padding: 8px 12px;
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 1px;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   /*
   const translatedLabels = {
@@ -42,6 +93,14 @@ const MobileStandCard = ({ standData, onReset }) => {
       <div className="mobile-header">
         <button onClick={onReset} className="mobile-back-btn">
           <span className="arrow">◀</span> RETURN
+        </button>
+        <button
+          onClick={handleToggleImageOnly}
+          className="mobile-image-toggle"
+          type="button"
+          disabled={!hasDownloadableImage}
+        >
+          只看图
         </button>
         <div className="mobile-title">STAND PROFILE</div>
       </div>
@@ -162,6 +221,21 @@ const MobileStandCard = ({ standData, onReset }) => {
                     color: #ffd700; padding: 5px 12px;
                     border-radius: 20px; font-family: 'Anton';
                     font-size: 0.9rem;
+                }
+
+                .mobile-image-toggle {
+                    background: rgba(255,215,0,0.1);
+                    border: 1px solid #ffd700;
+                    color: #ffd700;
+                    padding: 5px 10px;
+                    border-radius: 20px;
+                    font-family: 'Anton';
+                    font-size: 0.85rem;
+                    letter-spacing: 1px;
+                }
+
+                .mobile-image-toggle:disabled {
+                    opacity: 0.45;
                 }
 
                 .mobile-title {

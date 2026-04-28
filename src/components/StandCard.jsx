@@ -18,7 +18,7 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-const StandCard = ({ standData, onReset }) => {
+const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnly }) => {
   const isMobile = useIsMobile();
   const standCardRef = useRef(null);
 
@@ -34,7 +34,14 @@ const StandCard = ({ standData, onReset }) => {
 
   // === MOBILE RENDER PATH ===
   if (isMobile) {
-    return <MobileStandCard standData={standData} onReset={onReset} />;
+    return (
+      <MobileStandCard
+        standData={standData}
+        onReset={onReset}
+        imageOnlyMode={imageOnlyMode}
+        onToggleImageOnly={onToggleImageOnly}
+      />
+    );
   }
 
   // === DESKTOP RENDER PATH (Existing) ===
@@ -58,6 +65,89 @@ const StandCard = ({ standData, onReset }) => {
   */
   const { main: mainName, sub: subName } = parseStandName(name);
   const hasRenderableImage = Boolean(standData.imageUrl && standData.imageUrl !== 'FAILED');
+  const handleToggleImageOnly = onToggleImageOnly || (() => {});
+
+  if (imageOnlyMode) {
+    return (
+      <div className="stand-image-only-root">
+        <button
+          type="button"
+          className="image-only-toggle restore"
+          onClick={handleToggleImageOnly}
+          title="恢复档案 UI"
+        >
+          <span className="toggle-icon">▣</span>
+          <span>显示UI</span>
+        </button>
+
+        {hasRenderableImage ? (
+          <img className="image-only-img" src={standData.imageUrl} alt={mainName} />
+        ) : (
+          <div className="image-only-placeholder">
+            <span>{standData.imageUrl === 'FAILED' ? 'IMAGE FAILED' : 'IMAGE LOADING'}</span>
+          </div>
+        )}
+
+        <style>{`
+          .stand-image-only-root {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+          }
+
+          .image-only-img {
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+            background: #000;
+          }
+
+          .image-only-placeholder {
+            color: #ffd700;
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 4px;
+            font-size: 1.4rem;
+          }
+
+          .image-only-toggle {
+            position: fixed;
+            top: 26px;
+            right: 28px;
+            z-index: 10001;
+            border: 3px solid #ffd700;
+            background: rgba(0,0,0,0.78);
+            color: #ffd700;
+            box-shadow: 5px 5px 0 #000, 0 0 18px rgba(255, 215, 0, 0.25);
+            transform: skewX(-10deg);
+            cursor: pointer;
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 1px;
+            padding: 10px 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+          }
+
+          .image-only-toggle:hover {
+            background: #ffd700;
+            color: #000;
+            transform: skewX(-10deg) translateY(-2px);
+          }
+
+          .toggle-icon {
+            font-size: 1.05rem;
+            line-height: 1;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   /*
   const translatedLabels = {
@@ -94,6 +184,17 @@ const StandCard = ({ standData, onReset }) => {
           <path d="M20,11 L7.83,11 L13.42,5.41 L12,4 L4,12 L12,20 L13.41,18.59 L7.83,13 L20,13 Z" />
         </svg>
         <span className="return-text">RETURN</span>
+      </button>
+
+      <button
+        type="button"
+        className="image-only-toggle"
+        onClick={handleToggleImageOnly}
+        disabled={!hasRenderableImage}
+        title={hasRenderableImage ? '隐藏界面，只显示生成图片' : '图片生成完成后可用'}
+      >
+        <span className="toggle-icon">□</span>
+        <span>只看图片</span>
       </button>
 
       {/* WHITESNAKE PREMIUM IMMERSIVE HUB - Hand-Held V3.1 (Fixed Conflict) */}
@@ -842,10 +943,51 @@ const StandCard = ({ standData, onReset }) => {
            text-shadow: 2px 2px 0 #000;
         }
 
+        .image-only-toggle {
+          position: fixed;
+          top: 30px;
+          right: 120px;
+          z-index: 2000;
+          border: 3px solid #ffd700;
+          background: rgba(0,0,0,0.72);
+          color: #ffd700;
+          box-shadow: 5px 5px 0 #000, 0 0 18px rgba(255, 215, 0, 0.25);
+          transform: skewX(-10deg);
+          cursor: pointer;
+          font-family: 'Anton', sans-serif;
+          letter-spacing: 1px;
+          padding: 10px 16px;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .image-only-toggle:hover:not(:disabled) {
+          background: #ffd700;
+          color: #000;
+          transform: skewX(-10deg) translateY(-2px);
+        }
+
+        .image-only-toggle:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .toggle-icon {
+          font-size: 1.05rem;
+          line-height: 1;
+        }
+
         /* Responsive Fix for Return Button */
         @media (max-width: 1100px) {
            .return-btn {
               top: 10px; left: 10px;
+           }
+           .image-only-toggle {
+              top: 12px;
+              right: 96px;
+              padding: 8px 12px;
            }
         }
 

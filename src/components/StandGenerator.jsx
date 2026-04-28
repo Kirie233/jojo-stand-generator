@@ -24,6 +24,7 @@ const StandGenerator = () => {
   const [showDonate, setShowDonate] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
+  const [imageOnlyMode, setImageOnlyMode] = useState(false);
   const [inputProgress, setInputProgress] = useState({ current: 0, total: 1 });
   const appContainerRef = useRef(null);
   const generationIdRef = useRef(0);
@@ -93,6 +94,7 @@ const StandGenerator = () => {
     setGameState('LANDING');
     setStandData(null);
     setLoading(false);
+    setImageOnlyMode(false);
     setError(null); // Clear error when going back to title
   };
 
@@ -101,6 +103,7 @@ const StandGenerator = () => {
     closeAllPanels();
     setStandData(null);
     setGameState('INPUT'); // Or LANDING if preferred, but usually Retry means new Input
+    setImageOnlyMode(false);
     setError(null); // Clear error when resetting
   };
 
@@ -109,6 +112,7 @@ const StandGenerator = () => {
     generationIdRef.current = generationId;
     setLoading(true);
     setError(null);
+    setImageOnlyMode(false);
     closeAllPanels();
 
     // EASTER EGG: 10% Chance of Rejection (Death)
@@ -299,7 +303,12 @@ const StandGenerator = () => {
       case 'RESULT':
         return standData ? (
           <Suspense fallback={renderSuspenseFallback('正在展开替身档案...')}>
-            <StandCard standData={standData} onReset={handleReset} />
+            <StandCard
+              standData={standData}
+              onReset={handleReset}
+              imageOnlyMode={imageOnlyMode}
+              onToggleImageOnly={handleToggleImageOnly}
+            />
           </Suspense>
         ) : null;
 
@@ -354,13 +363,22 @@ const StandGenerator = () => {
   const handleLoadFromHistory = (item) => {
     setStandData(item);
     setGameState('RESULT');
+    setImageOnlyMode(false);
     setShowHistory(false);
+  };
+
+  const handleToggleImageOnly = () => {
+    setImageOnlyMode(prev => {
+      const next = !prev;
+      if (next) closeAllPanels();
+      return next;
+    });
   };
 
   return (
     <div ref={appContainerRef} className="app-container">
       {/* GLOBAL HUD (Only show on Input/Result, hide on Landing for immersion?) */}
-      {gameState !== 'LANDING' && (
+      {gameState !== 'LANDING' && !imageOnlyMode && (
         <NavBar
           onReset={handleBackToTitle} // "The Fool" now goes to Title? Or Input? Let's say Title for "New Awakening"
           isHistoryOpen={showHistory}
@@ -372,7 +390,7 @@ const StandGenerator = () => {
       )}
 
       {/* ERROR MESSAGE */}
-      {error && (
+      {error && !imageOnlyMode && (
         <div className="error-message" onClick={() => setError(null)}>
           <span className="error-icon">⚠️</span> {error}
         </div>
@@ -384,7 +402,7 @@ const StandGenerator = () => {
       </main>
 
       {/* MODALS & DRAWERS */}
-      {showHistory && (
+      {showHistory && !imageOnlyMode && (
         <Suspense fallback={renderSuspenseFallback('读取历史中...')}>
           <HistoryList
             history={history}
@@ -394,17 +412,17 @@ const StandGenerator = () => {
         </Suspense>
       )}
 
-      {showDonate && (
+      {showDonate && !imageOnlyMode && (
         <Suspense fallback={renderSuspenseFallback('展开赞赏页...')}>
           <DonateModal onClose={() => setShowDonate(false)} />
         </Suspense>
       )}
-      {showHelp && (
+      {showHelp && !imageOnlyMode && (
         <Suspense fallback={renderSuspenseFallback('加载说明中...')}>
           <HelpModal onClose={() => setShowHelp(false)} />
         </Suspense>
       )}
-      {showFAQ && (
+      {showFAQ && !imageOnlyMode && (
         <Suspense fallback={renderSuspenseFallback('整理问答中...')}>
           <FAQModal onClose={() => setShowFAQ(false)} />
         </Suspense>
