@@ -33,9 +33,11 @@ const parseJsonResponse = async (response, label) => {
 };
 
 const shouldRetryWithoutImageResponseFormat = (response, text) => (
-  response.status === 400 &&
+  (response.status === 400 || response.status === 500) &&
   /response_format|unsupported|unknown|invalid/i.test(text || '')
 );
+
+const shouldRequestImageBase64 = () => import.meta.env.VITE_IMAGE_RESPONSE_FORMAT === 'b64_json';
 
 const toImageDataUrl = (value, mimeType = 'image/png') => {
   if (!value) return null;
@@ -46,7 +48,6 @@ const toImageDataUrl = (value, mimeType = 'image/png') => {
 };
 
 const buildEyecatchPrompt = ({
-  appearance,
   standName,
   userName,
   song,
@@ -55,28 +56,21 @@ const buildEyecatchPrompt = ({
   referenceImage
 }) => {
   const resolvedSong = song || 'an unspecified musical reference';
-  const backgroundStyle = `${color || 'bold contrasting'} radial burst with retro TV scanline texture, manga speed lines, and a dramatic mood shaped by ${personality || 'mysterious psychic tension'}, inspired by ${resolvedSong}`;
-  const referenceNote = referenceImage
-    ? 'The user also provided a reference photo; preserve any distinctive silhouette, facial impression, or styling cues already reflected in the stand concept.'
-    : 'No reference photo was provided.';
+  const resolvedColor = color || 'bold contrasting palette';
+  const resolvedPersonality = personality || 'mysterious psychic tension';
+  const resolvedUserName = userName || 'Unknown User';
+  const resolvedStandName = standName || 'Unknown Stand';
 
-  return `Authentic Japanese TV anime eyecatch screenshot, 16:9 landscape composition, bizarre stylish action manga aesthetic, classic anime cel-shading.
-
-Background: ${backgroundStyle}
-
-Story context: The Stand is named "${standName || 'Unknown Stand'}" and belongs to "${userName || 'Unknown User'}". Use this only as design inspiration; do not render any visible text.
-
-Canvas and framing: Wide horizontal 16:9 frame only, landscape orientation, cinematic TV eyecatch. Do not use a vertical poster, portrait crop, phone wallpaper, centered full-body poster, or tall character-card composition.
-
-Character layout: Put the Stand on the left or center-left, occupying about 45% of the frame width. Show the upper body and dynamic silhouette cropped naturally by the wide frame. Leave the right half and lower corners cleaner and darker as negative space for later UI overlay.
-
-Character: A highly stylized psychic guardian avatar, ${appearance}. The design should channel the emotional and symbolic feel of the music reference "${resolvedSong}" and the user's inner drive "${personality || 'mysterious resolve'}". ${referenceNote} Striking an exaggerated, bizarre, dynamic pose. Varied line weight, distinct hard-edge anime shadows, unique palette.
-
-Graphic direction: Use the full horizontal canvas with sweeping speed lines and background energy extending across the width. Suggest the mood of a circular stat chart area using composition only. Do not draw an actual radar chart, labels, numbers, rings, UI boxes, or typography. The right side may contain subtle glow, framing, or empty spotlight space where a stat panel could be overlaid later.
-
-Constraints: NO text, NO letters, NO words, NO numbers, NO subtitles, NO logos, NO watermarks, NO captions, NO radar chart, NO stat wheel, NO interface elements, NO embedded nameplates. Keep the composition readable and leave overlay-safe empty space.
-
-Vibe: Retro TV broadcast quality, high contrast, visually striking wide composition.`;
+  return [
+    'An authentic Japanese TV anime Stand eyecatch screenshot, bizarre and stylish action manga aesthetic, classic cel-shading, 16:9 landscape.',
+    `User form inputs: Stand user "${resolvedUserName}", Stand name "${resolvedStandName}", music reference "${resolvedSong}", color direction "${resolvedColor}", personality or obsession "${resolvedPersonality}", reference photo: ${referenceImage ? 'yes' : 'no'}. Use these inputs as design DNA, not as visible text.`,
+    `Background: a flat graphic anime eyecatch backdrop built from ${resolvedColor}, checkerboards, radial bursts, floral or geometric patterns, manga speed lines, halftone dots, and motifs inspired by the music reference and personality.`,
+    'Character (one side): design an original psychic guardian Stand directly from the inputs. It may be humanoid, colony-like, wearable, object-bound, creature-like, phenomenon-like, or vehicle/building-bound. Give it a clear silhouette, one or two memorable motifs, a dramatic cropped pose, varied line weight, hard-edge anime shadows, glossy highlights, and a unique color palette.',
+    'Layout: place the Stand on one side or diagonally across one side, occupying about 40% to 55% of the frame. Keep the opposite side flatter and cleaner for app overlays.',
+    'Overlay-safe zones: leave a clear circular area on the opposite side for a radar chart, plus readable corners for NAME and MASTER text that the app will add later.',
+    'Do not draw any text, letters, numbers, subtitles, logos, watermarks, captions, speech bubbles, radar charts, stat wheels, UI borders, buttons, or interface elements. Avoid photorealism, generic fantasy armor, centered portraits, full-body character sheets, vertical compositions, and cluttered item piles.',
+    'Vibe: retro TV broadcast quality, high contrast, visually striking composition.'
+  ].join('\n\n');
 };
 
 export const generateStandProfile = async (inputs, premadeConcept = null) => {
@@ -213,25 +207,37 @@ export const generateFastVisualConcept = async (inputs) => {
   return retryOperation(async () => {
     console.log('Phase 1 Inputs:', inputs);
 
-    const prompt = `你正在为 JOJO 风格作品设计一个全新的替身概念。
+    const prompt = `你正在为 JOJO 风格作品设计一个全新的替身概念。重点是生成一个可画、具体、有辨识度的替身外观，而不是泛泛的 AI 形容词。
 
-用户信息：
-- 音乐引用：${inputs.song}
-- 主色调：${inputs.color}
-- 性格/执念：${inputs.personality}
+用户输入：
+- 替身使者：${inputs.userName || 'Unknown'}
+- 音乐/命名来源：${inputs.song || '未指定'}
+- 主色调：${inputs.color || '未指定'}
+- 性格、欲望或执念：${inputs.personality || '未指定'}
+- 是否提供参考图：${inputs.referenceImage ? '是。外观描述应保留参考图带来的轮廓、气质或局部风格暗示，但不要写“参考图”三个字。' : '否'}
 
-要求：
-1. 生成一个有辨识度、带有 JOJO 气质的替身概念。
-2. 替身名应参考音乐引用，符合 JOJO 式命名感觉。
-3. 替身不局限于人形，也可以是群体、器物、穿戴型、生物、现象或载具。
-4. appearance 字段将直接用于后续生图，请用简洁中文描述外观。
-5. appearance 控制在 45 到 80 个中文字符，突出轮廓、材质、配色和1到2个关键特征，不要写成长段说明。
+设计要求：
+1. 替身名应参考音乐/命名来源，符合 JOJO 式命名感。
+2. 外观必须结合替身特性：从性格/执念推导能力气质，再选择合适形态。
+3. 替身不一定是人形。请在以下形态中选择最适合的一种，不要默认肌肉人型：
+   - 人形近距离型：雕像感、面具、异色皮肤、几何纹样、夸张关节。
+   - 群体/小型型：多个小型个体、玩偶感、昆虫感、符号化编号。
+   - 穿戴/附着型：盔甲、面具、手套、外骨骼、寄生纹路。
+   - 器物/道具型：枪、唱片、镜子、锁、车轮、乐器、机械装置等。
+   - 生物/怪异型：爬虫、鸟、鱼、植物、骨骼、眼睛、触手等奇妙混合。
+   - 现象/领域型：雾、影子、液体、声音波纹、时间裂缝、重力环、光斑。
+   - 载具/建筑绑定型：列车、船、房间、门、街灯、舞台等本体即替身。
+4. appearance 要像给画师的设计稿摘要，必须包含：形态类别、轮廓、材质、主色、1 到 2 个关键视觉锚点。
+5. 避免空泛词：不要只写“神秘、强大、华丽、充满压迫感”。必须写可见物件和可见结构。
+6. 不要把齿轮、钟表、眼睛、翅膀等元素无意义堆满；选择少量强视觉符号。
+7. appearance 控制在 55 到 90 个中文字符，简洁、具体、便于后续生图。
 
-只返回 JSON：
+只返回合法 JSON：
 {
-  "reasoning": "一句中文设计思路，20字内",
+  "reasoning": "一句中文设计思路，说明为什么选择这种形态，30字以内",
+  "formType": "人形/群体/穿戴/器物/生物/现象/绑定",
   "name": "替身名",
-  "appearance": "简洁中文外观描述"
+  "appearance": "具体可画的中文外观描述"
 }`;
 
     const apiKey = getApiKey();
@@ -495,7 +501,6 @@ ${inputs.referenceImage ? '- 用户上传了参考图，请把能识别出的轮
 };
 
 export const generateStandImage = async ({
-  appearance,
   standName,
   userName,
   song,
@@ -503,16 +508,15 @@ export const generateStandImage = async ({
   personality,
   referenceImage
 }) => {
-  console.log('Phase 2 Appearance Input:', appearance);
   const apiKey = getApiKey();
   const imageModel = import.meta.env.VITE_IMAGE_MODEL || 'gpt-image-2';
   const imageSize = import.meta.env.VITE_IMAGE_SIZE || '1536x1024';
   const imageQuality = import.meta.env.VITE_IMAGE_QUALITY || 'medium';
+  const imageTimeoutMs = Number(import.meta.env.VITE_IMAGE_TIMEOUT_MS || 240000);
 
   console.log('Generating Image Model:', imageModel);
 
   const prompt = buildEyecatchPrompt({
-    appearance,
     standName,
     userName,
     song,
@@ -543,18 +547,24 @@ export const generateStandImage = async ({
       model: imageModel,
       prompt,
       n: 1,
-      size: imageSize,
-      response_format: 'b64_json'
+      size: imageSize
     };
 
     if (isGptImage) {
       body.quality = imageQuality;
       body.size = imageSize;
     }
+
+    if (shouldRequestImageBase64()) {
+      body.response_format = 'b64_json';
+    }
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120000);
+  const timeoutId = setTimeout(
+    () => controller.abort(new Error(`Image generation timeout after ${imageTimeoutMs}ms`)),
+    imageTimeoutMs
+  );
 
   try {
     let response;
@@ -563,7 +573,7 @@ export const generateStandImage = async ({
     if (useProxy) {
       const proxyBody = {
         action: 'image',
-        payload: { appearance, standName, userName, song, color, personality, referenceImage }
+        payload: { standName, userName, song, color, personality, referenceImage }
       };
 
       if (import.meta.env.VITE_IMAGE_MODEL) {
@@ -678,6 +688,10 @@ export const generateStandImage = async ({
     }
     return item?.url;
   } catch (err) {
+    if (controller.signal.aborted) {
+      console.error('Image Generation Timeout:', controller.signal.reason || err);
+      return null;
+    }
     console.error('Image Generation Error:', err);
     return null;
   }

@@ -149,7 +149,6 @@ const StandGenerator = () => {
       // 2. PHASE 2: Parallelized Tasks
       // Trigger drawing and full profile writing at the same time.
       const imageTask = generateStandImage({
-        appearance: concept.appearance,
         standName: concept.name,
         userName: inputs.userName,
         song: inputs.song,

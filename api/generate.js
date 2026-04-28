@@ -69,7 +69,6 @@ ${referenceImage ? '- 用户上传了参考图，请把能识别出的轮廓、�
 };
 
 const buildEyecatchPrompt = ({
-  appearance,
   standName,
   userName,
   song,
@@ -78,28 +77,21 @@ const buildEyecatchPrompt = ({
   referenceImage
 }) => {
   const resolvedSong = song || 'an unspecified musical reference';
-  const backgroundStyle = `${color || 'bold contrasting'} radial burst with retro TV scanline texture, manga speed lines, and a dramatic mood shaped by ${personality || 'mysterious psychic tension'}, inspired by ${resolvedSong}`;
-  const referenceNote = referenceImage
-    ? 'The user also provided a reference photo; preserve any distinctive silhouette, facial impression, or styling cues already reflected in the stand concept.'
-    : 'No reference photo was provided.';
+  const resolvedColor = color || 'bold contrasting palette';
+  const resolvedPersonality = personality || 'mysterious psychic tension';
+  const resolvedUserName = userName || 'Unknown User';
+  const resolvedStandName = standName || 'Unknown Stand';
 
-  return `Authentic Japanese TV anime eyecatch screenshot, 16:9 landscape composition, bizarre stylish action manga aesthetic, classic anime cel-shading.
-
-Background: ${backgroundStyle}
-
-Story context: The Stand is named "${standName || 'Unknown Stand'}" and belongs to "${userName || 'Unknown User'}". Use this only as design inspiration; do not render any visible text.
-
-Canvas and framing: Wide horizontal 16:9 frame only, landscape orientation, cinematic TV eyecatch. Do not use a vertical poster, portrait crop, phone wallpaper, centered full-body poster, or tall character-card composition.
-
-Character layout: Put the Stand on the left or center-left, occupying about 45% of the frame width. Show the upper body and dynamic silhouette cropped naturally by the wide frame. Leave the right half and lower corners cleaner and darker as negative space for later UI overlay.
-
-Character: A highly stylized psychic guardian avatar, ${appearance}. The design should channel the emotional and symbolic feel of the music reference "${resolvedSong}" and the user's inner drive "${personality || 'mysterious resolve'}". ${referenceNote} Striking an exaggerated, bizarre, dynamic pose. Varied line weight, distinct hard-edge anime shadows, unique palette.
-
-Graphic direction: Use the full horizontal canvas with sweeping speed lines and background energy extending across the width. Suggest the mood of a circular stat chart area using composition only. Do not draw an actual radar chart, labels, numbers, rings, UI boxes, or typography. The right side may contain subtle glow, framing, or empty spotlight space where a stat panel could be overlaid later.
-
-Constraints: NO text, NO letters, NO words, NO numbers, NO subtitles, NO logos, NO watermarks, NO captions, NO radar chart, NO stat wheel, NO interface elements, NO embedded nameplates. Keep the composition readable and leave overlay-safe empty space.
-
-Vibe: Retro TV broadcast quality, high contrast, visually striking wide composition.`;
+  return [
+    'An authentic Japanese TV anime Stand eyecatch screenshot, bizarre and stylish action manga aesthetic, classic cel-shading, 16:9 landscape.',
+    `User form inputs: Stand user "${resolvedUserName}", Stand name "${resolvedStandName}", music reference "${resolvedSong}", color direction "${resolvedColor}", personality or obsession "${resolvedPersonality}", reference photo: ${referenceImage ? 'yes' : 'no'}. Use these inputs as design DNA, not as visible text.`,
+    `Background: a flat graphic anime eyecatch backdrop built from ${resolvedColor}, checkerboards, radial bursts, floral or geometric patterns, manga speed lines, halftone dots, and motifs inspired by the music reference and personality.`,
+    'Character (one side): design an original psychic guardian Stand directly from the inputs. It may be humanoid, colony-like, wearable, object-bound, creature-like, phenomenon-like, or vehicle/building-bound. Give it a clear silhouette, one or two memorable motifs, a dramatic cropped pose, varied line weight, hard-edge anime shadows, glossy highlights, and a unique color palette.',
+    'Layout: place the Stand on one side or diagonally across one side, occupying about 40% to 55% of the frame. Keep the opposite side flatter and cleaner for app overlays.',
+    'Overlay-safe zones: leave a clear circular area on the opposite side for a radar chart, plus readable corners for NAME and MASTER text that the app will add later.',
+    'Do not draw any text, letters, numbers, subtitles, logos, watermarks, captions, speech bubbles, radar charts, stat wheels, UI borders, buttons, or interface elements. Avoid photorealism, generic fantasy armor, centered portraits, full-body character sheets, vertical compositions, and cluttered item piles.',
+    'Vibe: retro TV broadcast quality, high contrast, visually striking composition.'
+  ].join('\n\n');
 };
 
 const jsonResponse = (data, status = 200) =>
@@ -109,9 +101,11 @@ const jsonResponse = (data, status = 200) =>
   });
 
 const shouldRetryWithoutImageResponseFormat = (response, text) => (
-  response.status === 400 &&
+  (response.status === 400 || response.status === 500) &&
   /response_format|unsupported|unknown|invalid/i.test(text || '')
 );
+
+const shouldRequestImageBase64 = () => process.env.IMAGE_RESPONSE_FORMAT === 'b64_json';
 
 const toImageDataUrl = (value, mimeType = 'image/png') => {
   if (!value) return null;
@@ -214,7 +208,7 @@ export default async function handler(req) {
     }
 
     if (action === 'image') {
-      const { appearance, standName, userName, song, color, personality, referenceImage } = payload;
+      const { standName, userName, song, color, personality, referenceImage } = payload;
       const isGemini = imageModel.toLowerCase().includes('gemini');
       const isGptImage = imageModel.toLowerCase().includes('gpt-image');
       const imgApiKey = process.env.IMAGE_API_KEY || apiKey;
@@ -222,7 +216,6 @@ export default async function handler(req) {
       const imageSize = requestedImageSize || process.env.IMAGE_SIZE || '1536x1024';
       const imageQuality = requestedImageQuality || process.env.IMAGE_QUALITY || 'medium';
       const prompt = buildEyecatchPrompt({
-        appearance,
         standName,
         userName,
         song,
@@ -261,12 +254,14 @@ export default async function handler(req) {
           model: imageModel,
           prompt,
           n: 1,
-          size: imageSize,
-          response_format: 'b64_json'
+          size: imageSize
         };
         if (isGptImage) {
           body.quality = imageQuality;
           body.size = imageSize;
+        }
+        if (shouldRequestImageBase64()) {
+          body.response_format = 'b64_json';
         }
       }
 
