@@ -4,7 +4,7 @@ const MAX_ITEMS = 50; // Increased limit
 const safeUUID = () => {
   try {
     return crypto.randomUUID();
-  } catch (e) {
+  } catch {
     // Fallback for insecure contexts or older browsers
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }

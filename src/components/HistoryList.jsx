@@ -15,22 +15,30 @@ const HistoryList = ({ history, onLoad, onClose }) => {
       <div className="history-content-scroll">
         {history && history.length > 0 ? (
           <div className="history-items">
-            {history.map((item) => (
+            {history.map((item) => {
+              const stats = item.stats || {};
+              const timestamp = item.timestamp ? new Date(item.timestamp) : null;
+              const dateText = timestamp && !Number.isNaN(timestamp.getTime())
+                ? timestamp.toLocaleDateString()
+                : '--';
+
+              return (
               <div key={item.id} className="history-item" onClick={() => onLoad(item)}>
                 <div className="history-item-top">
                   <div className="history-name">{item.userName || "未知宿主"}</div>
                   <div className="history-date">
-                    {new Date(item.timestamp).toLocaleDateString()}
+                    {dateText}
                   </div>
                 </div>
-                <div className="history-stand-name">{item.name}</div>
+                <div className="history-stand-name">{item.name || 'UNKNOWN STAND'}</div>
                 <div className="history-stats">
-                  <span className="stat-tag">POWER:{item.stats.power}</span>
-                  <span className="stat-tag">SPEED:{item.stats.speed}</span>
+                  <span className="stat-tag">POWER:{stats.power || '?'}</span>
+                  <span className="stat-tag">SPEED:{stats.speed || '?'}</span>
                 </div>
                 <div className="history-click-hint">点击回溯 (CLICK TO REPLAY)</div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="empty-history">

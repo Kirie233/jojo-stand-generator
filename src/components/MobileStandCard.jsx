@@ -2,20 +2,30 @@ import React from 'react';
 import CustomRadar from './CustomRadar';
 import ReactMarkdown from 'react-markdown';
 import '../styles/variables.css';
+import { downloadUrl, parseStandName, STAND_STAT_LABELS } from '../utils/stand';
 
 const MobileStandCard = ({ standData, onReset }) => {
   if (!standData) return null;
   const { name, abilityName, ability, stats } = standData;
 
   // Helper: Parse Name
+  /*
   const parseName = (rawName) => {
     if (!rawName) return { main: 'UNKNOWN', sub: '' };
     const match = rawName.match(/^(.*?)\s*[(（](.*?)[)）]/);
     if (match) return { main: match[1], sub: match[2] };
     return { main: rawName, sub: '' };
   };
-  const { main: mainName, sub: subName } = parseName(name);
+  */
+  const hasDownloadableImage = Boolean(standData.imageUrl && standData.imageUrl !== 'FAILED');
 
+  const handleDownloadImage = () => {
+    if (!hasDownloadableImage) return;
+    downloadUrl(standData.imageUrl, `JOJO_${mainName.replace(/\s+/g, '_')}.png`);
+  };
+  const { main: mainName, sub: subName } = parseStandName(name);
+
+  /*
   const translatedLabels = {
     power: '破坏力',
     speed: '速度',
@@ -25,6 +35,7 @@ const MobileStandCard = ({ standData, onReset }) => {
     potential: '成长性'
   };
 
+  */
   return (
     <div className="mobile-stand-root">
       {/* 1. TOP NAV BAR */}
@@ -73,7 +84,7 @@ const MobileStandCard = ({ standData, onReset }) => {
 
       {/* 3. RADAR CHART (Centered) */}
       <div className="mobile-radar-section">
-        <CustomRadar stats={stats} labels={translatedLabels} />
+        <CustomRadar stats={stats} labels={STAND_STAT_LABELS} />
       </div>
 
       {/* 4. ABILITY INFO (Vertical Flow) */}
@@ -111,20 +122,15 @@ const MobileStandCard = ({ standData, onReset }) => {
 
       {/* 5. WHITESNAKE ACTION BAR (Fixed Bottom) */}
       <div className="mobile-action-bar">
-        <div className="action-fab" onClick={() => {
-          const link = document.createElement('a');
-          link.download = `JOJO_${mainName.replace(/\s+/g, '_')}.png`;
-          link.href = standData.imageUrl;
-          link.click();
-        }}>
+        <button className="action-fab" type="button" onClick={handleDownloadImage} disabled={!hasDownloadableImage}>
           <span className="icon">📸</span>
           <span className="label">保存图片</span>
-        </div>
+        </button>
 
-        <div className="action-fab primary" onClick={onReset}>
+        <button className="action-fab primary" type="button" onClick={onReset}>
           <span className="icon">♻</span>
           <span className="label">下一替身</span>
-        </div>
+        </button>
       </div>
 
       {/* CSS IN JS FOR MOBILE ISOLATION */}
@@ -285,8 +291,13 @@ const MobileStandCard = ({ standData, onReset }) => {
                 }
 
                 .action-fab {
+                    background: none; border: none;
                     display: flex; flex-direction: column; align-items: center;
                     color: #fff; font-size: 0.7rem; gap: 5px; cursor: pointer;
+                }
+                .action-fab:disabled {
+                    opacity: 0.45;
+                    cursor: not-allowed;
                 }
                 .action-fab .icon { font-size: 1.5rem; }
                 .action-fab.primary { color: #ffd700; }

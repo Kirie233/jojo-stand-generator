@@ -1,122 +1,160 @@
 import React from 'react';
 import '../styles/variables.css';
 
+const FAQ_ITEMS = [
+  {
+    question: 'Q: 为什么生成图片有时会比较慢？',
+    answer: (
+      <>
+        图片生成通常比文本生成慢，尤其是在使用 <code>gpt-image-2</code> 或 Gemini
+        生图模型时。当前项目已经把图片请求超时时间放宽到 120 秒，如果只是等待较久，通常不是故障。
+      </>
+    ),
+  },
+  {
+    question: 'Q: 本地开发时出现 Failed to fetch / CORS 报错怎么办？',
+    answer: (
+      <>
+        这通常是浏览器拦截了前端对外部模型接口的直连请求。现在项目会优先通过本地开发代理转发默认文本接口和默认图片接口，
+        能明显降低 <code>CORS</code> 问题的出现概率。若你自定义了接口地址，请确认该地址允许代理转发，或改用服务端部署方式调用。
+      </>
+    ),
+  },
+  {
+    question: 'Q: 线上部署时应该配置哪些变量？',
+    answer: (
+      <>
+        生产环境优先使用服务端变量，例如 <code>GEMINI_API_KEY</code>、<code>GEMINI_BASE_URL</code>、
+        <code>IMAGE_API_KEY</code>、<code>IMAGE_BASE_URL</code>、<code>IMAGE_MODEL</code>。不要把
+        <code>VITE_</code> 前缀的密钥变量放到公开前端环境里。
+      </>
+    ),
+  },
+  {
+    question: 'Q: 默认生图模型是什么，还能不能继续用 Gemini 生图？',
+    answer: (
+      <>
+        当前默认生图模型是 <code>gpt-image-2</code>，同时仍然保留 Gemini 生图支持。只要在环境变量里把
+        <code>IMAGE_MODEL</code> 或 <code>VITE_IMAGE_MODEL</code> 改成 <code>gemini</code> 或你实际使用的
+        Gemini 图片模型名即可。
+      </>
+    ),
+  },
+  {
+    question: 'Q: 我的历史记录会丢吗？',
+    answer: (
+      <>
+        不会。历史记录默认保存在浏览器本地的 IndexedDB 中。只要不主动清除浏览器站点数据，历史记录通常都会保留。
+      </>
+    ),
+  },
+];
+
 const FAQModal = ({ onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-content faq-modal" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h3>常见问题 (FAQ)</h3>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose} type="button">
+            ×
+          </button>
         </div>
+
         <div className="modal-body">
-          <div className="faq-item">
-            <h4>Q: 为什么图片生成这么慢？</h4>
-            <p>A: 为了还原 JoJo 风格的细腻画质，我们使用了高质量的 AI 绘图模型（如 DALL-E 3 或 Gemini Pro Vision）。这些模型通常需要 <strong>30秒到 1分钟</strong> 才能完成绘制。为了防止超时，我们为此开启了 120秒 的超长待机模式，请耐心等待“替身觉醒”的过程。</p>
-          </div>
-
-          <div className="faq-item">
-            <h4>Q: 出现 "504 Gateway Timeout" 怎么办？</h4>
-            <p>A: 这通常是因为 Vercel 免费版限制接口必须在 10秒内返回。我们已经更新了<strong>混合生成模式 (Hybrid Mode)</strong> 来绕过此限制。如果您是部署者，请确保在 Vercel 环境变量中配置了以 <code>VITE_</code> 开头的 Key。</p>
-          </div>
-
-          <div className="faq-item">
-            <h4>Q: 为什么生成的替身有时候不完全符合描述？</h4>
-            <p>A: 替身是灵魂的投射，具有不可预测性。AI 会根据您的精神特质进行“艺术加工”。如果您觉得太离谱，可以点击顶部的“✨ 觉醒新替身”重试。</p>
-          </div>
-
-          <div className="faq-item">
-            <h4>Q: 我的数据会丢失吗？</h4>
-            <p>A: 不会！我们使用浏览器原生数据库 (IndexedDB)，所有历史记录都<strong>永久保存</strong>在您的本地设备上。即使关闭浏览器再打开，它们依然存在。</p>
-          </div>
+          {FAQ_ITEMS.map((item) => (
+            <section key={item.question} className="faq-item">
+              <h4>{item.question}</h4>
+              <p>{item.answer}</p>
+            </section>
+          ))}
         </div>
       </div>
 
       <style>{`
-        .modal-overlay {
-          /* Uses global style */
-          animation: modalFadeIn 0.3s ease;
-        }
-
-        .modal-content {
+        .faq-modal {
           background: #1a1a1a;
           border: 2px solid var(--accent-color);
           padding: 30px;
-          max-width: 600px;
-          width: 90%;
-          max-height: 80vh; /* Scrollable if too long */
+          max-width: 640px;
+          width: min(92vw, 640px);
+          max-height: 80vh;
           overflow-y: auto;
           box-shadow: 0 0 20px var(--primary-color);
           position: relative;
         }
 
-        /* Scrollbar styling for Webkit */
-        .modal-content::-webkit-scrollbar {
+        .faq-modal::-webkit-scrollbar {
           width: 8px;
         }
-        .modal-content::-webkit-scrollbar-track {
-          background: #222; 
+
+        .faq-modal::-webkit-scrollbar-track {
+          background: #222;
         }
-        .modal-content::-webkit-scrollbar-thumb {
-          background: var(--accent-color); 
+
+        .faq-modal::-webkit-scrollbar-thumb {
+          background: var(--accent-color);
           border-radius: 4px;
         }
 
         .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-            position: sticky;
-            top: -30px; /* Offset for padding */
-            background: #1a1a1a;
-            z-index: 1;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid #333;
+          padding-bottom: 15px;
+          margin-bottom: 20px;
+          position: sticky;
+          top: -30px;
+          background: #1a1a1a;
+          z-index: 1;
         }
 
         .modal-header h3 {
-            color: var(--accent-color);
-            margin: 0;
-            font-family: var(--font-heading);
+          color: var(--accent-color);
+          margin: 0;
+          font-family: var(--font-heading);
         }
 
         .close-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 1.5rem;
-            cursor: pointer;
+          background: none;
+          border: none;
+          color: #fff;
+          font-size: 1.6rem;
+          line-height: 1;
+          cursor: pointer;
         }
 
         .faq-item {
-            margin-bottom: 25px;
-            border-bottom: 1px dashed #333;
-            padding-bottom: 15px;
+          margin-bottom: 22px;
+          border-bottom: 1px dashed #333;
+          padding-bottom: 14px;
         }
-        
+
         .faq-item:last-child {
-            border-bottom: none;
+          border-bottom: none;
+          margin-bottom: 0;
         }
 
         .faq-item h4 {
-            color: var(--secondary-color);
-            margin-bottom: 10px;
-            font-size: 1.1rem;
+          color: var(--secondary-color);
+          margin: 0 0 10px;
+          font-size: 1.05rem;
         }
 
         .faq-item p {
-            color: #ccc;
-            font-size: 0.95rem;
-            line-height: 1.6;
+          color: #ccc;
+          font-size: 0.95rem;
+          line-height: 1.7;
+          margin: 0;
         }
-        
+
         code {
-            background: #333;
-            padding: 2px 5px;
-            border-radius: 4px;
-            color: #fff;
-            font-family: monospace;
+          background: #333;
+          padding: 2px 5px;
+          border-radius: 4px;
+          color: #fff;
+          font-family: monospace;
         }
       `}</style>
     </div>

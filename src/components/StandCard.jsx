@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import CustomRadar from './CustomRadar';
 import '../styles/variables.css';
-import html2canvas from 'html2canvas';
 import ReactMarkdown from 'react-markdown';
 
 import MobileStandCard from './MobileStandCard';
+import { downloadUrl, parseStandName, STAND_STAT_LABELS } from '../utils/stand';
 
 // Hook for mobile detection
 const useIsMobile = () => {
@@ -20,6 +20,7 @@ const useIsMobile = () => {
 
 const StandCard = ({ standData, onReset }) => {
   const isMobile = useIsMobile();
+  const standCardRef = useRef(null);
 
   useEffect(() => {
     // Apply cleaner JOJO background and hide overflow to prevent scroll jumping
@@ -40,6 +41,7 @@ const StandCard = ({ standData, onReset }) => {
   const { name, abilityName, ability, stats } = standData;
 
   // Helper: Parse Name (English vs Chinese)
+  /*
   const parseName = (rawName) => {
     if (!rawName) return { main: 'UNKNOWN', sub: '' };
 
@@ -53,8 +55,11 @@ const StandCard = ({ standData, onReset }) => {
     return { main: rawName, sub: '' };
   };
 
-  const { main: mainName, sub: subName } = parseName(name);
+  */
+  const { main: mainName, sub: subName } = parseStandName(name);
+  const hasRenderableImage = Boolean(standData.imageUrl && standData.imageUrl !== 'FAILED');
 
+  /*
   const translatedLabels = {
     power: '破坏力',
     speed: '速度',
@@ -63,10 +68,12 @@ const StandCard = ({ standData, onReset }) => {
     precision: '精密动作性',
     potential: '成长性'
   };
+  */
   const handleSaveImage = async () => {
-    const element = document.querySelector('.stand-card');
+    const element = standCardRef.current;
     if (!element) return;
     try {
+      const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(element, {
         useCORS: true, allowTaint: true, backgroundColor: null, scale: 2, logging: false
       });
@@ -97,7 +104,7 @@ const StandCard = ({ standData, onReset }) => {
 
           <div className="interactive-hand-zone">
             {/* Visual Disc (Memory) */}
-            {standData.imageUrl && (
+            {hasRenderableImage && (
               <div className="hand-slot slot-memory">
                 <button
                   className="disc-trigger-btn"
@@ -124,14 +131,11 @@ const StandCard = ({ standData, onReset }) => {
               <button
                 className="disc-trigger-btn"
                 onClick={() => {
-                  if (!standData.imageUrl || standData.imageUrl === 'FAILED') {
+                  if (!hasRenderableImage) {
                     alert("替身尚未成型，无法提取实体 (No Stand Image)");
                     return;
                   }
-                  const link = document.createElement('a');
-                  link.download = `JOJO_ART_${mainName.replace(/\s+/g, '_')}.png`;
-                  link.href = standData.imageUrl;
-                  link.click();
+                  downloadUrl(standData.imageUrl, `JOJO_ART_${mainName.replace(/\s+/g, '_')}.png`);
                 }}
               >
                 <div className="flat-metallic-disc">
@@ -153,7 +157,7 @@ const StandCard = ({ standData, onReset }) => {
 
       </div>
 
-      <div className="stand-card">
+      <div ref={standCardRef} className="stand-card">
 
         {/* === TOP VISUAL AREA (Fixed Height) === */}
         <div className="visual-area">
@@ -201,7 +205,7 @@ const StandCard = ({ standData, onReset }) => {
 
             {/* RADAR (Floating in the center-left area) */}
             <div className="radar-container">
-              <CustomRadar stats={stats} labels={translatedLabels} />
+              <CustomRadar stats={stats} labels={STAND_STAT_LABELS} />
             </div>
 
             {/* TOP RIGHT: CATALYST (Floating) */}
@@ -305,8 +309,6 @@ const StandCard = ({ standData, onReset }) => {
       </div >
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Serif+SC:wght@700;900&family=Bangers&display=swap');
-
         .stand-card-container {
             margin: 40px auto;
             max-width: 900px;
@@ -332,8 +334,10 @@ const StandCard = ({ standData, onReset }) => {
         .visual-area {
             position: relative;
             width: 100%;
-            height: auto; /* Fluid height based on image */
-            min-height: 400px;
+            height: auto;
+            min-height: 0;
+            max-height: none;
+            aspect-ratio: 16 / 9;
             overflow: hidden;
             border-bottom: 6px solid #000;
             background-color: #000; 
@@ -357,12 +361,13 @@ const StandCard = ({ standData, onReset }) => {
         .stand-main-image {
             display: block;
             width: 100%;
-            height: auto;
+            height: 100%;
             position: relative;
             z-index: 10;
             /* High quality rendering */
             image-rendering: -webkit-optimize-contrast;
-            object-fit: contain;
+            object-fit: cover;
+            object-position: center;
         }
 
         /* 3. Text Protection Layer (The Scrim) */
@@ -1091,8 +1096,8 @@ const StandCard = ({ standData, onReset }) => {
             transition: all 0.5s ease;
             position: relative;
             padding: 40px 20px; /* Standard padding now */
-            width: 98%;
-            max-width: 1400px;
+            width: min(1120px, calc(100vw - 56px));
+            max-width: 1120px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;

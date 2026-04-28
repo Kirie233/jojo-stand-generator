@@ -1,135 +1,142 @@
 # JOJO 替身生成器 (JOJO Stand Generator)
 
-> **“你的替身正如你的灵魂，正在蠢蠢欲动……”**
+> 你的替身，正如你的灵魂。
 
-这是一个基于 AI 驱动的 Web 应用程序，能够根据用户的特征（音乐喜好、性格欲望、代表色）自动生成独一无二的《JOJO的奇妙冒险》风格替身。
-
-不仅仅是生成数据，我们致力于还原**90年代经典 OVA 动画的视觉风格**。从闪耀着神秘光芒的雷达图，到充满颗粒感复古质感，再到荒木飞吕彦老师标志性的肌肉线条与姿势，一切只为让你体验最纯正的“觉醒”时刻。
+这是一个基于 AI 的 Web 应用。用户输入名字、音乐、颜色、性格和参考图后，应用会生成一份 JOJO 风格的替身档案，并尝试绘制对应形象。
 
 ![JOJO Stand Generator Preview](public/assets/preview_v2.jpg)
-*(生成的替身卡片效果示例 / Generated Preview)*
 
-## 🌟 核心功能 (Features)
+## 功能
 
-*   **🧘 替身觉醒 (Soul Awakening)**
-    *   输入你的“精神特质”，AI 将深度解析并为你匹配最契合的替身能力。
-    *   绝非简单的随机组合，每个替身都有独特的“破坏力、速度、精密性”等六维面板。
+- 替身觉醒：根据用户输入生成替身名称、能力、面板和外观描述。
+- JOJO 风格绘图：文本生成和图片生成分离，方便分别切换模型和接口。
+- 雷达图展示：展示破坏力、速度、射程距离、持续力、精密动作性、成长性。
+- 本地历史记录：通过 IndexedDB 保存历史生成结果。
+- 双语命名：支持英文替身名和中文译名的组合展示。
 
-*   **🎨 荒木画风绘制 (Araki Style Art)**
-    *   集成 Google Gemini / DALL-E 绘图接口。
-    *   **极致的复古美学**：自动应用胶片颗粒、径向模糊、高对比度滤镜，模拟90年代赛璐璐动画截图质感。
-    *   **完美融合**：角色与背景无缝融合，仿佛从虚空中浮现。
+## 技术栈
 
-*   **📊 动态雷达图 (Dynamic Radar Chart)**
-    *   复刻“白金之星”过场动画风格的六维雷达图。
-    *   带有动态刻度、金属质感边框和发光特效。
-    *   **智能排版**：无论替身名字多长，雷达图都能自动调整位置，互不遮挡。
+- 前端：React 19 + Vite
+- 样式：Vanilla CSS
+- 本地存储：IndexedDB
+- 部署：Vercel Edge Functions
 
-*   **💾 无限觉醒历史 (Unlimited History)**
-    *   **IndexedDB 驱动**：利用浏览器本地数据库，突破 LocalStorage 容量限制。
-    *   **永久保存**：你可以生成成百上千个替身，高清大图和详细设定都会被完整保留在你的设备上。
-    *   **安全隐私**：所有数据存储在本地，不会上传到任何服务器。
+## 默认接口
 
-*   **🌍 双语支持 (Bilingual Support)**
-    *   自动生成标准的英文替身名 + 中文译名 (e.g. `Star Platinum (白金之星)`).
+- 文本 `GEMINI_BASE_URL` 默认值：`https://api.bltcy.ai/`
+- 图片 `IMAGE_BASE_URL` 默认值：`https://api.bltcy.ai/`
 
-## 🛠️ 技术栈 (Tech Stack)
+如果你在环境变量里显式配置了 `GEMINI_BASE_URL` 或 `IMAGE_BASE_URL`，环境变量优先。
 
-*   **前端 Core**: React 19 + Vite
-*   **样式 Engine**: Vanilla CSS (自定义变量系统，无 Tailwind/Bootstrap 依赖，极致轻量)
-*   **本地数据库**: IndexedDB (原生 API)
-*   **AI 接口**: Google Gemini Pro (3 Flash Preview / 3 Pro Image)
-*   **部署**: Vercel Edge Functions (后端代理架构，保护 API Key 不泄露)
+## 本地开发
 
-## 🚀 本地开发 (Development)
+1. 克隆仓库
 
-1.  **克隆仓库**
-    ```bash
-    git clone https://github.com/Kirie233/jojo-stand-generator.git
-    cd jojo-stand-generator
-    ```
+```bash
+git clone https://github.com/Kirie233/jojo-stand-generator.git
+cd jojo-stand-generator
+```
 
-2.  **安装依赖**
-    ```bash
-    npm install
-    ```
+2. 安装依赖
 
-3.  **配置环境变量**
-    复制 `.env.example` 为 `.env`，并填入你自己的 API Key：
-    ```bash
-    cp .env.example .env
-    ```
-    然后编辑 `.env` 文件：
-    ```env
-    # [必填] 你的 API Key
-    VITE_GEMINI_API_KEY=your_api_key_here
+```bash
+npm install
+```
 
-    # [可选] 自定义 API 地址 (如使用中转/代理)
-    # VITE_GEMINI_BASE_URL=https://generativelanguage.googleapis.com
+3. 创建本地环境变量
 
-    # [可选] 自定义模型
-    # VITE_GEMINI_MODEL=gemini-3-flash-preview
+把 `.env.example` 复制成 `.env`：
 
-    # [可选] 图片生成独立配置
-    # VITE_IMAGE_API_KEY=your_image_api_key
-    # VITE_IMAGE_BASE_URL=https://your-image-provider.com
-    # VITE_IMAGE_MODEL=gemini-3-pro-image-preview
-    ```
-    > ⚠️ `.env` 文件已在 `.gitignore` 中，**不会被提交到仓库**，请放心填写。
+```bash
+cp .env.example .env
+```
 
-4.  **启动替身使者**
-    ```bash
-    npm run dev
-    ```
-    访问 `http://localhost:5173` 开始觉醒。
+推荐的本地开发配置：
 
-## ☁️ 部署指南 (Deployment on Vercel)
+```env
+# 文本生成
+VITE_GEMINI_API_KEY=your_text_key
+# 默认值: https://api.bltcy.ai/
+VITE_GEMINI_BASE_URL=https://api.bltcy.ai/
+VITE_GEMINI_MODEL=gemini-3-flash-preview
+
+# 图片生成
+# 不配置时会复用上面的文本 Key
+# 默认值: https://api.bltcy.ai/
+VITE_IMAGE_API_KEY=your_image_key
+VITE_IMAGE_BASE_URL=https://api.bltcy.ai/
+VITE_IMAGE_MODEL=gpt-image-2
+```
+
+说明：
+
+- `.env` 已被 `.gitignore` 忽略。
+- `VITE_*` 变量会暴露到前端代码中，只适合本地开发调试。
+
+4. 启动开发服务器
+
+```bash
+npm run dev
+```
+
+默认访问：`http://localhost:5173`
+
+## Vercel 部署
 
 ### 架构说明
 
-本项目采用 **前后端分离的安全架构**：
+- 生产环境：浏览器请求前端，再由 Vercel 的 `/api/*` 代理到模型接口。
+- 本地开发：前端可以直接使用 `.env` 里的 `VITE_*` 变量访问接口。
 
-- **生产环境**：所有 API 请求通过 Vercel Serverless Functions 代理转发，API Key **仅存在于服务器端**，前端代码中不包含任何密钥。
-- **开发环境**：通过 `.env` 文件中的 `VITE_` 前缀变量直连 API，方便本地调试。
-
-```
-[生产环境] 浏览器 → Vercel Serverless (/api/generate) → AI API
-[开发环境] 浏览器 → 直连 AI API (使用 .env 中的 Key)
+```text
+[生产环境] 浏览器 -> Vercel Serverless (/api/generate, /api/gemini) -> AI API
+[本地开发] 浏览器 -> 直连 AI API
 ```
 
-### 1. 导入项目 (Import Project)
-1.  **Fork** 本项目到您的 GitHub 账号。
-2.  登录 [Vercel](https://vercel.com)。
-3.  点击 **"Add New..."** → **"Project"**。
-4.  选择导入您刚刚 Fork 的 `jojo-stand-generator` 仓库。
+### 需要配置的环境变量
 
-### 2. 配置环境变量 (Environment Variables)
-在 Vercel 的 **Settings → Environment Variables** 中添加以下变量：
+在 Vercel 的 `Settings -> Environment Variables` 中配置：
 
-| 变量名 (Key) | 示例值 (Value) | 说明 |
+| Key | 示例值 | 说明 |
 | :--- | :--- | :--- |
-| `GEMINI_API_KEY` | `sk-xxx...` | **[必填]** 文本生成 API Key |
-| `GEMINI_BASE_URL` | `https://api.example.com` | **[选填]** API 地址 (默认 Google 官方) |
-| `GEMINI_MODEL` | `gemini-3-flash-preview` | **[选填]** 文本模型 |
-| `IMAGE_API_KEY` | `sk-xxx...` | **[选填]** 图片 API Key (不填则复用 GEMINI_API_KEY) |
-| `IMAGE_BASE_URL` | `https://img.example.com` | **[选填]** 图片 API 地址 |
-| `IMAGE_MODEL` | `gemini-3-pro-image-preview` | **[选填]** 图片模型 |
+| `GEMINI_API_KEY` | `sk-xxx...` | 必填，文本生成 Key |
+| `GEMINI_BASE_URL` | `https://api.bltcy.ai/` | 选填，文本接口地址 |
+| `GEMINI_MODEL` | `gemini-3-flash-preview` | 选填，文本模型 |
+| `IMAGE_API_KEY` | `sk-xxx...` | 选填，图片生成 Key，不填则复用 `GEMINI_API_KEY` |
+| `IMAGE_BASE_URL` | `https://api.bltcy.ai/` | 选填，图片接口地址 |
+| `IMAGE_MODEL` | `gpt-image-2` | 选填，图片模型 |
+| `IMAGE_QUALITY` | `high` | 选填，部分图片模型可用 |
+| `IMAGE_SIZE` | `1024x1024` | 选填，部分图片模型可用 |
 
-> ⚠️ **请勿在 Vercel 上设置 `VITE_` 前缀的变量！** `VITE_` 前缀的变量会被编译进前端代码，导致 API Key 泄露。不带 `VITE_` 前缀的变量仅在 Serverless Functions 中可用，完全安全。
+注意：
 
-### 3. 开始部署 (Deploy)
-1.  点击底部的 **Deploy** 按钮。
-2.  等待约 1 分钟构建完成。
-3.  点击 **Visit** 即可访问您的线上替身生成器！
+- 不要在 Vercel 生产环境里配置 `VITE_*` 变量。
+- Vercel 上应只配置服务端变量，也就是上表这一组。
+- 前端设置弹窗里的模型配置适合本地或单浏览器覆盖，不应该替代服务端默认配置。
+- 当前默认生图模型是 `gpt-image-2`，但仍然保留 `gemini` 生图支持。
 
-### 4. 后续更新
-只要您向 GitHub 仓库推送了新代码 (`git push`)，Vercel 会自动触发重新部署，无需额外操作。
+### 部署步骤
 
-## ⚠️ 免责声明
+1. Fork 或上传仓库到 GitHub
+2. 在 Vercel 导入该仓库
+3. 配置上面的环境变量
+4. 点击 `Deploy`
 
-本项目是由《JOJO的奇妙冒险》粉丝制作的非营利性开源项目。所有通过 AI 生成的内容仅供娱乐。JOJO 的相关版权归 **荒木飞吕彦 (Hirohiko Araki)** 及 **集英社 (SHUEISHA)** 所有。
+后续只要推送新代码，Vercel 会自动重新部署。
 
-> *“人类的赞歌就是勇气的赞歌！人类的伟大就是勇气的伟大！”*
+## 配置建议
+
+如果你准备长期部署到 Vercel，建议采用下面这套规则：
+
+- 服务端环境变量负责生产默认值
+- `.env.example` 只作为本地开发模板
+- `VITE_*` 只给本地调试使用
+- 前端模型设置只做“本地覆盖”，不要作为项目默认配置来源
+
+## 免责声明
+
+本项目为 JOJO 粉丝向非商业项目。通过 AI 生成的内容仅供娱乐和学习使用。相关作品版权归原作者及版权方所有。
 
 ---
-**To Be Continued... ➡️**
+
+**To Be Continued...**

@@ -2,6 +2,9 @@ export const config = {
   runtime: 'edge',
 };
 
+const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
+const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
+
 export default async function handler(req) {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -16,7 +19,7 @@ export default async function handler(req) {
   }
 
   // Get Key from Server Environment
-  const apiKey = process.env.GEMINI_SECRET_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_SECRET_KEY || process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'Server Error: API Key not configured' }), {
@@ -36,9 +39,9 @@ export default async function handler(req) {
       });
     }
 
-    const modelId = model || process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
-    const baseUrl = process.env.GEMINI_BASE_URL || process.env.VITE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
-    const url = `${baseUrl}/v1beta/models/${modelId}:generateContent`;
+    const modelId = model || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
+    const baseUrl = process.env.GEMINI_BASE_URL || 'https://api.bltcy.ai/';
+    const url = joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`);
 
     // Call API (Server-to-Server)
     const googleResponse = await fetch(url, {

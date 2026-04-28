@@ -1,251 +1,418 @@
 import React, { useState } from 'react';
 import '../styles/variables.css';
 
-const NavBar = ({ onReset, onToggleHistory, onToggleHelp, onToggleDonate, onToggleFAQ, isHistoryOpen }) => {
+const NavBar = ({ onToggleHistory, onToggleHelp, onToggleDonate, onToggleFAQ, isHistoryOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  const menuItems = [
+    { en: 'INTRO', cn: '简介', icon: '/assets/icon_tarot_intro.png', action: onToggleHelp },
+    { en: 'HISTORY', cn: '历史', icon: '/assets/icon_tarot_history.png', action: onToggleHistory },
+    { en: 'DONATE', cn: '赞赏', icon: '/assets/icon_tarot_harvest.png', action: onToggleDonate },
+    { en: 'FAQ', cn: '问答', icon: '/assets/icon_tarot_faq.png', action: onToggleFAQ },
+  ];
+
+  const handleItemClick = (action) => {
+    action();
+    setIsOpen(false);
+  };
 
   return (
     <>
-      {/* MAIN NAVIGATION CONTAINER (FIXED) */}
-      <div className={`zipper-nav-container ${isOpen ? 'open' : ''}`}>
-
-        {/* THE ZIPPER HANDLE (ALWAYS VISIBLE, SLIDES WITH MENU) */}
-        {!isHistoryOpen && (
-          <div className="zipper-handle-sticky" onClick={() => setIsOpen(!isOpen)} title="Sticky Fingers!">
-            <svg viewBox="0 0 70 140" className="handle-svg">
-              <defs>
-                {/* PREMIUM METALLIC GOLD GRADIENT */}
-                <linearGradient id="stickyGold" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#FFF700" />
-                  <stop offset="50%" stopColor="#FFD700" />
-                  <stop offset="100%" stopColor="#B8860B" />
-                </linearGradient>
-                <filter id="stickyGlow">
-                  <feDropShadow dx="-2" dy="2" stdDeviation="4" floodColor="#ffd700" floodOpacity="0.4" />
-                </filter>
-              </defs>
-
-              {/* THE ZIPPER BASE (The part that slides) */}
-              <rect x="20" y="0" width="30" height="20" fill="#222" stroke="#000" strokeWidth="1" rx="2" />
-
-              {/* THE PULL TAB - STICKY FINGERS STYLE */}
-              <g filter="url(#stickyGlow)">
-                {/* Main Body of the Pull */}
-                <path
-                  d="M15,20 H55 Q60,20 60,25 V100 Q60,115 45,120 L35,125 L25,120 Q10,115 10,100 V25 Q10,20 15,20 Z"
-                  fill="url(#stickyGold)"
-                  stroke="#000"
-                  strokeWidth="2.5"
-                />
-                {/* The Iconic "Handle Hole" */}
-                <circle cx="35" cy="45" r="12" fill="#1a0b2e" stroke="#000" strokeWidth="1.5" />
-                {/* Detailed inset line for 3D look */}
-                <path
-                  d="M20,70 H50 V95 Q50,105 40,110 L35,112 L30,110 Q20,105 20,95 Z"
-                  fill="rgba(255,255,255,0.15)"
-                  stroke="rgba(0,0,0,0.2)"
-                  strokeWidth="1"
-                />
-              </g>
-            </svg>
+      {/* MANGA MENU TOGGLE BUTTON */}
+      {!isHistoryOpen && (
+        <button
+          className={`manga-toggle ${isOpen ? 'active' : ''}`}
+          onClick={() => setIsOpen(!isOpen)}
+          title="MENU"
+        >
+          <div className="toggle-bars">
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
-        )}
+          <div className="toggle-sfx">ゴ</div>
+        </button>
+      )}
 
-        {/* MENU CONTENT PAN (BEHIND THE ZIPPER) */}
-        <div className="zipper-panel">
-          <div className="menu-list">
-            {/* INTRO */}
-            <div className="menu-item" onClick={() => { onToggleHelp(); setIsOpen(false); }}>
-              <img src="/assets/icon_tarot_intro.png" className="menu-icon-img" alt="Intro" />
-              <div className="menu-text-group">
-                <span className="menu-en">INTRO</span>
-                <span className="menu-cn">简介</span>
-              </div>
-            </div>
-            {/* HISTORY */}
-            <div className="menu-item" onClick={() => { onToggleHistory(); setIsOpen(false); }}>
-              <img src="/assets/icon_tarot_history.png" className="menu-icon-img" alt="History" />
-              <div className="menu-text-group">
-                <span className="menu-en">HISTORY</span>
-                <span className="menu-cn">历史</span>
-              </div>
-            </div>
-            {/* DONATE */}
-            <div className="menu-item" onClick={() => { onToggleDonate(); setIsOpen(false); }}>
-              <img src="/assets/icon_tarot_harvest.png" className="menu-icon-img" alt="Donate" />
-              <div className="menu-text-group">
-                <span className="menu-en">DONATE</span>
-                <span className="menu-cn">赞赏</span>
-              </div>
-            </div>
-            {/* FAQ */}
-            <div className="menu-item" onClick={() => { onToggleFAQ(); setIsOpen(false); }}>
-              <img src="/assets/icon_tarot_faq.png" className="menu-icon-img" alt="FAQ" />
-              <div className="menu-text-group">
-                <span className="menu-en">FAQ</span>
-                <span className="menu-cn">问答</span>
-              </div>
-            </div>
-          </div>
+      {/* OVERLAY */}
+      <div className={`manga-overlay ${isOpen ? 'show' : ''}`} onClick={() => setIsOpen(false)} />
+
+      {/* MANGA PANEL MENU */}
+      <nav className={`manga-nav ${isOpen ? 'open' : ''}`}>
+        {/* Decorative SFX */}
+        <div className="nav-sfx">
+          <span style={{ top: '8%', right: '10%', animationDelay: '0s' }}>ゴ</span>
+          <span style={{ top: '45%', right: '5%', animationDelay: '0.3s' }}>ゴ</span>
+          <span style={{ bottom: '12%', right: '15%', animationDelay: '0.6s' }}>ゴ</span>
         </div>
 
-      </div>
+        {/* Menu Panels */}
+        <div className="panel-grid">
+          {menuItems.map((item, i) => (
+            <div
+              key={item.en}
+              className={`manga-panel panel-${i}`}
+              style={{ animationDelay: `${0.08 + i * 0.08}s` }}
+              onClick={() => handleItemClick(item.action)}
+            >
+              <div className="panel-img-wrap">
+                <img src={item.icon} className="panel-img" alt={item.en} />
+              </div>
+              <div className="panel-text">
+                <span className="panel-en">{item.en}</span>
+                <span className="panel-cn">{item.cn}</span>
+              </div>
+              <div className="panel-flash"></div>
+            </div>
+          ))}
+        </div>
+      </nav>
 
       <style>{`
-        .zipper-nav-container {
-            position: fixed;
-            top: 0; right: 0;
-            height: 100vh;
-            width: 350px; /* Menu Width */
-            z-index: 9999;
-            transform: translateX(100%); /* Hidden by default */
-            transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
-            /* THE GOLDEN ZIPPER TEETH LINE */
-            border-left: 12px solid gold; 
-            box-shadow: -5px 0 10px rgba(0,0,0,0.5);
+        /* ========== MANGA TOGGLE BUTTON ========== */
+        .manga-toggle {
+          position: fixed;
+          top: 20px; right: 20px;
+          z-index: 10001;
+          width: 56px; height: 56px;
+          background: #000;
+          border: 3px solid var(--accent-color, #FFD700);
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transform: skewX(-8deg);
+          box-shadow:
+            4px 4px 0 #000,
+            0 0 15px rgba(255, 215, 0, 0.3);
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          overflow: visible;
         }
-        
-        .zipper-nav-container.open {
-            transform: translateX(0); /* Slide In */
+        .manga-toggle:hover {
+          transform: skewX(-8deg) scale(1.12);
+          box-shadow:
+            4px 4px 0 #000,
+            0 0 25px rgba(255, 215, 0, 0.6);
+          border-color: #fff;
+        }
+        .manga-toggle:active { transform: skewX(-8deg) scale(0.95); }
+
+        /* Hamburger Bars */
+        .toggle-bars {
+          display: flex; flex-direction: column;
+          gap: 5px; width: 24px;
+          transform: skewX(8deg);
+          transition: all 0.3s;
+        }
+        .toggle-bars span {
+          display: block; height: 3px;
+          background: var(--accent-color, #FFD700);
+          border-radius: 1px;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transform-origin: center;
+        }
+        .toggle-bars span:nth-child(2) { width: 70%; margin-left: auto; }
+
+        /* Toggle → X animation */
+        .manga-toggle.active .toggle-bars span:nth-child(1) {
+          transform: rotate(45deg) translate(5px, 6px);
+          background: #fff;
+        }
+        .manga-toggle.active .toggle-bars span:nth-child(2) {
+          opacity: 0; width: 0;
+        }
+        .manga-toggle.active .toggle-bars span:nth-child(3) {
+          transform: rotate(-45deg) translate(5px, -6px);
+          background: #fff;
         }
 
-        /* THE SINGLE ZIPPER HANDLE */
-        .zipper-handle-sticky {
-            position: absolute;
-            top: 30px; 
-            left: -60px; /* Sticks out to the left of the border */
-            width: 60px; height: 120px;
-            cursor: pointer;
-            z-index: 10002;
-            transition: transform 0.2s;
-            filter: drop-shadow(-2px 2px 5px rgba(0,0,0,0.5));
+        /* SFX on button */
+        .toggle-sfx {
+          position: absolute;
+          top: -14px; right: -16px;
+          font-family: 'Noto Serif SC', serif;
+          font-size: 1.4rem;
+          font-weight: 900;
+          color: var(--accent-color, #FFD700);
+          text-shadow: 2px 2px 0 #000;
+          animation: sfxPulse 2s ease-in-out infinite alternate;
+          pointer-events: none;
         }
-        .zipper-handle-sticky:hover {
-            transform: scale(1.15) rotate(-5deg); /* More dynamic hover */
-            filter: drop-shadow(-6px 6px 12px rgba(163, 0, 255, 0.4));
-        }
-
-        /* Ambient Gold Glow Pulse for the "Zipper" hint */
-        .zipper-handle-sticky::before {
-            content: '';
-            position: absolute;
-            inset: 10px;
-            background: rgba(255, 215, 0, 0.25);
-            border-radius: 50%;
-            filter: blur(18px);
-            z-index: -1;
-            animation: handlePulse 2s ease-in-out infinite alternate;
+        @keyframes sfxPulse {
+          from { transform: scale(0.85) rotate(-10deg); opacity: 0.6; }
+          to { transform: scale(1.1) rotate(5deg); opacity: 1; }
         }
 
-        @keyframes handlePulse {
-            from { transform: scale(0.8); opacity: 0.3; }
-            to { transform: scale(1.4); opacity: 0.7; }
+        /* ========== OVERLAY ========== */
+        .manga-overlay {
+          position: fixed; inset: 0;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(4px);
+          z-index: 9998;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.4s ease;
+        }
+        .manga-overlay.show {
+          opacity: 1;
+          pointer-events: auto;
         }
 
-        /* THE MENU PANEL BACKGROUND */
-        .zipper-panel {
-            width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1a0b2e 0%, #000000 100%);
-            display: flex; flex-direction: column;
-            justify-content: center;
-            box-shadow: inset 10px 0 50px rgba(0,0,0,0.8);
+        /* ========== MANGA NAV PANEL ========== */
+        .manga-nav {
+          position: fixed;
+          top: 0; right: 0;
+          width: 380px; height: 100vh;
+          z-index: 9999;
+          background: linear-gradient(160deg, #1a0033 0%, #0a0014 60%, #000 100%);
+          border-left: 5px solid var(--accent-color, #FFD700);
+          box-shadow:
+            -8px 0 30px rgba(0, 0, 0, 0.8),
+            inset 4px 0 20px rgba(255, 215, 0, 0.05);
+          transform: translateX(110%);
+          transition: transform 0.45s cubic-bezier(0.77, 0, 0.175, 1);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          overflow: hidden;
+        }
+        .manga-nav.open {
+          transform: translateX(0);
         }
 
-        .menu-list {
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
-            text-align: right;
-            width: 100%;
-            padding-right: 40px;
-            align-items: flex-end;
+        /* Diagonal comic line decoration */
+        .manga-nav::before {
+          content: '';
+          position: absolute;
+          top: -50%; left: -50%;
+          width: 200%; height: 200%;
+          background: repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 18px,
+            rgba(255, 215, 0, 0.03) 18px,
+            rgba(255, 215, 0, 0.03) 20px
+          );
+          pointer-events: none;
+          z-index: 0;
         }
 
-        .menu-item {
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            padding: 10px;
-        }
-        
-        /* HOVER EFFECTS */
-        .menu-item:hover { transform: translateX(-15px); }
-        .menu-item:hover .menu-cn { text-shadow: 0 0 15px #fff; }
-        .menu-item:hover .menu-icon-img { 
-            transform: scale(1.1) rotate(5deg);
-            filter: drop-shadow(0 0 10px #fff) brightness(1.2);
-            border-color: #fff;
-        }
-
-        .menu-icon-img {
-             width: 60px; height: 90px;
-             object-fit: cover;
-             border: 3px solid #555;
-             transition: all 0.3s;
-             /* High Contrast B/W looking */
-             filter: grayscale(1) contrast(1.2);
-             background: #fff;
+        /* Speed lines at bottom */
+        .manga-nav::after {
+          content: '';
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          height: 120px;
+          background: repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 4px,
+            rgba(255, 215, 0, 0.04) 4px,
+            rgba(255, 215, 0, 0.04) 5px
+          );
+          mask-image: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+          -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+          pointer-events: none;
+          z-index: 0;
         }
 
-        .menu-text-group {
-            display: flex; flex-direction: column;
-            align-items: flex-end;
-            position: relative;
+        /* ========== SFX FLOATING ========== */
+        .nav-sfx {
+          position: absolute; inset: 0;
+          pointer-events: none; z-index: 1;
+        }
+        .nav-sfx span {
+          position: absolute;
+          font-family: 'Noto Serif SC', serif;
+          font-size: 3.5rem;
+          font-weight: 900;
+          color: rgba(75, 0, 130, 0.35);
+          text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.05);
+          animation: sfxFloat 3s ease-in-out infinite alternate;
+        }
+        @keyframes sfxFloat {
+          from { transform: translateY(0) scale(1); }
+          to { transform: translateY(-12px) scale(1.05); }
         }
 
-        .menu-cn {
-            display: block;
-            font-family: 'ZCOOL KuaiLe', cursive; /* Using the Bold Font */
-            font-size: 2.5rem; /* BIG TEXT */
-            color: #fff;
-            line-height: 1;
-            z-index: 2;
-        }
-        
-        .menu-en {
-            display: block;
-            font-family: 'Anton', sans-serif;
-            font-size: 1.5rem;
-            color: transparent;
-            -webkit-text-stroke: 1px rgba(255,255,255,0.3); /* HOLLOW OUTLINE */
-            letter-spacing: 2px;
-            position: absolute;
-            top: -15px; right: 0; /* Watermark placement */
-            z-index: 1;
-            pointer-events: none;
+        /* ========== PANEL GRID ========== */
+        .panel-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding: 30px 28px;
+          position: relative;
+          z-index: 2;
         }
 
-        /* === MOBILE RESPONSIVE NAVBAR === */
+        /* ========== MANGA PANEL (Each menu item) ========== */
+        .manga-panel {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          padding: 16px 20px;
+          background: rgba(0, 0, 0, 0.6);
+          border: 3px solid #333;
+          border-left: 5px solid var(--accent-color, #FFD700);
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+          transform: skewX(-4deg);
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+          /* Staggered entrance */
+          opacity: 0;
+          animation: panelSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation-play-state: paused;
+        }
+
+        .manga-nav.open .manga-panel {
+          animation-play-state: running;
+        }
+
+        @keyframes panelSlideIn {
+          from {
+            opacity: 0;
+            transform: skewX(-4deg) translateX(80px);
+          }
+          to {
+            opacity: 1;
+            transform: skewX(-4deg) translateX(0);
+          }
+        }
+
+        /* Panel color accents */
+        .panel-0 { border-left-color: #FFD700; }
+        .panel-1 { border-left-color: #d500f9; }
+        .panel-2 { border-left-color: #00e5ff; }
+        .panel-3 { border-left-color: #ff1744; }
+        .panel-4 { border-left-color: #00c853; }
+
+        /* Hover: dramatic comic emphasis */
+        .manga-panel:hover {
+          transform: skewX(-4deg) translateX(-8px) scale(1.03);
+          border-color: #fff;
+          background: rgba(30, 0, 50, 0.9);
+          box-shadow:
+            6px 6px 0 #000,
+            0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        .manga-panel:active {
+          transform: skewX(-4deg) scale(0.97);
+        }
+
+        /* Flash overlay on hover */
+        .panel-flash {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
+          transform: translateX(-100%);
+          transition: transform 0.5s;
+          pointer-events: none;
+        }
+        .manga-panel:hover .panel-flash {
+          transform: translateX(100%);
+        }
+
+        /* ========== PANEL IMAGE ========== */
+        .panel-img-wrap {
+          width: 60px; height: 78px;
+          flex-shrink: 0;
+          border: 2px solid #555;
+          background: #111;
+          overflow: hidden;
+          transform: skewX(4deg);
+          transition: all 0.3s;
+        }
+        .manga-panel:hover .panel-img-wrap {
+          border-color: #fff;
+          box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+        }
+
+        .panel-img {
+          width: 100%; height: 100%;
+          object-fit: cover;
+          filter: grayscale(0.8) contrast(1.3);
+          transition: all 0.3s;
+        }
+        .manga-panel:hover .panel-img {
+          filter: grayscale(0) contrast(1.1) brightness(1.1);
+          transform: scale(1.1);
+        }
+
+        /* ========== PANEL TEXT ========== */
+        .panel-text {
+          display: flex;
+          flex-direction: column;
+          transform: skewX(4deg);
+          position: relative;
+        }
+
+        .panel-cn {
+          font-family: 'ZCOOL KuaiLe', cursive;
+          font-size: 2rem;
+          color: #fff;
+          line-height: 1.1;
+          text-shadow: 3px 3px 0 #000;
+          transition: all 0.3s;
+        }
+        .manga-panel:hover .panel-cn {
+          text-shadow:
+            3px 3px 0 #000,
+            0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        .panel-en {
+          font-family: 'Anton', sans-serif;
+          font-size: 0.85rem;
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(255, 255, 255, 0.25);
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          margin-top: 2px;
+        }
+        .manga-panel:hover .panel-en {
+          -webkit-text-stroke: 1px rgba(255, 215, 0, 0.6);
+        }
+
+        /* Panel accent colors on hover */
+        .panel-0:hover .panel-cn { text-shadow: 3px 3px 0 #000, 0 0 15px rgba(255, 215, 0, 0.5); }
+        .panel-1:hover .panel-cn { text-shadow: 3px 3px 0 #000, 0 0 15px rgba(213, 0, 249, 0.5); }
+        .panel-2:hover .panel-cn { text-shadow: 3px 3px 0 #000, 0 0 15px rgba(0, 229, 255, 0.5); }
+        .panel-3:hover .panel-cn { text-shadow: 3px 3px 0 #000, 0 0 15px rgba(255, 23, 68, 0.5); }
+        .panel-4:hover .panel-cn { text-shadow: 3px 3px 0 #000, 0 0 15px rgba(0, 200, 83, 0.5); }
+
+        .panel-0:hover .panel-en { -webkit-text-stroke: 1px rgba(255, 215, 0, 0.6); }
+        .panel-1:hover .panel-en { -webkit-text-stroke: 1px rgba(213, 0, 249, 0.6); }
+        .panel-2:hover .panel-en { -webkit-text-stroke: 1px rgba(0, 229, 255, 0.6); }
+        .panel-3:hover .panel-en { -webkit-text-stroke: 1px rgba(255, 23, 68, 0.6); }
+        .panel-4:hover .panel-en { -webkit-text-stroke: 1px rgba(0, 200, 83, 0.6); }
+
+        /* ========== MOBILE RESPONSIVE ========== */
         @media (max-width: 768px) {
-            .zipper-nav-container {
-                width: 260px; /* Narrower for mobile */
-            }
-            .zipper-handle-sticky {
-                top: 20px;
-                left: -50px;
-                width: 50px; height: 100px;
-            }
-            .menu-list {
-                gap: 25px;
-                padding-right: 20px;
-            }
-            .menu-icon-img {
-                width: 45px; height: 68px;
-            }
-            .menu-cn { font-size: 1.8rem; }
-            .menu-en { font-size: 1.1rem; }
-            .menu-item { gap: 12px; padding: 8px; }
+          .manga-toggle {
+            top: 14px; right: 14px;
+            width: 46px; height: 46px;
+          }
+          .toggle-bars { width: 20px; gap: 4px; }
+          .toggle-bars span { height: 2.5px; }
+          .toggle-sfx { font-size: 1.1rem; top: -10px; right: -12px; }
+
+          .manga-nav { width: 280px; }
+          .panel-grid { padding: 20px 16px; gap: 10px; }
+
+          .manga-panel { padding: 12px 14px; gap: 14px; }
+          .panel-img-wrap { width: 45px; height: 60px; }
+          .panel-cn { font-size: 1.5rem; }
+          .panel-en { font-size: 0.7rem; letter-spacing: 2px; }
+
+          .nav-sfx span { font-size: 2.5rem; }
         }
 
         @media (max-width: 380px) {
-            .zipper-nav-container { width: 220px; }
-            .menu-cn { font-size: 1.5rem; }
-            .menu-icon-img { width: 35px; height: 55px; }
+          .manga-nav { width: 240px; }
+          .panel-cn { font-size: 1.3rem; }
+          .panel-img-wrap { width: 38px; height: 50px; }
+          .manga-panel { padding: 10px 12px; gap: 10px; }
         }
-
       `}</style>
     </>
   );

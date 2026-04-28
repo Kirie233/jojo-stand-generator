@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import LandingPage from './LandingPage'; // Import Landing Page
-import InputForm from './InputForm';
-import StandCard from './StandCard';
-import HistoryList from './HistoryList';
 import NavBar from './NavBar';
-import DonateModal from './DonateModal';
-import HelpModal from './HelpModal';
-import FAQModal from './FAQModal';
 import { generateStandProfile, generateStandImage, getCachedStand, saveCachedStand, generateFastVisualConcept } from '../services/gemini';
 import { saveStandToDB, getAllStandsFromDB, initDB } from '../services/db';
 import '../styles/variables.css';
+
+const InputForm = lazy(() => import('./InputForm'));
+const StandCard = lazy(() => import('./StandCard'));
+const HistoryList = lazy(() => import('./HistoryList'));
+const DonateModal = lazy(() => import('./DonateModal'));
+const HelpModal = lazy(() => import('./HelpModal'));
+const FAQModal = lazy(() => import('./FAQModal'));
 
 const StandGenerator = () => {
   // GAME STATE: 'LANDING' | 'INPUT' | 'RESULT'
@@ -24,6 +25,32 @@ const StandGenerator = () => {
   const [showHelp, setShowHelp] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
   const [inputProgress, setInputProgress] = useState({ current: 0, total: 1 });
+  const appContainerRef = useRef(null);
+  const generationIdRef = useRef(0);
+
+  const isCurrentGeneration = (generationId) => generationIdRef.current === generationId;
+
+  const closeAllPanels = () => {
+    setShowHistory(false);
+    setShowDonate(false);
+    setShowHelp(false);
+    setShowFAQ(false);
+  };
+
+  const togglePanel = (panel) => {
+    setShowHistory(prev => (panel === 'history' ? !prev : false));
+    setShowDonate(prev => (panel === 'donate' ? !prev : false));
+    setShowHelp(prev => (panel === 'help' ? !prev : false));
+    setShowFAQ(prev => (panel === 'faq' ? !prev : false));
+  };
+
+  const refreshHistory = async (generationId = generationIdRef.current) => {
+    const items = await getAllStandsFromDB();
+    if (isCurrentGeneration(generationId)) {
+      setHistory(items);
+    }
+    return items;
+  };
 
   // Load history from DB on mount
   useEffect(() => {
@@ -48,7 +75,7 @@ const StandGenerator = () => {
 
   // --- AUTOMATIC SCROLL TO TOP ON STATE CHANGE ---
   useEffect(() => {
-    const container = document.querySelector('.app-container');
+    const container = appContainerRef.current;
     if (container) {
       container.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -61,6 +88,8 @@ const StandGenerator = () => {
 
   const handleBackToTitle = () => {
     // Nigerundayo!
+    generationIdRef.current += 1;
+    closeAllPanels();
     setGameState('LANDING');
     setStandData(null);
     setLoading(false);
@@ -68,19 +97,24 @@ const StandGenerator = () => {
   };
 
   const handleReset = () => {
+    generationIdRef.current += 1;
+    closeAllPanels();
     setStandData(null);
     setGameState('INPUT'); // Or LANDING if preferred, but usually Retry means new Input
     setError(null); // Clear error when resetting
   };
 
   const handleGenerate = async (inputs) => {
+    const generationId = generationIdRef.current + 1;
+    generationIdRef.current = generationId;
     setLoading(true);
     setError(null);
-    setShowHistory(false);
+    closeAllPanels();
 
     // EASTER EGG: 10% Chance of Rejection (Death)
     if (Math.random() < 0.1) {
       setTimeout(() => {
+        if (!isCurrentGeneration(generationId)) return;
         setLoading(false);
         setGameState('DEATH');
       }, 2000); // Fake delay for suspense
@@ -90,11 +124,18 @@ const StandGenerator = () => {
     // Check Cache
     const cached = getCachedStand(inputs);
     if (cached) {
+      if (!isCurrentGeneration(generationId)) return;
       setStandData(cached);
-      await saveStandToDB(cached);
-      setHistory(await getAllStandsFromDB());
-      setLoading(false);
       setGameState('RESULT'); // Move to Result
+      setLoading(false);
+
+      try {
+        await saveStandToDB(cached);
+        await refreshHistory(generationId);
+      } catch (storageError) {
+        if (!isCurrentGeneration(generationId)) return;
+        console.error("Cache history sync failed:", storageError);
+      }
       return;
     }
 
@@ -102,11 +143,20 @@ const StandGenerator = () => {
       // 1. PHASE 1: Generate Fast Visual Concept (Name + Appearance)
       // This is extremely fast (~2-3s) and allows us to start drawing earlier.
       const concept = await generateFastVisualConcept(inputs);
+      if (!isCurrentGeneration(generationId)) return;
       console.log("Fast Visual Concept ready:", concept);
 
       // 2. PHASE 2: Parallelized Tasks
       // Trigger drawing and full profile writing at the same time.
-      const imageTask = generateStandImage(concept.appearance);
+      const imageTask = generateStandImage({
+        appearance: concept.appearance,
+        standName: concept.name,
+        userName: inputs.userName,
+        song: inputs.song,
+        color: inputs.color,
+        personality: inputs.personality,
+        referenceImage: inputs.referenceImage
+      });
       const profileTask = generateStandProfile(inputs, concept);
 
       // Update UI with initial name so user sees progress
@@ -119,21 +169,35 @@ const StandGenerator = () => {
 
       // 3. Update Text Content as soon as BIO arrives
       profileTask.then(fullProfile => {
+        if (!isCurrentGeneration(generationId)) return;
         setStandData(prev => ({
           ...prev,
           ...fullProfile,
           userName: inputs.userName
         }));
+      }).catch(err => {
+        if (!isCurrentGeneration(generationId)) return;
+        console.error("Profile logic failed:", err);
+        setError("替身档案同步失败，已保留基础结果。请稍后重试。");
       });
 
       // 4. Update Image Content as soon as it arrives
       imageTask.then(async (imageUrl) => {
+        if (!isCurrentGeneration(generationId)) return;
         const finalImageUrl = imageUrl || 'FAILED';
 
-        // Wait for profile (usually already there) to save to DB
-        const finalProfile = await profileTask;
+        let finalProfile = null;
+        try {
+          // Do not discard a successful image when profile generation degrades.
+          finalProfile = await profileTask;
+        } catch (profileError) {
+          console.error("Profile sync failed during finalization:", profileError);
+        }
+
+        if (!isCurrentGeneration(generationId)) return;
         const finalizedData = {
-          ...finalProfile,
+          ...(finalProfile || {}),
+          name: finalProfile?.name || concept.name,
           imageUrl: finalImageUrl,
           userName: inputs.userName,
           referenceImage: inputs.referenceImage,
@@ -143,18 +207,28 @@ const StandGenerator = () => {
 
         setStandData(finalizedData);
         saveCachedStand(inputs, finalizedData);
-        await saveStandToDB(finalizedData);
-        setHistory(await getAllStandsFromDB());
+
+        try {
+          await saveStandToDB(finalizedData);
+          await refreshHistory(generationId);
+        } catch (storageError) {
+          if (!isCurrentGeneration(generationId)) return;
+          console.error("Final result history sync failed:", storageError);
+        }
       }).catch(err => {
+        if (!isCurrentGeneration(generationId)) return;
         console.error("Image logic failed:", err);
         setStandData(prev => ({ ...prev, imageUrl: 'FAILED' }));
       });
 
     } catch (err) {
+      if (!isCurrentGeneration(generationId)) return;
       console.error(err);
       setError("替身觉醒失败... 你的精神力还不够强吗？(API Error)");
     } finally {
-      setLoading(false);
+      if (isCurrentGeneration(generationId)) {
+        setLoading(false);
+      }
     }
   };
 
@@ -183,6 +257,10 @@ const StandGenerator = () => {
   }, [loading]);
 
   // --- RENDER HELPERS ---
+  const renderSuspenseFallback = (label = '加载中...') => (
+    <div className="component-loading">{label}</div>
+  );
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -209,15 +287,21 @@ const StandGenerator = () => {
         return <LandingPage onStart={handleStartGame} />;
 
       case 'INPUT':
-        return <InputForm
-          onSubmit={handleGenerate}
-          onCancel={handleBackToTitle}
-          onStepChange={setInputProgress}
-        />;
+        return (
+          <Suspense fallback={renderSuspenseFallback('仪式构筑中...')}>
+            <InputForm
+              onSubmit={handleGenerate}
+              onCancel={handleBackToTitle}
+              onStepChange={setInputProgress}
+            />
+          </Suspense>
+        );
 
       case 'RESULT':
         return standData ? (
-          <StandCard standData={standData} onReset={handleReset} />
+          <Suspense fallback={renderSuspenseFallback('正在展开替身档案...')}>
+            <StandCard standData={standData} onReset={handleReset} />
+          </Suspense>
         ) : null;
 
       case 'DEATH':
@@ -275,36 +359,16 @@ const StandGenerator = () => {
   };
 
   return (
-    <div className="app-container">
+    <div ref={appContainerRef} className="app-container">
       {/* GLOBAL HUD (Only show on Input/Result, hide on Landing for immersion?) */}
       {gameState !== 'LANDING' && (
         <NavBar
           onReset={handleBackToTitle} // "The Fool" now goes to Title? Or Input? Let's say Title for "New Awakening"
           isHistoryOpen={showHistory}
-          onToggleHistory={() => {
-            setShowHistory(prev => !prev);
-            setShowDonate(false);
-            setShowHelp(false);
-            setShowFAQ(false);
-          }}
-          onToggleDonate={() => {
-            setShowDonate(prev => !prev);
-            setShowHistory(false);
-            setShowHelp(false);
-            setShowFAQ(false);
-          }}
-          onToggleHelp={() => {
-            setShowHelp(prev => !prev);
-            setShowHistory(false);
-            setShowDonate(false);
-            setShowFAQ(false);
-          }}
-          onToggleFAQ={() => {
-            setShowFAQ(prev => !prev);
-            setShowHistory(false);
-            setShowDonate(false);
-            setShowHelp(false);
-          }}
+          onToggleHistory={() => togglePanel('history')}
+          onToggleDonate={() => togglePanel('donate')}
+          onToggleHelp={() => togglePanel('help')}
+          onToggleFAQ={() => togglePanel('faq')}
         />
       )}
 
@@ -322,16 +386,30 @@ const StandGenerator = () => {
 
       {/* MODALS & DRAWERS */}
       {showHistory && (
-        <HistoryList
-          history={history}
-          onClose={() => setShowHistory(false)}
-          onLoad={handleLoadFromHistory}
-        />
+        <Suspense fallback={renderSuspenseFallback('读取历史中...')}>
+          <HistoryList
+            history={history}
+            onClose={() => setShowHistory(false)}
+            onLoad={handleLoadFromHistory}
+          />
+        </Suspense>
       )}
 
-      {showDonate && <DonateModal onClose={() => setShowDonate(false)} />}
-      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
-      {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
+      {showDonate && (
+        <Suspense fallback={renderSuspenseFallback('展开赞赏页...')}>
+          <DonateModal onClose={() => setShowDonate(false)} />
+        </Suspense>
+      )}
+      {showHelp && (
+        <Suspense fallback={renderSuspenseFallback('加载说明中...')}>
+          <HelpModal onClose={() => setShowHelp(false)} />
+        </Suspense>
+      )}
+      {showFAQ && (
+        <Suspense fallback={renderSuspenseFallback('整理问答中...')}>
+          <FAQModal onClose={() => setShowFAQ(false)} />
+        </Suspense>
+      )}
 
       {/* FIXED UI ELEMENTS (TBC ARROW) - ROOT LEVEL FOR STABLE CONTEXT */}
       {gameState === 'INPUT' && (
@@ -456,6 +534,16 @@ const StandGenerator = () => {
               display: flex;
               justify-content: center;
               padding: 20px;
+          }
+          .component-loading {
+              min-height: 240px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: #fff;
+              font-family: 'Anton', sans-serif;
+              letter-spacing: 2px;
+              text-shadow: 2px 2px 0 #000;
           }
 
           /* === MOBILE RESPONSIVE LOADING & CONTENT === */

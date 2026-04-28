@@ -2,255 +2,348 @@ export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(req) {
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
+const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
 
-  try {
-    const { action, payload } = await req.json();
-    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-    const baseUrl = process.env.GEMINI_BASE_URL || process.env.VITE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
+const buildProfileSystemPrompt = () => {
+  return '你是 JOJO 风格替身档案撰写器。使用简洁、清晰、偏百科的中文口吻，返回合法 JSON。';
+};
 
-    // Allow overriding models via env vars, formatted for backend
-    const textModel = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
-    const imageModel = process.env.IMAGE_MODEL || process.env.VITE_IMAGE_MODEL || 'gemini';
+const buildProfileUserPrompt = ({ song, color, personality, userName, premadeConcept, referenceImage }) => {
+  return `
+请基于以下信息生成一个 JOJO 风格替身档案：
 
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'Server configuration error: Missing API Key' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+[输入信息]
+- 替身使者：${userName || 'Unknown'}
+- 命名来源：${song}
+- 主色调：${color}
+- 性格/执念：${personality}
+${premadeConcept ? `- 已确认概念：替身名“${premadeConcept.name}”，外观“${premadeConcept.appearance}”。请在此基础上完善。` : ''}
+${referenceImage ? '- 用户上传了参考图，请把能识别出的轮廓、气质或局部特征融入外观描述。' : ''}
 
-    // --- Action: Generate Profile (Text) ---
-    if (action === 'profile') {
-      const { song, color, personality, userName } = payload;
-      const isGemini = textModel.toLowerCase().includes('gemini');
-      let url, headers, body;
+输出要求：
+1. 所有字段都用中文输出。
+2. 文案要短，不要写成长段。
+3. desc 控制在 18 到 30 个字。
+4. long_desc 控制在 60 到 100 个字。
+5. mechanics 只保留 2 条，每条 content 控制在 35 到 60 个字。
+6. limitations 只保留 2 条，每条尽量一句话。
+7. appearance 使用简洁中文，控制在 45 到 80 个字，便于后续生图。
+8. 不要输出 Markdown，不要加解释。
 
-      const systemPrompt = `你是一位严谨的《JOJO的奇妙冒险》替身数据录入员，正在为"JOJO百科 (JoJo Wiki)"撰写词条。
-你的任务是基于用户提供的关键词，生成一份**专业、客观且详实**的替身档案。
-
-核心写作风格严格参照【白金之星】的百科词条：
-1. **百科全书口吻**：使用第三人称。语气客观、冷静，避免过多的主观修饰。
-2. **精确的术语**：在描述属性时，使用标准的JOJO术语。
-3. **能力深度解析**：不要只写"控制火"，要写出**机制**。
-4. **结构化描述**：将能力拆解为【基本能力】和【衍生应用】，条理清晰。
-请返回一个合法的 JSON 对象。`;
-      const userPrompt = `
-请基于以下数据，生成一份标准的【JOJO百科替身词条】：
-
-【档案元数据】
-1. 替身使者 (User): "${userName || 'Unknown'}"
-2. 命名来源 (Name Origin): "${song}" (由此决定替身名)
-3. 视觉色调 (Color): "${color}"
-4. 核心欲望 (Core Desire): "${personality}" (由此推导能力机制)
-
-⚠️ 严格指令：
-1. **能力强度随机化**：严禁将所有替身都设计得很强！允许生成弱替身。
-2. **形态多样性**：不要局限于人型！
-3. **色彩描述禁令**：绝对禁止在返回的文本中包含任何十六进制颜色代码或RGB代码。
-4. **格式清洗**：返回的 JSON 字段值中绝对禁止包含如"【替身简介】"、"【基本能力】"等带方括号的指示性标题，直接输出内容即可。
-
-请返回一个严格符合 JSON 格式的对象（不要使用 Markdown 代码块）：
+返回 JSON 结构：
 {
-  "name": "替身名 (英文名 + 中文名，如 'Star Platinum (白金之星)')",
-  "type": "替身类型 (如：近距离力量型、远距离自动操纵型、群体型等)",
+  "name": "替身名",
+  "type": "替身类型",
   "panel": {
-    "abilityName": "能力名 (四字熟语或简洁短语，如 '时间暂停')",
-    "desc": "一句话概括核心功能",
-    "long_desc": "一段详实的百科式描述，包含替身的外观特征和能力概述",
+    "abilityName": "能力名",
+    "desc": "一句话能力摘要",
+    "long_desc": "简洁的外观与能力说明",
     "mechanics": [
       {
-        "title": "基本能力：[机制名称]",
-        "content": "详细解释该能力的工作原理（约80-100字）"
+        "title": "核心能力：xx",
+        "content": "简洁说明"
       },
       {
-        "title": "衍生技：[技能名称]",
-        "content": "基于基本能力的进阶应用（约80-100字）"
+        "title": "衍生应用：xx",
+        "content": "简洁说明"
       }
     ],
     "limitations": [
-      "限制条件 1",
-      "弱点/代价 2"
+      "限制一",
+      "限制二"
     ],
-    "battleCry": "战吼 (如：ORA ORA、MUDA MUDA)",
-    "quote": "名台词"
+    "battleCry": "短战吼",
+    "quote": "短台词"
   },
   "stats": {
-    "power": "评级 (A/B/C/D/E/None/∞)",
-    "speed": "评级",
-    "range": "评级",
-    "durability": "评级",
-    "precision": "评级",
-    "potential": "成长性"
+    "power": "A/B/C/D/E/None",
+    "speed": "A/B/C/D/E/None",
+    "range": "A/B/C/D/E/None",
+    "durability": "A/B/C/D/E/None",
+    "precision": "A/B/C/D/E/None",
+    "potential": "A/B/C/D/E/None"
   },
-  "appearance": "基于'${color}'色调的详细外貌描述，用于后续绘画"
-}
-      `;
+  "appearance": "简洁中文外观描述"
+}`;
+};
+
+const buildEyecatchPrompt = ({
+  appearance,
+  standName,
+  userName,
+  song,
+  color,
+  personality,
+  referenceImage
+}) => {
+  const resolvedSong = song || 'an unspecified musical reference';
+  const backgroundStyle = `${color || 'bold contrasting'} radial burst with retro TV scanline texture, manga speed lines, and a dramatic mood shaped by ${personality || 'mysterious psychic tension'}, inspired by ${resolvedSong}`;
+  const referenceNote = referenceImage
+    ? 'The user also provided a reference photo; preserve any distinctive silhouette, facial impression, or styling cues already reflected in the stand concept.'
+    : 'No reference photo was provided.';
+
+  return `Authentic Japanese TV anime eyecatch screenshot, 16:9 landscape composition, bizarre stylish action manga aesthetic, classic anime cel-shading.
+
+Background: ${backgroundStyle}
+
+Story context: The Stand is named "${standName || 'Unknown Stand'}" and belongs to "${userName || 'Unknown User'}". Use this only as design inspiration; do not render any visible text.
+
+Canvas and framing: Wide horizontal 16:9 frame only, landscape orientation, cinematic TV eyecatch. Do not use a vertical poster, portrait crop, phone wallpaper, centered full-body poster, or tall character-card composition.
+
+Character layout: Put the Stand on the left or center-left, occupying about 45% of the frame width. Show the upper body and dynamic silhouette cropped naturally by the wide frame. Leave the right half and lower corners cleaner and darker as negative space for later UI overlay.
+
+Character: A highly stylized psychic guardian avatar, ${appearance}. The design should channel the emotional and symbolic feel of the music reference "${resolvedSong}" and the user's inner drive "${personality || 'mysterious resolve'}". ${referenceNote} Striking an exaggerated, bizarre, dynamic pose. Varied line weight, distinct hard-edge anime shadows, unique palette.
+
+Graphic direction: Use the full horizontal canvas with sweeping speed lines and background energy extending across the width. Suggest the mood of a circular stat chart area using composition only. Do not draw an actual radar chart, labels, numbers, rings, UI boxes, or typography. The right side may contain subtle glow, framing, or empty spotlight space where a stat panel could be overlaid later.
+
+Constraints: NO text, NO letters, NO words, NO numbers, NO subtitles, NO logos, NO watermarks, NO captions, NO radar chart, NO stat wheel, NO interface elements, NO embedded nameplates. Keep the composition readable and leave overlay-safe empty space.
+
+Vibe: Retro TV broadcast quality, high contrast, visually striking wide composition.`;
+};
+
+const jsonResponse = (data, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+const shouldRetryWithoutImageResponseFormat = (response, text) => (
+  response.status === 400 &&
+  /response_format|unsupported|unknown|invalid/i.test(text || '')
+);
+
+const toImageDataUrl = (value, mimeType = 'image/png') => {
+  if (!value) return null;
+  if (/^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(value)) {
+    return value;
+  }
+  return `data:${mimeType};base64,${value}`;
+};
+
+export default async function handler(req) {
+  if (req.method !== 'POST') {
+    return jsonResponse({ error: 'Method not allowed' }, 405);
+  }
+
+  try {
+    const {
+      action,
+      payload,
+      textModel: requestedTextModel,
+      imageModel: requestedImageModel,
+      imageSize: requestedImageSize,
+      imageQuality: requestedImageQuality
+    } = await req.json();
+    const apiKey = process.env.GEMINI_API_KEY;
+    const baseUrl = process.env.GEMINI_BASE_URL || 'https://api.bltcy.ai/';
+    const textModel = requestedTextModel || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
+    const imageModel = requestedImageModel || process.env.IMAGE_MODEL || 'gpt-image-2';
+
+    if (!apiKey) {
+      return jsonResponse({ error: 'Server configuration error: Missing API Key' }, 500);
+    }
+
+    if (action === 'profile') {
+      const { song, color, personality, userName, premadeConcept, referenceImage } = payload;
+      const isGemini = textModel.toLowerCase().includes('gemini');
+      const systemPrompt = buildProfileSystemPrompt();
+      const userPrompt = buildProfileUserPrompt({
+        song,
+        color,
+        personality,
+        userName,
+        premadeConcept,
+        referenceImage
+      });
+
+      let url;
+      let headers;
+      let body;
 
       if (isGemini) {
-        // Strategy A: Google Gemini
-        url = `${baseUrl}/v1beta/models/${textModel}:generateContent?key=${apiKey}`;
+        url = `${joinUrl(baseUrl, `/v1beta/models/${textModel}:generateContent`)}?key=${apiKey}`;
         headers = { 'Content-Type': 'application/json' };
-        body = {
-          contents: [{ parts: [{ text: systemPrompt + "\n" + userPrompt }] }]
-        };
+
+        const parts = [{ text: userPrompt }];
+        if (referenceImage) {
+          const base64Data = referenceImage.split(',')[1];
+          const mimeType = referenceImage.split(';')[0].split(':')[1];
+          parts.push({
+            inlineData: {
+              mimeType,
+              data: base64Data
+            }
+          });
+        }
+
+        body = { contents: [{ parts }] };
       } else {
-        // Strategy B: OpenAI Compatible
-        url = `${baseUrl}/v1/chat/completions`;
+        url = joinUrl(baseUrl, '/v1/chat/completions');
         headers = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          Authorization: `Bearer ${apiKey}`
         };
+
+        const userContent = [{ type: 'text', text: userPrompt }];
+        if (referenceImage) {
+          userContent.push({
+            type: 'image_url',
+            image_url: { url: referenceImage }
+          });
+        }
+
         body = {
           model: textModel,
           messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent }
           ],
-          response_format: { type: "json_object" } // Enforce JSON for smart models
+          response_format: { type: 'json_object' }
         };
       }
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: headers,
+        headers,
         body: JSON.stringify(body)
       });
 
       const data = await response.json();
-      return new Response(JSON.stringify(data), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return jsonResponse(data, response.status);
     }
 
-    // --- Action: Generate Image ---
     if (action === 'image') {
-      const { appearance } = payload;
+      const { appearance, standName, userName, song, color, personality, referenceImage } = payload;
       const isGemini = imageModel.toLowerCase().includes('gemini');
-
-      // Support independent Image Provider credentials
+      const isGptImage = imageModel.toLowerCase().includes('gpt-image');
       const imgApiKey = process.env.IMAGE_API_KEY || apiKey;
-      const imgBaseUrl = process.env.IMAGE_BASE_URL || baseUrl;
+      const imgBaseUrl = process.env.IMAGE_BASE_URL || 'https://api.bltcy.ai/';
+      const imageSize = requestedImageSize || process.env.IMAGE_SIZE || '1536x1024';
+      const imageQuality = requestedImageQuality || process.env.IMAGE_QUALITY || 'medium';
+      const prompt = buildEyecatchPrompt({
+        appearance,
+        standName,
+        userName,
+        song,
+        color,
+        personality,
+        referenceImage
+      });
 
-      let url, body, headers;
-
-      const prompt = `Draw a JoJo's Bizarre Adventure Stand character in the art style of Hirohiko Araki. ${appearance}. The art style should feature bold ink outlines, dramatic cross-hatching shadows, vibrant saturated colors, and an exaggerated dynamic pose. Position the Stand on the right side of the image. Use a dramatic, atmospheric background that fits the Stand's theme. This is a Stand entity, not a human character. Do not include any text, letters, watermarks, or UI elements in the image.`;
+      let url;
+      let headers;
+      let body;
 
       if (isGemini) {
-        url = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent`;
+        url = joinUrl(imgBaseUrl, `/v1beta/models/${imageModel}:generateContent`);
         headers = {
           'Content-Type': 'application/json',
           'x-goog-api-key': imgApiKey
         };
         body = {
-          contents: [{
-            role: "user",
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"]
-          },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
           safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
           ]
         };
       } else {
-        url = `${imgBaseUrl}/v1/images/generations`;
+        url = joinUrl(imgBaseUrl, '/v1/images/generations');
         headers = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${imgApiKey}`
+          Authorization: `Bearer ${imgApiKey}`
         };
         body = {
           model: imageModel,
-          prompt: prompt,
+          prompt,
           n: 1,
-          size: "1024x1024"
+          size: imageSize,
+          response_format: 'b64_json'
         };
+        if (isGptImage) {
+          body.quality = imageQuality;
+          body.size = imageSize;
+        }
       }
 
-      console.log("[Image] Provider:", imgBaseUrl, "| Model:", imageModel, "| isGemini:", isGemini);
+      console.log('[Image] Provider:', imgBaseUrl, '| Model:', imageModel, '| isGemini:', isGemini);
 
-      // Use streaming to avoid Edge 25s timeout:
-      // Start sending response immediately, write actual data when Gemini responds.
       const { readable, writable } = new TransformStream();
       const writer = writable.getWriter();
 
-      // Launch async processing in background (not awaited)
       (async () => {
         try {
-          const response = await fetch(url, {
+          let response = await fetch(url, {
             method: 'POST',
-            headers: headers,
+            headers,
             body: JSON.stringify(body)
           });
 
-          const data = await response.json();
+          let rawText = await response.text();
+
+          if (!response.ok && body.response_format && shouldRetryWithoutImageResponseFormat(response, rawText)) {
+            console.warn('[Image] response_format=b64_json unsupported; retrying without it.');
+            const retryBody = { ...body };
+            delete retryBody.response_format;
+            response = await fetch(url, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify(retryBody)
+            });
+            rawText = await response.text();
+          }
+
+          const data = rawText ? JSON.parse(rawText) : {};
 
           if (!response.ok) {
-            console.error("[Image] API Error:", response.status, JSON.stringify(data));
-            await writer.write(new TextEncoder().encode(JSON.stringify({
-              error: data.error || 'Image generation failed', raw: data
-            })));
+            console.error('[Image] API Error:', response.status, JSON.stringify(data));
+            await writer.write(
+              new TextEncoder().encode(JSON.stringify({ error: data.error || 'Image generation failed', raw: data }))
+            );
             await writer.close();
             return;
           }
 
-          // Normalize response: extract image data regardless of provider format
           let imageData = null;
 
           if (isGemini) {
             const parts = data.candidates?.[0]?.content?.parts || [];
-            console.log("[Image] Gemini parts count:", parts.length);
-            const imagePart = parts.find(p => (p.inline_data?.data) || (p.inlineData?.data));
+            const imagePart = parts.find((part) => part.inline_data?.data || part.inlineData?.data);
             if (imagePart) {
               const dataObj = imagePart.inline_data || imagePart.inlineData;
               const mimeType = dataObj.mime_type || dataObj.mimeType || 'image/png';
-              console.log("[Image] Found Base64 image, mime:", mimeType, "| data length:", dataObj.data.length);
-              imageData = `data:${mimeType};base64,${dataObj.data}`;
-            } else {
-              console.warn("[Image] No image found in parts.");
+              imageData = toImageDataUrl(dataObj.data, mimeType);
             }
           } else {
-            imageData = data.data?.[0]?.url || null;
+            const item = data.data?.[0];
+            imageData = item?.b64_json ? toImageDataUrl(item.b64_json, 'image/png') : item?.url || null;
           }
 
           await writer.write(new TextEncoder().encode(JSON.stringify({ imageData })));
           await writer.close();
         } catch (err) {
-          console.error("[Image] Stream error:", err);
+          console.error('[Image] Stream error:', err);
           try {
             await writer.write(new TextEncoder().encode(JSON.stringify({ error: err.message })));
             await writer.close();
-          } catch (_) { /* writer may already be closed */ }
+          } catch {
+            // writer may already be closed
+          }
         }
       })();
 
-      // Return response immediately (starts the 300s streaming window)
       return new Response(readable, {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-
+    return jsonResponse({ error: 'Invalid action' }, 400);
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: error.message }, 500);
   }
 }

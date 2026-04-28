@@ -84,6 +84,11 @@ const STEPS = [
   }
 ];
 
+const pickRandomItem = (items) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  return items[Math.floor(Math.random() * items.length)];
+};
+
 // TBC Progress Logic: Linear 0-100% based on steps
 // Now that image is cropped tightly, we can use simple math.
 const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
@@ -98,6 +103,7 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
   });
   const [invalidField, setInvalidField] = useState(null); // Which field failed validation
   const [showHint, setShowHint] = useState(false); // Show the floating validation hint
+  const tarotCardRef = useRef(null);
 
   // Report progress to parent
   useEffect(() => {
@@ -153,7 +159,7 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
       setIsFlipping(false);
 
       // Phase 2: Add flip-in class to restore opacity and rotate back (via CSS)
-      const card = document.querySelector('.tarot-card-frame');
+      const card = tarotCardRef.current;
       if (card) {
         card.classList.remove('flip-out');
         card.classList.add('flip-in');
@@ -182,11 +188,11 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
       });
 
       if (candidates.length > 0) {
-        const randItem = candidates[Math.floor(Math.random() * candidates.length)];
+        const randItem = pickRandomItem(candidates);
         handleChange(currentKey, getRandomValue(randItem));
       } else {
         // Fallback
-        const randItem = step.random[Math.floor(Math.random() * step.random.length)];
+        const randItem = pickRandomItem(step.random);
         handleChange(currentKey, getRandomValue(randItem));
       }
     }
@@ -229,7 +235,7 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
 
       <div className="tarot-container">
         <div className="tarot-card-scene">
-          <div className={`tarot-card-frame ${isFlipping ? 'flip-out' : ''}`}>
+          <div ref={tarotCardRef} className={`tarot-card-frame ${isFlipping ? 'flip-out' : ''}`}>
 
             {/* Watermark - Hidden on Final Step to keep background clean */}
             <div className="tarot-watermark" style={{ display: step.type === 'final' ? 'none' : 'block' }}>

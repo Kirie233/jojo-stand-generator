@@ -1,43 +1,189 @@
+const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
+const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
 const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
-const getBaseUrl = () => import.meta.env.VITE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
+const getBaseUrl = () => import.meta.env.VITE_GEMINI_BASE_URL || 'https://api.bltcy.ai/';
+const isBrowser = () => typeof window !== 'undefined';
+
+const getProxyUrl = (targetUrl, proxyPrefix) => {
+  if (!isBrowser() || import.meta.env.PROD) {
+    return targetUrl;
+  }
+
+  const parsed = new URL(targetUrl, window.location.origin);
+  if (parsed.origin === window.location.origin) {
+    return targetUrl;
+  }
+
+  const normalizedPath = parsed.pathname.replace(/^\/+/, '/');
+  return `${proxyPrefix}${normalizedPath}${parsed.search}`;
+};
+
+const parseJsonResponse = async (response, label) => {
+  const rawText = await response.text();
+  if (!rawText) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawText);
+  } catch {
+    const preview = rawText.slice(0, 200).replace(/\s+/g, ' ').trim();
+    throw new Error(`${label} returned non-JSON response (${response.status}): ${preview}`);
+  }
+};
+
+const shouldRetryWithoutImageResponseFormat = (response, text) => (
+  response.status === 400 &&
+  /response_format|unsupported|unknown|invalid/i.test(text || '')
+);
+
+const toImageDataUrl = (value, mimeType = 'image/png') => {
+  if (!value) return null;
+  if (/^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(value)) {
+    return value;
+  }
+  return `data:${mimeType};base64,${value}`;
+};
+
+const buildEyecatchPrompt = ({
+  appearance,
+  standName,
+  userName,
+  song,
+  color,
+  personality,
+  referenceImage
+}) => {
+  const resolvedSong = song || 'an unspecified musical reference';
+  const backgroundStyle = `${color || 'bold contrasting'} radial burst with retro TV scanline texture, manga speed lines, and a dramatic mood shaped by ${personality || 'mysterious psychic tension'}, inspired by ${resolvedSong}`;
+  const referenceNote = referenceImage
+    ? 'The user also provided a reference photo; preserve any distinctive silhouette, facial impression, or styling cues already reflected in the stand concept.'
+    : 'No reference photo was provided.';
+
+  return `Authentic Japanese TV anime eyecatch screenshot, 16:9 landscape composition, bizarre stylish action manga aesthetic, classic anime cel-shading.
+
+Background: ${backgroundStyle}
+
+Story context: The Stand is named "${standName || 'Unknown Stand'}" and belongs to "${userName || 'Unknown User'}". Use this only as design inspiration; do not render any visible text.
+
+Canvas and framing: Wide horizontal 16:9 frame only, landscape orientation, cinematic TV eyecatch. Do not use a vertical poster, portrait crop, phone wallpaper, centered full-body poster, or tall character-card composition.
+
+Character layout: Put the Stand on the left or center-left, occupying about 45% of the frame width. Show the upper body and dynamic silhouette cropped naturally by the wide frame. Leave the right half and lower corners cleaner and darker as negative space for later UI overlay.
+
+Character: A highly stylized psychic guardian avatar, ${appearance}. The design should channel the emotional and symbolic feel of the music reference "${resolvedSong}" and the user's inner drive "${personality || 'mysterious resolve'}". ${referenceNote} Striking an exaggerated, bizarre, dynamic pose. Varied line weight, distinct hard-edge anime shadows, unique palette.
+
+Graphic direction: Use the full horizontal canvas with sweeping speed lines and background energy extending across the width. Suggest the mood of a circular stat chart area using composition only. Do not draw an actual radar chart, labels, numbers, rings, UI boxes, or typography. The right side may contain subtle glow, framing, or empty spotlight space where a stat panel could be overlaid later.
+
+Constraints: NO text, NO letters, NO words, NO numbers, NO subtitles, NO logos, NO watermarks, NO captions, NO radar chart, NO stat wheel, NO interface elements, NO embedded nameplates. Keep the composition readable and leave overlay-safe empty space.
+
+Vibe: Retro TV broadcast quality, high contrast, visually striking wide composition.`;
+};
 
 export const generateStandProfile = async (inputs, premadeConcept = null) => {
   return retryOperation(() => _generateStandProfile(inputs, premadeConcept));
 };
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const stripCodeFences = (text) => {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('```')) {
+    return trimmed;
+  }
+
+  return trimmed
+    .replace(/^```[a-zA-Z0-9_-]*\s*/, '')
+    .replace(/\s*```$/, '')
+    .trim();
+};
+
+const escapeInnerQuotesInJsonStrings = (text) => {
+  let result = '';
+  let inString = false;
+  let escaping = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (escaping) {
+      result += char;
+      escaping = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      result += char;
+      escaping = true;
+      continue;
+    }
+
+    if (char === '"') {
+      if (!inString) {
+        inString = true;
+        result += char;
+        continue;
+      }
+
+      let j = i + 1;
+      while (j < text.length && /\s/.test(text[j])) {
+        j++;
+      }
+
+      const nextChar = text[j];
+      if (nextChar === ',' || nextChar === '}' || nextChar === ']' || nextChar === ':') {
+        inString = false;
+        result += char;
+      } else {
+        result += '\\"';
+      }
+      continue;
+    }
+
+    result += char;
+  }
+
+  return result;
+};
+
+const parseJsonCandidate = (text) => {
+  const normalized = stripCodeFences(text);
+
+  try {
+    return JSON.parse(normalized);
+  } catch {
+    return JSON.parse(escapeInnerQuotesInJsonStrings(normalized));
+  }
+};
 
 const extractJSON = (text) => {
   try {
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}');
-    if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
+    const normalizedText = stripCodeFences(text);
+    const jsonStart = normalizedText.indexOf('{');
+    const jsonEnd = normalizedText.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON found');
 
-    // Attempt simple extract first
-    const candidate = text.substring(jsonStart, jsonEnd + 1);
+    const candidate = normalizedText.substring(jsonStart, jsonEnd + 1);
     try {
-      return JSON.parse(candidate);
+      return parseJsonCandidate(candidate);
     } catch (e) {
-      // If simple fails, try to find the first complete object
-      // (Handles cases where there's junk AFTER the main JSON)
       let depth = 0;
       let start = -1;
-      for (let i = 0; i < text.length; i++) {
-        if (text[i] === '{') {
+      for (let i = 0; i < normalizedText.length; i++) {
+        if (normalizedText[i] === '{') {
           if (depth === 0) start = i;
           depth++;
-        } else if (text[i] === '}') {
+        } else if (normalizedText[i] === '}') {
           depth--;
           if (depth === 0 && start !== -1) {
-            return JSON.parse(text.substring(start, i + 1));
+            return parseJsonCandidate(normalizedText.substring(start, i + 1));
           }
         }
       }
-      throw e; // Re-throw if loop fails
+      throw e;
     }
   } catch (err) {
-    console.error("JSON Extraction Failed:", err, "\nRaw Text:", text);
-    throw new Error("API 返回了无法解析的格式 (JSON Error)");
+    console.error('JSON Extraction Failed:', err, '\nRaw Text:', text);
+    throw new Error('API returned an invalid JSON payload.');
   }
 };
 
@@ -48,7 +194,7 @@ const retryOperation = async (operation, retries = 3) => {
     } catch (err) {
       if (
         i < retries - 1 &&
-        (err.message.includes("Overloaded") || err.message.includes("503") || err.message.includes("quota"))
+        (err.message.includes('Overloaded') || err.message.includes('503') || err.message.includes('quota'))
       ) {
         console.warn(`API Overloaded. Retrying in ${(i + 1) * 2}s...`);
         await sleep((i + 1) * 2000);
@@ -65,41 +211,28 @@ const retryOperation = async (operation, retries = 3) => {
  */
 export const generateFastVisualConcept = async (inputs) => {
   return retryOperation(async () => {
-    console.log("🚀 [Phase 1] Inputs:", inputs);
+    console.log('Phase 1 Inputs:', inputs);
 
-    // Hybrid strategy: Proxy in production, Direct call in dev with API key
+    const prompt = `你正在为 JOJO 风格作品设计一个全新的替身概念。
 
-    const prompt = `你是《JOJO的奇妙冒险》的替身设计师。请基于用户特征设计一个替身。
+用户信息：
+- 音乐引用：${inputs.song}
+- 主色调：${inputs.color}
+- 性格/执念：${inputs.personality}
 
-    用户特征:
-    - 歌曲/引用: "${inputs.song}"
-    - 色调: "${inputs.color}"
-    - 性格特质: "${inputs.personality}"
+要求：
+1. 生成一个有辨识度、带有 JOJO 气质的替身概念。
+2. 替身名应参考音乐引用，符合 JOJO 式命名感觉。
+3. 替身不局限于人形，也可以是群体、器物、穿戴型、生物、现象或载具。
+4. appearance 字段将直接用于后续生图，请用简洁中文描述外观。
+5. appearance 控制在 45 到 80 个中文字符，突出轮廓、材质、配色和1到2个关键特征，不要写成长段说明。
 
-    设计原则:
-    1. 替身名源自歌曲/乐队名，符合 JOJO 命名惯例。
-    2. 以'${inputs.color}'为主色调进行配色设计。
-    3. JOJO的替身形态极其多样，请从中汲取灵感（不要照搬）：
-       - 近距离力量型：白金之星、疯狂钻石、黄金体验、石之自由
-       - 优雅/异形人型：杀手皇后、绯红之王、粘手手指、天堂之门
-       - 骑士/机甲型：银色战车、钢链手指、金属制品
-       - 远程操控型：绿色法皇、空条徐伦的石之自由（线）、隐者之紫
-       - 非人生物型：愚者、宠物店、迷雾、流浪猫
-       - 群体/微型：性感手枪、收成者、坏公司、麦达利卡
-       - 器物/武器型：皇帝、阿努比斯神、海滩男孩
-       - 凭依/载具型：力量（船）、命运之轮（车）、超级飞行（铁塔）
-       - 穿戴型：绿洲、白色相簿、20世纪少年
-       - 自动追踪型：黑色安息日、透明死神、廉价把戏
-       - 现象型：波希米亚狂想曲、天气预报、D4C
-       - 独立行动型：臭名昭著的大敌、滚石
-       - 以上只是部分示例，你完全可以设计出不属于任何分类的全新替身。
-
-    返回 JSON（严禁 Markdown 代码块）:
-    {
-      "reasoning": "一句话说明设计思路",
-      "name": "替身名 (中英文)",
-      "appearance": "English visual description of the Stand's appearance"
-    }`;
+只返回 JSON：
+{
+  "reasoning": "一句中文设计思路，20字内",
+  "name": "替身名",
+  "appearance": "简洁中文外观描述"
+}`;
 
     const apiKey = getApiKey();
     const baseUrl = getBaseUrl();
@@ -109,66 +242,66 @@ export const generateFastVisualConcept = async (inputs) => {
     let response;
 
     if (useProxy) {
-      // --- PROXY MODE (Production default, Dev fallback) ---
-      // Only send model if user explicitly configured it, otherwise let backend use its own env vars
-      const proxyBody = { prompt: prompt };
-      if (import.meta.env.VITE_GEMINI_MODEL) proxyBody.model = import.meta.env.VITE_GEMINI_MODEL;
+      const proxyBody = { prompt };
+      if (import.meta.env.VITE_GEMINI_MODEL) proxyBody.model = modelId;
       response = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(proxyBody)
       });
     } else {
-      // --- DIRECT CLIENT-SIDE CALL (Dev with API Key) ---
       const isGemini = modelId.toLowerCase().includes('gemini');
-      let directUrl, headers, body;
+      let directUrl;
+      let headers;
+      let body;
 
       if (isGemini) {
-        directUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+        directUrl = `${joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`)}?key=${apiKey}`;
         headers = { 'Content-Type': 'application/json' };
         body = { contents: [{ parts: [{ text: prompt }] }] };
       } else {
-        directUrl = `${baseUrl}/v1/chat/completions`;
+        directUrl = joinUrl(baseUrl, '/v1/chat/completions');
         headers = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          Authorization: `Bearer ${apiKey}`
         };
         body = {
           model: modelId,
-          messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" }
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' }
         };
       }
 
-      console.log("[Phase 1] Direct Call to:", directUrl.replace(apiKey, '***'));
-      response = await fetch(directUrl, {
+      const proxiedUrl = getProxyUrl(directUrl, '/__text_api');
+      console.log('[Phase 1] Direct Call to:', proxiedUrl.replace(apiKey, '***'));
+      response = await fetch(proxiedUrl, {
         method: 'POST',
-        headers: headers,
+        headers,
         body: JSON.stringify(body)
       });
     }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ [Phase 1] API Error Details:", response.status, errorText);
+      console.error('[Phase 1] API Error Details:', response.status, errorText);
       try {
         const errorJson = JSON.parse(errorText);
-        throw new Error(errorJson.error || "Fast Visual Concept Failed");
+        throw new Error(errorJson.error || 'Fast Visual Concept Failed');
       } catch (e) {
-        if (e.message.includes("Fast Visual Concept")) throw e;
+        if (e.message.includes('Fast Visual Concept')) throw e;
         throw new Error(`API Error ${response.status}: ${errorText}`);
       }
     }
-    const data = await response.json();
 
-    // Handle both Gemini and OpenAI response formats
+    const data = await response.json();
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text && data.choices?.[0]?.message?.content) {
       text = data.choices[0].message.content;
     }
-    if (!text) throw new Error("API response is empty");
+    if (!text) throw new Error('API response is empty');
+
     const result = extractJSON(text);
-    console.log("📝 [Phase 1] JSON Result:", result);
+    console.log('[Phase 1] JSON Result:', result);
     return result;
   });
 };
@@ -176,179 +309,131 @@ export const generateFastVisualConcept = async (inputs) => {
 const _generateStandProfile = async (inputs, premadeConcept = null) => {
   const apiKey = getApiKey();
 
-  // Only enforce API Key in Development (Client-side)
-  // In Production, we use the backend proxy which has its own key.
   if (!import.meta.env.PROD && !apiKey) {
-    throw new Error("请在 .env 文件中配置 VITE_GEMINI_API_KEY");
+    throw new Error('Please configure VITE_GEMINI_API_KEY in your .env file.');
   }
-
-  const { song, color, personality } = inputs;
-
-
 
   const baseUrl = getBaseUrl();
   const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
 
-  const prompt = `你是一位《JOJO的奇妙冒险》替身设计专家。请根据以下用户特征，为一个新人类设计一个独特的替身(Stand)。
-
-  用户特征:
-  1. 音乐引用(决定命名): "${song}"
-  2. 代表色(决定视觉): "${color}"
-  3. 精神特质 / 欲望(决定能力核心): "${personality}"
-
-  ⚠️ 命名规则（智能转化）：
-  - 如果用户输入的是【专辑名】或【歌曲名】，请直接使用或微调作为替身名。
-  - **重要：如果用户输入的是【歌手/乐队名】（如 Michael Jackson, 周杰伦），请不要直接用人名！请从该歌手的作品中，挑选一首最符合用户设定色彩"${color}"和特质"${personality}"的【歌曲】或【专辑】作为替身名。**
-  - 替身名必须符合 JOJO 的摇滚/流行音乐引用风格。
-
-    请返回一个合法的 JSON 对象(不要使用 Markdown 代码块)，包含以下字段:
-  {
-    "name": "替身名 (基于音乐引用的日文片假名或英文，并附带帅气的中文译名。例如输入'Michael Jackson'且特质为'危险'，可命名为 'Smooth Criminal (犯罪高手)' 或 'Dangerous (危险之旅)')",
-      "abilityName": "能力名 (汉字，如 '败者食尘')",
-        "ability": "能力详细描述。必须基于'${personality}'设计。请使用以下格式：\n【能力概述】简短一句话。\n【详细机制】具体的发动条件和效果。\n【限制/代价】能力使用的弱点或风险 (JOJO的替身都有局限性)。",
-          "stats": {
-      "power": "评级 (A=极强, B=强, C=普通, D=弱, E=极弱, None=无, ∞=无限)。⚠️严禁全A面板！必须遵循等价交换原则：强力能力(A)必须伴随弱项(D/E/None)。请大胆使用 D 和 E 甚至 None。",
-        "speed": "评级",
-          "range": "评级",
-            "durability": "评级",
-              "precision": "评级",
-                "potential": "成长性 (体现未来的可能性)"
-    },
-    "appearance": "基于'${color}'色调的详细外貌描述，包含服装、机械或生物特征，用于后续绘画。注意：不要描述任何文字、字母、符号或纹身在替身身上，保持外表纯净。",
-      "shout": "替身吼叫 (如 ORA ORA, ARI ARI, 或与能力相关的独特声音)"
-  }
-  `;
-
   try {
     let response;
-
-    // HYBRID STRATEGY:
-    // Production: ALWAYS use Serverless Proxy (Secure, Key stays on server)
-    // Development: Use Direct Call if Key exists (Fast, no proxy needed)
     const useProxy = import.meta.env.PROD || !apiKey;
 
     if (useProxy) {
-      // --- PROXY MODE (Production default, Dev fallback) ---
-      response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'profile',
-          payload: { ...inputs, userName: inputs.userName || 'Unknown', referenceImage: inputs.referenceImage }
-        })
-      });
+      if (import.meta.env.VITE_GEMINI_MODEL) {
+        response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'profile',
+            textModel: modelId,
+            payload: { ...inputs, userName: inputs.userName || 'Unknown', referenceImage: inputs.referenceImage }
+          })
+        });
+      } else {
+        response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'profile',
+            payload: { ...inputs, userName: inputs.userName || 'Unknown', referenceImage: inputs.referenceImage }
+          })
+        });
+      }
     } else {
-      // --- DIRECT CLIENT-SIDE CALL ---
-
-      const systemPrompt = `你是一位严谨的《JOJO的奇妙冒险》替身数据录入员，正在为“JOJO百科 (JoJo Wiki)”撰写词条。
-你的任务是基于用户提供的关键词，生成一份**专业、客观且详实**的替身档案。
-
-核心写作风格严格参照【白金之星】的百科词条：
-1. **百科全书口吻**：使用第三人称。语气客观、冷静，避免过多的主观修饰（如“太强了”、“无敌”），而是通过**具体的表现描写**来体现强大。例如：“能够徒手接住近距离发射的子弹”、“视力足以在照片中分辨出苍蝇”。
-2. **精确的术语**：在描述属性时，使用标准的JOJO术语（如：破坏力、速度、射程距离、持续力、精密动作性、成长性）。
-3. **能力深度解析**：不要只写“控制火”，要写出**机制**（例如：“能够随意控制热能的流动，将接触物体的温度瞬间提升至燃点”）。
-4. **结构化描述**：将能力拆解为【基本能力】和【衍生应用】，条理清晰。`;
-
+      const systemPrompt = `你是 JOJO 风格替身档案撰写器。使用简洁、清晰、偏百科的中文口吻，返回合法 JSON。`;
 
       const userPromptText = `
-  请基于以下数据，生成一份标准的【JOJO百科替身词条】：
+请基于以下信息生成一个 JOJO 风格替身档案：
 
-  【档案元数据】
-  1. 替身使者 (User): "${inputs.userName || 'Unknown'}"
-  2. 命名来源 (Name Origin): "${inputs.song}" (由此决定替身名)
-  3. 视觉色调 (Color): "${inputs.color}"
-  4. 核心欲望 (Core Desire): "${inputs.personality}" (由此推导能力机制)
-  ${premadeConcept ? `5. 已确认概念: 替身名为"${premadeConcept.name}", 基础外观为"${premadeConcept.appearance}"。请在此基础上进行深度百科创作并扩充外貌细节。` : ""}
-  ${inputs.referenceImage ? "6. [视觉参考] 请参考附图特征进行外貌描写。" : ""}
+[输入信息]
+- 替身使者：${inputs.userName || 'Unknown'}
+- 命名来源：${inputs.song}
+- 主色调：${inputs.color}
+- 性格/执念：${inputs.personality}
+${premadeConcept ? `- 已确认概念：替身名“${premadeConcept.name}”，外观“${premadeConcept.appearance}”。请在此基础上完善。` : ''}
+${inputs.referenceImage ? '- 用户上传了参考图，请把能识别出的轮廓、气质或局部特征融入外观描述。' : ''}
 
-  ⚠️ 严格指令：
-  1. **能力强度随机化 (Gacha System)**：**严禁将所有替身都设计得很强！** 请模拟“抽卡”体验，替身强度必须在【S级 (时间/因果律)】到【E级 (几乎无用/仅仅是啦啦队)】之间大幅波动。允许生成像“幸存者 (Survivor)”这种对他人都没用甚至对自己有害的弱替身，或者像“嘿呀 (Hey Ya!)”这种只能给人加油的替身。**弱替身也是JOJO世界的重要组成部分。**
-  2. **形态多样性**：不要局限于人型！JOJO 的魅力在于不可预测。请根据“宿命特质”自由构筑形态。它可以是：
-     - **传统的【人型】** (如白金之星)
-     - **【器物/装备型】** (如手枪、飞机、书本)
-     - **【穿戴一体型】** (像铠甲或紧身衣一样穿在本体身上，如白色相簿)
-     - **【同化型】** (附着在现实物体如船、车、电塔上，如Strength)
-     - **【微观群落/群体型】** (由无数小体组成，如收成者)
-     - **【现象/空间型】** (如天气、影子、镜中世界)
-     **请务必打破常规，创造出令人意想不到的独特存在形式。**
-  3. **独立意志与异质性**：请大胆设计具有【自主意识】的替身（如“性感手枪”会对话、有情绪），或是【自动律法型】（如“奇迹与你”代表灾厄本身），甚至【脱离控制型】（如“银色战车镇魂曲”）。替身不一定完全听命于使者，它可能是宿主深层欲望的独立具象化。
-  4. **色彩描述禁令**：在描述颜色时，请直接使用具体的色彩名称。**绝对禁止在返回的文本中包含任何十六进制颜色代码 (如 #7B1FA2) 或 RGB 代码。** 保持百科词条的浸入感。
-  5. **格式清洗**：返回的 JSON 字段值中**绝对禁止**包含如“【替身简介】”、“【基本能力】”等带方括号的指示性标题，直接输出内容即可。
+输出要求：
+1. 所有字段都用中文输出。
+2. 文案要短，不要写成长段。
+3. desc 控制在 18 到 30 个字。
+4. long_desc 控制在 60 到 100 个字。
+5. mechanics 只保留 2 条，每条 content 控制在 35 到 60 个字。
+6. limitations 只保留 2 条，每条尽量一句话。
+7. appearance 使用简洁中文，控制在 45 到 80 个字，便于后续生图。
+8. 不要输出 Markdown，不要加解释。
 
-  请返回一个严格符合 JSON 格式的对象（不要使用 Markdown 代码块）：
-  {
-    "name": "替身名 (英文名 + 官方译名风格的中文名，如 'Star Platinum (白金之星)')",
-    "type": "替身类型 (如：近距离力量型、远距离自动操纵型、群体型、现象型、器物/装备型、规则概念型、无意识暴走型、穿戴/一体化型、同化型(附着于物体)、陷阱/自动触发型、寄生型)",
-    "panel": {
-      "abilityName": "能力名 (四字熟语或简洁短语，如 '时间暂停'、'黄金体验')",
-      "desc": "【能力摘要】一句话概括核心功能，类似百科的顶部简介。",
-      "long_desc": "【替身简介】一段详实的百科式描述。包含替身的外观特征（基于色调）、出现方式以及能力的整体概述。请用说明文的口吻，描述其独特的压迫感或神圣感。",
-      "mechanics": [
-        {
-          "title": "基本能力：[机制名称]",
-          "content": "详细解释该能力的工作原理。例如：描述由于速度极快，在普通人眼中如同瞬间移动一般。或者：该能力并非简单的破坏，而是从分子层面重组物质。（约80-100字）"
-        },
-        {
-          "title": "衍生技：[技能名称]",
-          "content": "基于基本能力的进阶应用。描述在战斗中如何灵活运用此能力，或者该能力的某项特殊性质（如：射程虽短但威力足以粉碎钻石）。（约80-100字）"
-        }
-      ],
-      "limitations": [
-        "限制条件 1 (精确描述能力的边界，如：射程距离只有2米)",
-        "弱点/代价 2 (例如：持续发动会消耗大量精神力)"
-      ],
-      "battleCry": "战吼 (如：欧拉欧拉 (ORA ORA)、木大木大 (MUDA MUDA))",
-      "quote": "名台词 (一句展现替身使者觉悟或性格的经典发言)"
-    },
-    "stats": { 
-      "power": "评级 (A/B/C/D/E/None/∞/?)。⚠️注意：JOJO中不存在'S'级面板，最高为'A'或'∞'！请严格遵守标准六维。", 
-      "speed": "评级", 
-      "range": "评级", 
-      "durability": "评级 (A=硬度极高, E=脆弱)", 
-      "precision": "评级 (A=机械般精密, E=盲目)", 
-      "potential": "成长性 (A=潜力无穷, E=完成体)" 
-    },
-    "appearance": "【外观描写】基于'${inputs.color}'色调的详细外貌描述。使用百科词条的笔触（如：该替身呈现为人型，全身覆盖着...，头部装饰有...）。"
-  }
-  ⚠️ 严格指令：返回的 JSON 字段值中**绝对禁止**包含如“【替身简介】”、“【基本能力】”等带方括号的指示性标题，直接输出内容即可。
-  `;
+返回 JSON 结构：
+{
+  "name": "替身名",
+  "type": "替身类型",
+  "panel": {
+    "abilityName": "能力名",
+    "desc": "一句话能力摘要",
+    "long_desc": "简洁的外观与能力说明",
+    "mechanics": [
+      {
+        "title": "核心能力：xx",
+        "content": "简洁说明"
+      },
+      {
+        "title": "衍生应用：xx",
+        "content": "简洁说明"
+      }
+    ],
+    "limitations": [
+      "限制一",
+      "限制二"
+    ],
+    "battleCry": "短战吼",
+    "quote": "短台词"
+  },
+  "stats": {
+    "power": "A/B/C/D/E/None",
+    "speed": "A/B/C/D/E/None",
+    "range": "A/B/C/D/E/None",
+    "durability": "A/B/C/D/E/None",
+    "precision": "A/B/C/D/E/None",
+    "potential": "A/B/C/D/E/None"
+  },
+  "appearance": "简洁中文外观描述"
+}`;
 
       const isGemini = modelId.toLowerCase().includes('gemini');
-      let requestUrl, headers, body;
+      let requestUrl;
+      let headers;
+      let body;
 
       if (isGemini) {
-        requestUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+        requestUrl = `${joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`)}?key=${apiKey}`;
         headers = { 'Content-Type': 'application/json' };
 
-        // Gemini Multimodal Format
         const parts = [{ text: userPromptText }];
         if (inputs.referenceImage) {
-          // inputs.referenceImage is "data:image/jpeg;base64,..."
-          // Gemini needs raw base64 without prefix
           const base64Data = inputs.referenceImage.split(',')[1];
           const mimeType = inputs.referenceImage.split(';')[0].split(':')[1];
           parts.push({
             inlineData: {
-              mimeType: mimeType,
+              mimeType,
               data: base64Data
             }
           });
         }
-        body = { contents: [{ parts: parts }] };
 
+        body = { contents: [{ parts }] };
       } else {
-        // OpenAI Compatible Multimodal
-        // Many proxies support standard OpenAI "image_url"
-        requestUrl = `${baseUrl}/v1/chat/completions`;
+        requestUrl = joinUrl(baseUrl, '/v1/chat/completions');
         headers = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          Authorization: `Bearer ${apiKey}`
         };
 
-        const userContentVector = [{ type: "text", text: userPromptText }];
+        const userContentVector = [{ type: 'text', text: userPromptText }];
         if (inputs.referenceImage) {
           userContentVector.push({
-            type: "image_url",
+            type: 'image_url',
             image_url: { url: inputs.referenceImage }
           });
         }
@@ -356,19 +441,20 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
         body = {
           model: modelId,
           messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userContentVector }
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContentVector }
           ],
-          response_format: { type: "json_object" }
+          response_format: { type: 'json_object' }
         };
       }
 
-      console.log("Using Direct Client-Side Call for Text");
-      console.log("Current Model ID:", modelId);
-      console.log("Request URL (masked):", requestUrl.replace(apiKey, '***'));
-      response = await fetch(requestUrl, {
+      const proxiedUrl = getProxyUrl(requestUrl, '/__text_api');
+      console.log('Using Direct Client-Side Call for Text');
+      console.log('Current Model ID:', modelId);
+      console.log('Request URL (masked):', proxiedUrl.replace(apiKey, '***'));
+      response = await fetch(proxiedUrl, {
         method: 'POST',
-        headers: headers,
+        headers,
         body: JSON.stringify(body)
       });
     }
@@ -378,245 +464,242 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
       let errorMsg = `Status ${response.status} `;
       try {
         const errorJson = JSON.parse(errorRaw);
-        // Check for specific provider error messages
-        const detail = errorJson.error?.message || "";
-        if (detail.includes("quota exhausted") || detail.includes("RemainQuota")) {
-          throw new Error("API 额度已用尽 (Quota Exhausted)。请检查您的余额。");
+        const detail = errorJson.error?.message || '';
+        if (detail.includes('quota exhausted') || detail.includes('RemainQuota')) {
+          throw new Error('API quota exhausted. Please check your remaining balance.');
         }
         errorMsg = JSON.stringify(errorJson, null, 2);
       } catch (e) {
-        // If it was already our friendly error, rethrow it
-        if (e.message.startsWith("API 额度")) throw e;
+        if (e.message.startsWith('API quota')) throw e;
         errorMsg = errorRaw;
       }
-      throw new Error(`Gemini API Error: ${errorMsg} `);
+      throw new Error(`Gemini API Error: ${errorMsg}`);
     }
 
     const data = await response.json();
-    console.log("--- RAW API RESPONSE (DEBUG) ---");
+    console.log('--- RAW API RESPONSE (DEBUG) ---');
     console.log(data);
 
-    // Attempt standard Google format
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    // Fallback: Check for OpenAI format (some proxies convert it)
     if (!text && data.choices?.[0]?.message?.content) {
-      console.log("Detected OpenAI-style response format");
+      console.log('Detected OpenAI-style response format');
       text = data.choices[0].message.content;
     }
 
-    if (!text) throw new Error("API response is empty or has unrecognized format. Check console logs.");
-
+    if (!text) throw new Error('API response is empty or has unrecognized format. Check console logs.');
     return extractJSON(text);
   } catch (err) {
-    console.error("Stand Generation Failed:", err);
+    console.error('Stand Generation Failed:', err);
     throw err;
   }
 };
 
-export const generateStandImage = async (appearance) => {
-  console.log("🎨 [Phase 2] Appearance Input:", appearance);
+export const generateStandImage = async ({
+  appearance,
+  standName,
+  userName,
+  song,
+  color,
+  personality,
+  referenceImage
+}) => {
+  console.log('Phase 2 Appearance Input:', appearance);
   const apiKey = getApiKey();
-  const baseUrl = getBaseUrl();
-  const imageModel = import.meta.env.VITE_IMAGE_MODEL || 'dall-e-3';
+  const imageModel = import.meta.env.VITE_IMAGE_MODEL || 'gpt-image-2';
+  const imageSize = import.meta.env.VITE_IMAGE_SIZE || '1536x1024';
+  const imageQuality = import.meta.env.VITE_IMAGE_QUALITY || 'medium';
 
-  console.log("Generating Image Model:", imageModel);
+  console.log('Generating Image Model:', imageModel);
 
-  const prompt = `**ART STYLE: JAPANESE ANIME / MANGA (JoJo's Bizarre Adventure Style)**
-  
-  Create a high-quality **2D Anime Illustration** of a 'Stand' in the signature style of **Hirohiko Araki**.
-  
-  The Stand's appearance features: ${appearance}.
+  const prompt = buildEyecatchPrompt({
+    appearance,
+    standName,
+    userName,
+    song,
+    color,
+    personality,
+    referenceImage
+  });
 
-  **DESIGN GUIDANCE (JOJO STYLE):**
-  - **IF HUMANOID**: Use these archetypes as **inspiration** (mix and match allowed):
-    1. **Noble Statue**: Heroic, sharp features (Star Platinum).
-    2. **Distorted/Stylized**: Expressive but inhuman (King Crimson, Gold Experience).
-    3. **Mask/Visor**: Mechanical or covered (Hierophant Green).
-    4. **Pattern-Integrated**: Face split by zippers, hearts, or geometric patterns (Sticky Fingers, Crazy Diamond).
-    5. **Monstrous/Skeletal**: Skull-like or void-faced (Cream, Justice).
-    6. **Surreal/Abstract**: No face, just a shape, a shadow, or an eye in a weird place (Grateful Dead, Black Sabbath).
-    **Key**: **Surprise the user.** Do not feel limited by this list. The goal is "Biological Surrealism".
-  - **IF COLONY/TINY (Mascot Type)**:
-    - **REFERENCES**: Sex Pistols (Mista), Harvest (Shigechi).
-    - **STYLE**: Use **"Anime Mascot" aesthetics**. They should look like stylized characters, not realistic humans.
-    - **BODY SHAPE**: **STRICTLY NO MUSCLES**. Use "Potato-shaped", "Pear-shaped", or "Round" bodies with thin noodle limbs.
-    - **PROPORTIONS**: Huge head (1/2 total height), tiny body. Think "Chibi" or "Funko Pop" style.
-    - **NO PHOTOREALISM**: Do not draw realistic mini-men. Keep it 2D, expressive, and exaggerated.
-  - **IF OBJECT/NON-HUMAN**: Focus on "Artifact Quality". If it's a gun/tool, make it ornate (Emperor).
-    - **LIVING PARTS RULE**: If the object has living bullets/missiles (like Sex Pistols), their faces MUST be **"Ugly-Cute Mascots"**.
-    - **STRICT BAN**: Do NOT put "Noble Statue" or "Handsome Human" faces on small objects. They should look like cartoons or emojis.
-  - **IF PHENOMENON (Natural Force)**:
-    - **NO ELEMENTAL GOLEMS**: Do not draw a "Man made of Fire". Draw the element itself satisfyingly (e.g., A swirl of living slime, a floating sun, a claw made of water).
-    - **VIBE**: Abstract, terrifying, formless.
-  - **IF BOUND (Vehicle/Building)**:
-    - **NO SEPARATE GHOST**: The object (Store, Ship, Car) **IS** the Stand. Do NOT draw a character standing next to it.
-    - **INTEGRATION**: The stand features (eyes, mouths, patterns) should be subtly embedded into the object's surface (like a face in the hull), not pasted on top.
-  - **AVOID CLUTTER & STACKING**: **STRICTLY PROHIBITED** to stack unrelated items.
-    - **NO GEAR-STACKING**: For Industrial types, do NOT draw a mess of gears. Use **clean hydraulic pistons**, smooth metal plating, or a single large turbine.
-    - **NO CLOCK-STACKING**: For Time types, do NOT cover the body in clocks. Use **one abstract dial**, digital distortion effects, or a starry void skin.
-    - **LESS IS MORE**: Avoid visual noise. The design should be readable and elegant, not a pile of junk.
-  - **INNOVATION CLAUSE**: If the Stand's concept is unique, **INVENT A NEW FORM**. Do not be afraid to draw a Stand that is made of liquid, smoke, digital glitches, or floating geometric scraps. **Break the silhouette.**
-  - **TEXTURE**: Emphasize unnatural materials—gold plating, stitched leather, rubber, slime, or stone.
+  console.log('[Phase 2] FINAL IMAGE PROMPT:\n', prompt);
 
-  Please interpret this design with a focus on bizarre, surreal, and high-fashion aesthetics. The form should adapt to the stand's concept—it can be a humanoid figure, a robotic entity, a creature, or an inorganic object. There is no fixed rule for the body type; choose the form that best fits the description provided.
-
-  Use thick, expressive ink linework and heavy dramatic cross-hatching typical of manga art. The coloring should be vibrant and bold, with slight color shifts (JoJo palettes). 
-  
-  **COMPOSITION & AURA:**
-  - **SPIRIT AURA**: Stands must emit a **"Stand Aura" (Spirit Energy)**. Surround the figure with flame-like, undulating energy outlines (Pink, Blue, or Gold). This is CRITICAL for the "Jojo" look. 
-  - **POSE**: Dynamic, twisted, "Jojo Pose".
-  - **BACKGROUND**: Surreal, psychedelic void or speed lines (Manga effect).
-
-  Constraints: Ensure the image is clean with NO text, NO speech bubbles, and NO interface elements. Avoid generic bodybuilding physiques unless specified.`;
-
-  console.log("🖌️ [Phase 2] FINAL IMAGE PROMPT:\n", prompt);
-
-  // 1. Determine API Strategy based on Model Name
   const isGemini = imageModel.toLowerCase().includes('gemini');
+  const isGptImage = imageModel.toLowerCase().includes('gpt-image');
 
-  // Support independent Image Provider
   const imgApiKey = import.meta.env.VITE_IMAGE_API_KEY || apiKey;
-  const imgBaseUrl = import.meta.env.VITE_IMAGE_BASE_URL || baseUrl;
+  const imgBaseUrl = import.meta.env.VITE_IMAGE_BASE_URL || 'https://api.bltcy.ai/';
 
-  let url, body, headers;
+  let url;
+  let body;
+  let headers;
 
   if (!isGemini) {
-    // --- OpenAI Compatible API (DALL-E, etc) ---
-    url = `${imgBaseUrl}/v1/images/generations`;
+    url = joinUrl(imgBaseUrl, '/v1/images/generations');
     headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${imgApiKey}`
+      Authorization: `Bearer ${imgApiKey}`
     };
     body = {
       model: imageModel,
-      prompt: prompt,
+      prompt,
       n: 1,
-      size: "1024x1024"
+      size: imageSize,
+      response_format: 'b64_json'
     };
+
+    if (isGptImage) {
+      body.quality = imageQuality;
+      body.size = imageSize;
+    }
   }
 
-  // 2. Timeout Controller
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout (Images can be slow)
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
 
   try {
     let response;
-
-    // HYBRID STRATEGY:
-    // Production: ALWAYS use Serverless Proxy (Secure, Key stays on server)
-    // Development: Use Direct Call if Key exists (Fast, avoids proxy timeout)
     const useProxy = import.meta.env.PROD || !imgApiKey;
 
     if (useProxy) {
-      // --- PROXY MODE (Production default, Dev fallback) ---
+      const proxyBody = {
+        action: 'image',
+        payload: { appearance, standName, userName, song, color, personality, referenceImage }
+      };
+
+      if (import.meta.env.VITE_IMAGE_MODEL) {
+        proxyBody.imageModel = imageModel;
+      }
+      proxyBody.imageSize = imageSize;
+      proxyBody.imageQuality = imageQuality;
+
       response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'image',
-          payload: { appearance }
-        }),
+        body: JSON.stringify(proxyBody),
         signal: controller.signal
       });
     } else if (isGemini) {
-      // --- DIRECT Gemini Image Call (Dev only) ---
-      const geminiUrl = `${imgBaseUrl}/v1beta/models/${imageModel}:generateContent`;
-      console.log("Using Direct Gemini Image Call (Dev Mode):", geminiUrl);
-      response = await fetch(geminiUrl, {
+      const geminiUrl = joinUrl(imgBaseUrl, `/v1beta/models/${imageModel}:generateContent`);
+      const proxiedGeminiUrl = getProxyUrl(geminiUrl, '/__image_api');
+      console.log('Using Direct Gemini Image Call (Dev Mode):', proxiedGeminiUrl);
+      response = await fetch(proxiedGeminiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-goog-api-key': imgApiKey
         },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
           safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
           ]
         }),
         signal: controller.signal
       });
     } else {
-      // --- DIRECT OpenAI Image Call (Dev only) ---
-      console.log("Using Direct Client-Side Call for Image (Dev Mode)");
-      console.log("Image Endpoint:", url);
-      response = await fetch(url, {
+      const proxiedImageUrl = getProxyUrl(url, '/__image_api');
+      console.log('Using Direct Client-Side Call for Image (Dev Mode)');
+      console.log('Image Endpoint:', proxiedImageUrl);
+      response = await fetch(proxiedImageUrl, {
         method: 'POST',
-        headers: headers,
+        headers,
         body: JSON.stringify(body),
         signal: controller.signal
       });
+
+      if (!response.ok && body.response_format) {
+        const retryText = await response.clone().text();
+        if (shouldRetryWithoutImageResponseFormat(response, retryText)) {
+          console.warn('Image API does not support response_format=b64_json; retrying without it.');
+          const retryBody = { ...body };
+          delete retryBody.response_format;
+          response = await fetch(proxiedImageUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(retryBody),
+            signal: controller.signal
+          });
+        }
+      }
     }
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errText = await response.text();
-      console.warn("Image Generation Failed:", response.status, errText);
+      console.warn('Image Generation Failed:', response.status, errText);
       return null;
     }
 
-    const data = await response.json();
-    console.log("--- IMAGE RESPONSE ---", JSON.stringify(data, null, 2));
+    const data = await parseJsonResponse(response, 'Image API');
+    console.log('--- IMAGE RESPONSE ---', JSON.stringify(data, null, 2));
 
-    // 3. Parse Response
-    // If we used the proxy, backend already normalized the response
     if (useProxy) {
       return data.imageData || null;
     }
 
-    // Direct call (Dev only): parse raw provider response
     if (isGemini) {
       const candidate = data.candidates?.[0];
       if (candidate?.finishReason) {
-        console.log("Gemini Finish Reason:", candidate.finishReason);
+        console.log('Gemini Finish Reason:', candidate.finishReason);
       }
 
       const parts = candidate?.content?.parts || [];
-      console.log("Response Parts Count:", parts.length);
+      console.log('Response Parts Count:', parts.length);
 
-      // A. Look for Base64 Image (inline_data vs inlineData)
-      const imagePart = parts.find(p => (p.inline_data && p.inline_data.data) || (p.inlineData && p.inlineData.data));
+      const imagePart = parts.find((p) => (p.inline_data && p.inline_data.data) || (p.inlineData && p.inlineData.data));
       if (imagePart) {
         const dataObj = imagePart.inline_data || imagePart.inlineData;
-        console.log("Found Image in parts (Base64)");
-        return `data:image/jpeg;base64,${dataObj.data}`;
+        const mimeType = dataObj.mime_type || dataObj.mimeType || 'image/jpeg';
+        console.log('Found Image in parts (Base64)');
+        return toImageDataUrl(dataObj.data, mimeType);
       }
 
-      // B. Look for Image URL in Text (Markdown link)
-      const textParts = parts.filter(p => p.text).map(p => p.text).join('\n');
+      const textParts = parts.filter((p) => p.text).map((p) => p.text).join('\n');
       if (textParts) {
-        const urlMatch = textParts.match(/https?:\/\/[^\s\)]+(?:\.png|\.jpg|\.jpeg|\.webp)|https?:\/\/oaidalleapiprodscus[^\s\)]+/);
+        const urlMatch = textParts.match(/https?:\/\/[^\s)]+(?:\.png|\.jpg|\.jpeg|\.webp)|https?:\/\/oaidalleapiprodscus[^\s)]+/);
         if (urlMatch) {
-          console.log("Found Image URL in text:", urlMatch[0]);
+          console.log('Found Image URL in text:', urlMatch[0]);
           return urlMatch[0];
         }
-        console.warn("Gemini returned text but no image found:", textParts);
+        console.warn('Gemini returned text but no image found:', textParts);
       }
 
       return null;
-    } else {
-      // Parse OpenAI Response (URL)
-      return data.data?.[0]?.url;
     }
 
+    const item = data.data?.[0];
+    if (item?.b64_json) {
+      return toImageDataUrl(item.b64_json, 'image/png');
+    }
+    return item?.url;
   } catch (err) {
-    console.error("Image Generation Error:", err);
+    console.error('Image Generation Error:', err);
     return null;
   }
 };
 
-// Cache Helpers
 const CACHE_PREFIX = 'jojo_stand_cache_';
-const CACHE_DURATION = 55 * 60 * 1000; // 55 minutes
+const CACHE_DURATION = 55 * 60 * 1000;
+
+const serializeReferenceImage = (referenceImage) => {
+  if (!referenceImage) return null;
+  return `img:${referenceImage.length}:${referenceImage.slice(0, 32)}:${referenceImage.slice(-32)}`;
+};
 
 const getCacheKey = (inputs) => {
-  return CACHE_PREFIX + JSON.stringify(inputs);
+  const normalizedInputs = {
+    userName: inputs.userName || '',
+    song: inputs.song || '',
+    color: inputs.color || '',
+    personality: inputs.personality || '',
+    referenceImage: serializeReferenceImage(inputs.referenceImage)
+  };
+  return CACHE_PREFIX + JSON.stringify(normalizedInputs);
 };
 
 export const getCachedStand = (inputs) => {
@@ -633,24 +716,29 @@ export const getCachedStand = (inputs) => {
       return null;
     }
 
-    console.log("Using cached stand data for:", inputs);
+    console.log('Using cached stand data for:', inputs);
     return record.data;
   } catch (e) {
-    console.error("Cache read error:", e);
+    console.error('Cache read error:', e);
     return null;
   }
 };
 
 export const saveCachedStand = (inputs, data) => {
   try {
+    if (data?.imageUrl?.startsWith('data:image/')) {
+      console.log('Skipping localStorage cache for inline image data.');
+      return;
+    }
+
     const key = getCacheKey(inputs);
     const record = {
       timestamp: Date.now(),
-      data: data
+      data
     };
     localStorage.setItem(key, JSON.stringify(record));
-    console.log("Saved stand to cache:", inputs);
+    console.log('Saved stand to cache:', inputs);
   } catch (e) {
-    console.error("Cache write error:", e);
+    console.error('Cache write error:', e);
   }
 };
