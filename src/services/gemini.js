@@ -47,17 +47,26 @@ const buildEyecatchPrompt = ({
   song,
   color,
   personality,
-  referenceImage
+  referenceImage,
+  visualConcept
 }) => {
   const resolvedSong = song || 'an unspecified musical reference';
   const resolvedColor = color || 'bold contrasting palette';
   const resolvedPersonality = personality || 'mysterious psychic tension';
   const resolvedUserName = userName || 'Unknown User';
   const resolvedStandName = standName || 'Unknown Stand';
+  const conceptLines = visualConcept ? [
+    'Confirmed visual concept from the first design pass:',
+    visualConcept.formType ? `- Form type: ${visualConcept.formType}` : null,
+    visualConcept.appearance ? `- Appearance: ${visualConcept.appearance}` : null,
+    visualConcept.reasoning ? `- Design reason: ${visualConcept.reasoning}` : null,
+    'Use this confirmed concept as the main Stand design. Do not replace it with an unrelated character.'
+  ].filter(Boolean).join('\n') : null;
 
   return [
     'An authentic Japanese TV anime Stand eyecatch screenshot, bizarre and stylish action manga aesthetic, classic cel-shading, 16:9 landscape.',
     `User form inputs: Stand user "${resolvedUserName}", Stand name "${resolvedStandName}", music reference "${resolvedSong}", color direction "${resolvedColor}", personality or obsession "${resolvedPersonality}", reference photo: ${referenceImage ? 'yes' : 'no'}. Use these inputs as design DNA, not as visible text.`,
+    conceptLines,
     `Background: a flat graphic anime eyecatch backdrop built from ${resolvedColor}, checkerboards, radial bursts, floral or geometric patterns, manga speed lines, halftone dots, and motifs inspired by the music reference and personality.`,
     'Character (one side): design an original psychic guardian Stand directly from the inputs. It may be humanoid, colony-like, wearable, object-bound, creature-like, phenomenon-like, or vehicle/building-bound. Give it a clear silhouette, one or two memorable motifs, a dramatic cropped pose, varied line weight, hard-edge anime shadows, glossy highlights, and a unique color palette.',
     'Layout: place the Stand on one side or diagonally across one side, occupying about 40% to 55% of the frame. Keep the opposite side flatter and cleaner for app overlays.',
@@ -228,40 +237,12 @@ const retryOperation = async (operation, retries = 3) => {
   }
 };
 
-const isTimeoutLikeError = (err) => {
-  const message = String(err?.message || err);
-  return (
-    message.includes('504') ||
-    message.includes('timeout') ||
-    message.includes('Timeout') ||
-    message.includes('UPSTREAM_TIMEOUT') ||
-    message.includes('FUNCTION_INVOCATION_TIMEOUT')
-  );
-};
-
-const buildFallbackConcept = (inputs) => {
-  const rawSong = String(inputs.song || '').trim();
-  const fallbackName = rawSong
-    ? rawSong.replace(/\s*\([^)]*\)\s*/g, ' ').split(/[-/,|]/)[0].trim().slice(0, 28)
-    : 'Stand By Me';
-  const color = inputs.color || 'high contrast';
-  const personality = inputs.personality || 'unreadable will';
-
-  return {
-    reasoning: 'Local fallback used because the fast concept API timed out.',
-    formType: 'humanoid',
-    name: fallbackName || 'Stand By Me',
-    appearance: `Original JOJO-style Stand with ${color} accents, mask-like face, sharp armor contours, and visual motifs shaped by ${personality}.`
-  };
-};
-
 /**
  * PHASE 1: Fast Visual Concept
  * Returns just Name and Appearance prompt to kick off image gen ASAP.
  */
 export const generateFastVisualConcept = async (inputs) => {
-  try {
-    return await retryOperation(async () => {
+  return retryOperation(async () => {
     console.log('Phase 1 Inputs:', inputs);
 
     const prompt = `你正在为 JOJO 风格作品设计一个全新的替身概念。重点是生成一个可画、具体、有辨识度的替身外观，而不是泛泛的 AI 形容词。
@@ -371,13 +352,6 @@ export const generateFastVisualConcept = async (inputs) => {
     console.log('[Phase 1] JSON Result:', result);
     return result;
   });
-  } catch (err) {
-    if (isTimeoutLikeError(err)) {
-      console.warn('[Phase 1] API timed out. Using local fallback concept.', err);
-      return buildFallbackConcept(inputs);
-    }
-    throw err;
-  }
 };
 
 const _generateStandProfile = async (inputs, premadeConcept = null) => {
@@ -439,7 +413,7 @@ ${inputs.referenceImage ? '- 用户上传了参考图，请把能识别出的轮
 7. limitations 固定返回空数组 []。
 8. 能力设计要像 JOJO 替身：规则明确、画面鲜明、可以被聪明利用，不要只是“操控元素/提升力量/瞬间秒杀”。
 9. appearance 使用简洁中文，控制在 45 到 80 个字，便于档案展示。
-10. stats 必须有取舍，不要全 A。近距离人形/力量型替身的 range 通常为 C 或 D；普通人形替身 range 不要给 A。只有远隔、自动追踪、群体、现象、领域或绑定型替身才可以给 range A。
+10. stats 必须有取舍，不要全 A。每项只能使用 A、B、C、D、E、?、∞、None。? 表示能力机制导致无法测定；∞ 表示规则层面没有上限或可无限成长/延伸；None 表示该维度不适用。特殊值最多使用 2 项，不要滥用。近距离人形/力量型替身的 range 通常为 C 或 D；普通人形替身 range 不要给 A。只有远隔、自动追踪、群体、现象、领域或绑定型替身才可以给 range A 或 ∞。
 11. 不要输出 Markdown，不要加解释。
 
 返回 JSON 结构：
@@ -473,12 +447,12 @@ ${inputs.referenceImage ? '- 用户上传了参考图，请把能识别出的轮
     "quote": "短台词"
   },
   "stats": {
-    "power": "A/B/C/D/E/None",
-    "speed": "A/B/C/D/E/None",
-    "range": "A/B/C/D/E/None",
-    "durability": "A/B/C/D/E/None",
-    "precision": "A/B/C/D/E/None",
-    "potential": "A/B/C/D/E/None"
+    "power": "A/B/C/D/E/?/∞/None",
+    "speed": "A/B/C/D/E/?/∞/None",
+    "range": "A/B/C/D/E/?/∞/None",
+    "durability": "A/B/C/D/E/?/∞/None",
+    "precision": "A/B/C/D/E/?/∞/None",
+    "potential": "A/B/C/D/E/?/∞/None"
   },
   "appearance": "简洁中文外观描述"
 }`;
@@ -582,13 +556,13 @@ export const generateStandImage = async ({
   song,
   color,
   personality,
-  referenceImage
+  referenceImage,
+  visualConcept
 }) => {
   const apiKey = getApiKey();
   const imageModel = import.meta.env.VITE_IMAGE_MODEL || 'gpt-image-2';
   const imageSize = '1536x1024';
   const imageQuality = 'medium';
-  const imageTimeoutMs = Number(import.meta.env.VITE_IMAGE_TIMEOUT_MS || 240000);
 
   console.log('Generating Image Model:', imageModel);
 
@@ -598,7 +572,8 @@ export const generateStandImage = async ({
     song,
     color,
     personality,
-    referenceImage
+    referenceImage,
+    visualConcept
   });
 
   console.log('[Phase 2] FINAL IMAGE PROMPT:\n', prompt);
@@ -633,12 +608,6 @@ export const generateStandImage = async ({
 
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(
-    () => controller.abort(new Error(`Image generation timeout after ${imageTimeoutMs}ms`)),
-    imageTimeoutMs
-  );
-
   try {
     let response;
     const useProxy = import.meta.env.PROD || !imgApiKey;
@@ -646,7 +615,7 @@ export const generateStandImage = async ({
     if (useProxy) {
       const proxyBody = {
         action: 'image',
-        payload: { standName, userName, song, color, personality, referenceImage }
+        payload: { standName, userName, song, color, personality, referenceImage, visualConcept }
       };
 
       if (import.meta.env.VITE_IMAGE_MODEL) {
@@ -656,8 +625,7 @@ export const generateStandImage = async ({
       response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(proxyBody),
-        signal: controller.signal
+        body: JSON.stringify(proxyBody)
       });
     } else if (isGemini) {
       const geminiUrl = joinUrl(imgBaseUrl, `/v1beta/models/${imageModel}:generateContent`);
@@ -678,8 +646,7 @@ export const generateStandImage = async ({
             { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
             { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
           ]
-        }),
-        signal: controller.signal
+        })
       });
     } else {
       const proxiedImageUrl = getProxyUrl(url, '/__image_api');
@@ -688,24 +655,25 @@ export const generateStandImage = async ({
       response = await fetch(proxiedImageUrl, {
         method: 'POST',
         headers,
-        body: JSON.stringify(body),
-        signal: controller.signal
+        body: JSON.stringify(body)
       });
 
     }
 
-    clearTimeout(timeoutId);
-
     if (!response.ok) {
       const errText = await response.text();
       console.warn('Image Generation Failed:', response.status, errText);
-      return null;
+      throw new Error(`Image API Error ${response.status}: ${errText}`);
     }
 
     const data = await parseJsonResponse(response, 'Image API');
     console.log('--- IMAGE RESPONSE ---', JSON.stringify(data, null, 2));
 
     if (useProxy) {
+      if (data.error) {
+        const detail = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+        throw new Error(`Image API Error: ${detail}`);
+      }
       return data.imageData || null;
     }
 
@@ -736,21 +704,20 @@ export const generateStandImage = async ({
         console.warn('Gemini returned text but no image found:', textParts);
       }
 
-      return null;
+      throw new Error('Gemini image response did not include image data.');
     }
 
     const item = data.data?.[0];
     if (item?.b64_json) {
       return toImageDataUrl(item.b64_json, 'image/png');
     }
-    return item?.url;
-  } catch (err) {
-    if (controller.signal.aborted) {
-      console.error('Image Generation Timeout:', controller.signal.reason || err);
-      return null;
+    if (item?.url) {
+      return item.url;
     }
+    throw new Error('Image API response did not include an image URL or base64 image.');
+  } catch (err) {
     console.error('Image Generation Error:', err);
-    return null;
+    throw err;
   }
 };
 

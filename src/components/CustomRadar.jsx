@@ -10,12 +10,13 @@ const CustomRadar = ({ stats, labels }) => {
 
   // Grade Mapping
   const gradeToNumber = (grade) => {
-    const map = { 'NONE': 0, 'E': 1, 'D': 2, 'C': 3, 'B': 4, 'A': 5, '∞': 6, '?': 0 };
-    const cleanBox = grade?.replace(/[^A-D∞E?]/gi, '').toUpperCase() || 'E';
-    if (grade?.includes('∞')) return 6;
-    if (grade?.includes('?')) return 0; // Unknown stats don't extend the polygon
-    if (grade?.toUpperCase() === 'NONE') return 0;
-    return map[cleanBox] || map[grade?.charAt(0).toUpperCase()] || 1;
+    const text = String(grade || '').trim();
+    const map = { 'NONE': 0, 'E': 1, 'D': 2, 'C': 3, 'B': 4, 'A': 5, '∞': 5, '?': 0 };
+    const cleanBox = text.replace(/[^A-E∞?]/gi, '').toUpperCase() || 'E';
+    if (text.includes('∞')) return 5;
+    if (text.includes('?')) return 0; // Unknown stats don't extend the polygon
+    if (text.toUpperCase() === 'NONE') return 0;
+    return map[cleanBox] || map[text.charAt(0).toUpperCase()] || 1;
   };
 
   const keys = ['power', 'speed', 'range', 'durability', 'precision', 'potential'];
@@ -28,7 +29,7 @@ const CustomRadar = ({ stats, labels }) => {
     return keys.map((key, i) => {
       const angle = getAngle(i);
       const val = stats ? gradeToNumber(stats[key]) : 0;
-      const normalized = Math.min(val, 6) / 6;
+      const normalized = Math.min(val, 5) / 5;
       const r = normalized * chartRadius;
       const x = center + r * Math.cos(angle);
       const y = center + r * Math.sin(angle);

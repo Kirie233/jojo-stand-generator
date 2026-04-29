@@ -30,6 +30,7 @@ const StandGenerator = () => {
   const generationIdRef = useRef(0);
 
   const isCurrentGeneration = (generationId) => generationIdRef.current === generationId;
+  const formatGenerationError = (stage, err) => `${stage} failed: ${err?.message || String(err)}`;
 
   const closeAllPanels = () => {
     setShowHistory(false);
@@ -158,7 +159,8 @@ const StandGenerator = () => {
         song: inputs.song,
         color: inputs.color,
         personality: inputs.personality,
-        referenceImage: inputs.referenceImage
+        referenceImage: inputs.referenceImage,
+        visualConcept: concept
       });
       const profileTask = generateStandProfile(inputs, concept);
 
@@ -181,7 +183,7 @@ const StandGenerator = () => {
       }).catch(err => {
         if (!isCurrentGeneration(generationId)) return;
         console.error("Profile logic failed:", err);
-        setError("替身档案同步失败，已保留基础结果。请稍后重试。");
+        setError(formatGenerationError('Profile generation', err));
       });
 
       // 4. Update Image Content as soon as it arrives
@@ -222,12 +224,13 @@ const StandGenerator = () => {
         if (!isCurrentGeneration(generationId)) return;
         console.error("Image logic failed:", err);
         setStandData(prev => ({ ...prev, imageUrl: 'FAILED' }));
+        setError(formatGenerationError('Image generation', err));
       });
 
     } catch (err) {
       if (!isCurrentGeneration(generationId)) return;
       console.error(err);
-      setError("替身觉醒失败... 你的精神力还不够强吗？(API Error)");
+      setError(formatGenerationError('Stand generation', err));
     } finally {
       if (isCurrentGeneration(generationId)) {
         setLoading(false);

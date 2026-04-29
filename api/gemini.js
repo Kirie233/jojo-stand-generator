@@ -4,7 +4,6 @@ export const config = {
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
 const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
-const TEXT_TIMEOUT_MS = Number(process.env.TEXT_TIMEOUT_MS || 12000);
 
 const jsonResponse = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -54,30 +53,18 @@ export default async function handler(req) {
     const modelId = model || process.env.TEXT_MODEL || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
     const baseUrl = process.env.TEXT_BASE_URL || process.env.GEMINI_BASE_URL || 'https://api.bltcy.ai/';
     const url = joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TEXT_TIMEOUT_MS);
 
     // Call API (Server-to-Server)
-    let googleResponse;
-    try {
-      googleResponse = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            maxOutputTokens: 512,
-            temperature: 0.8,
-          },
-        }),
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    const googleResponse = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
 
     const data = await readJsonOrText(googleResponse);
 
@@ -85,13 +72,6 @@ export default async function handler(req) {
 
   } catch (error) {
     console.error("Edge Proxy Error:", error);
-    if (error.name === 'AbortError') {
-      return jsonResponse({
-        error: `Text generation timed out after ${TEXT_TIMEOUT_MS}ms. Try a faster text model or a healthier API endpoint.`,
-        code: 'UPSTREAM_TIMEOUT',
-      }, 504);
-    }
-
     return jsonResponse({ error: error.message }, 500);
   }
 }
