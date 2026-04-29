@@ -89,18 +89,45 @@ const pickRandomItem = (items) => {
   return items[Math.floor(Math.random() * items.length)];
 };
 
+const FORM_DRAFT_KEY = 'jojo_stand_form_draft';
+const DEFAULT_FORM_DATA = {
+  userName: '',
+  song: '',
+  color: '',
+  personality: '',
+  referenceImage: null
+};
+
+const loadFormDraft = () => {
+  try {
+    const raw = localStorage.getItem(FORM_DRAFT_KEY);
+    if (!raw) return DEFAULT_FORM_DATA;
+
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_FORM_DATA,
+      ...parsed
+    };
+  } catch (err) {
+    console.warn('Failed to load form draft:', err);
+    return DEFAULT_FORM_DATA;
+  }
+};
+
+const saveFormDraft = (data) => {
+  try {
+    localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.warn('Failed to save form draft:', err);
+  }
+};
+
 // TBC Progress Logic: Linear 0-100% based on steps
 // Now that image is cropped tightly, we can use simple math.
 const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false); // 3D Flip State
-  const [formData, setFormData] = useState({
-    userName: '',
-    song: '',
-    color: '',
-    personality: '',
-    referenceImage: null
-  });
+  const [formData, setFormData] = useState(() => loadFormDraft());
   const [invalidField, setInvalidField] = useState(null); // Which field failed validation
   const [showHint, setShowHint] = useState(false); // Show the floating validation hint
   const tarotCardRef = useRef(null);
@@ -114,6 +141,10 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
       });
     }
   }, [currentStep, onStepChange]);
+
+  useEffect(() => {
+    saveFormDraft(formData);
+  }, [formData]);
 
 
   const handleNext = () => {
@@ -169,7 +200,14 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
   };
 
   const handleChange = (key, val) => {
-    setFormData({ ...formData, [key]: val });
+    setFormData(prev => ({ ...prev, [key]: val }));
+  };
+
+  const handleClearCurrentInput = () => {
+    const stepType = STEPS[currentStep].type;
+    const currentKey = stepType === 'upload' ? 'referenceImage' : getFieldKey();
+    if (!currentKey) return;
+    handleChange(currentKey, currentKey === 'referenceImage' ? null : '');
   };
 
   const handleRandom = () => {
@@ -245,7 +283,7 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
             <div className="card-header">
               <span className="card-sub">{step.sub}</span>
               <h2 className="card-question">{step.question}</h2>
-              <p className="card-plain">{step.plain}</p>
+            <p className="card-plain">{step.plain}</p>
             </div>
 
             <div className="card-body">
@@ -350,6 +388,15 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
                     </svg>
                     <span className="random-text" style={{ fontSize: '1rem' }}>命运 (RANDOM)</span>
                   </button>
+                  <button
+                    type="button"
+                    className={`random-dice-btn clear-current-btn ${currentVal ? '' : 'hidden'}`}
+                    onClick={handleClearCurrentInput}
+                    tabIndex={currentVal ? 0 : -1}
+                  >
+                    <span className="clear-icon">×</span>
+                    <span className="random-text">清除当前输入</span>
+                  </button>
                 </div>
               ) : step.type === 'tags' ? (
                 <div className="tags-container">
@@ -371,6 +418,15 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
                     onChange={(e) => handleChange('personality', e.target.value)}
                     onKeyDown={handleKeyDown}
                   />
+                  <button
+                    type="button"
+                    className={`random-dice-btn clear-current-btn inline ${currentVal ? '' : 'hidden'}`}
+                    onClick={handleClearCurrentInput}
+                    tabIndex={currentVal ? 0 : -1}
+                  >
+                    <span className="clear-icon">×</span>
+                    <span className="random-text">清除当前输入</span>
+                  </button>
                 </div>
               ) : step.type === 'upload' ? (
                 <div className={`spirit-photo-box ${formData.referenceImage ? 'has-file' : ''}`}>
@@ -405,6 +461,15 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
                       <path d="M10,40 Q25,10 40,20 L35,25 M40,20 L38,15" fill="none" stroke="#2b1d2b" strokeWidth="3" strokeLinecap="round" />
                     </svg>
                   </div>
+                  <button
+                    type="button"
+                    className={`random-dice-btn clear-current-btn upload-clear ${formData.referenceImage ? '' : 'hidden'}`}
+                    onClick={handleClearCurrentInput}
+                    tabIndex={formData.referenceImage ? 0 : -1}
+                  >
+                    <span className="clear-icon">×</span>
+                    <span className="random-text">清除当前输入</span>
+                  </button>
                 </div>
               ) : step.type === 'final' ? (
                 <div className="arrow-ritual-container">
@@ -481,6 +546,15 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
                         <span className="random-text">命运 (RANDOM)</span>
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className={`random-dice-btn clear-current-btn input-clear ${currentVal ? '' : 'hidden'}`}
+                      onClick={handleClearCurrentInput}
+                      tabIndex={currentVal ? 0 : -1}
+                    >
+                      <span className="clear-icon">×</span>
+                      <span className="random-text">清除当前输入</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -647,6 +721,39 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
         }
 
         .card-header { position: relative; z-index: 2; flex-shrink: 0; }
+        .clear-current-btn {
+            margin-top: 8px;
+            background: #111;
+            color: #ffd700;
+            border-color: #ffd700;
+            padding: 4px 14px;
+            opacity: 0.95;
+        }
+        .clear-current-btn.hidden {
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .clear-current-btn:hover {
+            background: #ffd700;
+            color: #000;
+            border-color: #000;
+        }
+        .clear-icon {
+            width: 18px;
+            height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid currentColor;
+            border-radius: 50%;
+            font-family: 'Anton', sans-serif;
+            line-height: 1;
+            transform: skewX(15deg);
+        }
+        .clear-current-btn.inline,
+        .clear-current-btn.upload-clear {
+            align-self: center;
+        }
         .card-body { 
             position: relative; z-index: 2; width: 100%; 
             flex: 1; /* CATCH ALL SPACE */
