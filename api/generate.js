@@ -4,7 +4,7 @@ export const config = {
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
 const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
-const TEXT_TIMEOUT_MS = Number(process.env.TEXT_TIMEOUT_MS || 25000);
+const TEXT_TIMEOUT_MS = Number(process.env.TEXT_TIMEOUT_MS || 12000);
 
 const fetchWithTimeout = async (url, options, timeoutMs = TEXT_TIMEOUT_MS) => {
   const controller = new AbortController();

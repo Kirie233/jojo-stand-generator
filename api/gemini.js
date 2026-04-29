@@ -4,7 +4,7 @@ export const config = {
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
 const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
-const TEXT_TIMEOUT_MS = Number(process.env.TEXT_TIMEOUT_MS || 25000);
+const TEXT_TIMEOUT_MS = Number(process.env.TEXT_TIMEOUT_MS || 12000);
 
 const jsonResponse = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -68,6 +68,10 @@ export default async function handler(req) {
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: 512,
+            temperature: 0.8,
+          },
         }),
         signal: controller.signal,
       });

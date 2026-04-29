@@ -216,9 +216,6 @@ const retryOperation = async (operation, retries = 3) => {
         (
           message.includes('Overloaded') ||
           message.includes('503') ||
-          message.includes('504') ||
-          message.includes('timeout') ||
-          message.includes('UPSTREAM_TIMEOUT') ||
           message.includes('quota')
         )
       ) {
@@ -231,12 +228,40 @@ const retryOperation = async (operation, retries = 3) => {
   }
 };
 
+const isTimeoutLikeError = (err) => {
+  const message = String(err?.message || err);
+  return (
+    message.includes('504') ||
+    message.includes('timeout') ||
+    message.includes('Timeout') ||
+    message.includes('UPSTREAM_TIMEOUT') ||
+    message.includes('FUNCTION_INVOCATION_TIMEOUT')
+  );
+};
+
+const buildFallbackConcept = (inputs) => {
+  const rawSong = String(inputs.song || '').trim();
+  const fallbackName = rawSong
+    ? rawSong.replace(/\s*\([^)]*\)\s*/g, ' ').split(/[-/,|]/)[0].trim().slice(0, 28)
+    : 'Stand By Me';
+  const color = inputs.color || 'high contrast';
+  const personality = inputs.personality || 'unreadable will';
+
+  return {
+    reasoning: 'Local fallback used because the fast concept API timed out.',
+    formType: 'humanoid',
+    name: fallbackName || 'Stand By Me',
+    appearance: `Original JOJO-style Stand with ${color} accents, mask-like face, sharp armor contours, and visual motifs shaped by ${personality}.`
+  };
+};
+
 /**
  * PHASE 1: Fast Visual Concept
  * Returns just Name and Appearance prompt to kick off image gen ASAP.
  */
 export const generateFastVisualConcept = async (inputs) => {
-  return retryOperation(async () => {
+  try {
+    return await retryOperation(async () => {
     console.log('Phase 1 Inputs:', inputs);
 
     const prompt = `你正在为 JOJO 风格作品设计一个全新的替身概念。重点是生成一个可画、具体、有辨识度的替身外观，而不是泛泛的 AI 形容词。
@@ -346,6 +371,13 @@ export const generateFastVisualConcept = async (inputs) => {
     console.log('[Phase 1] JSON Result:', result);
     return result;
   });
+  } catch (err) {
+    if (isTimeoutLikeError(err)) {
+      console.warn('[Phase 1] API timed out. Using local fallback concept.', err);
+      return buildFallbackConcept(inputs);
+    }
+    throw err;
+  }
 };
 
 const _generateStandProfile = async (inputs, premadeConcept = null) => {
