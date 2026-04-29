@@ -24,7 +24,8 @@ const FAQ_ITEMS = [
     question: 'Q: 线上部署时应该配置哪些变量？',
     answer: (
       <>
-        生产环境优先使用服务端变量，例如 <code>GEMINI_API_KEY</code>、<code>GEMINI_BASE_URL</code>、
+        生产环境优先使用服务端变量，例如 <code>TEXT_API_KEY</code>、<code>TEXT_BASE_URL</code>、
+        <code>TEXT_MODEL</code>、
         <code>IMAGE_API_KEY</code>、<code>IMAGE_BASE_URL</code>、<code>IMAGE_MODEL</code>。不要把
         <code>VITE_</code> 前缀的密钥变量放到公开前端环境里。
       </>

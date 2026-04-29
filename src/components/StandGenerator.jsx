@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import LandingPage from './LandingPage'; // Import Landing Page
 import NavBar from './NavBar';
 import { generateStandProfile, generateStandImage, getCachedStand, saveCachedStand, generateFastVisualConcept } from '../services/gemini';
-import { saveStandToDB, getAllStandsFromDB, initDB } from '../services/db';
+import { saveStandToDB, getAllStandsFromDB, initDB, clearDB } from '../services/db';
 import '../styles/variables.css';
 
 const InputForm = lazy(() => import('./InputForm'));
@@ -375,6 +375,16 @@ const StandGenerator = () => {
     });
   };
 
+  const handleClearHistory = async () => {
+    const confirmed = window.confirm('确定要清空所有觉醒历史吗？此操作不可恢复。');
+    if (!confirmed) return;
+
+    await clearDB();
+    setHistory([]);
+    setShowHistory(false);
+    setError('觉醒历史已清空。');
+  };
+
   return (
     <div ref={appContainerRef} className="app-container">
       {/* GLOBAL HUD (Only show on Input/Result, hide on Landing for immersion?) */}
@@ -408,6 +418,7 @@ const StandGenerator = () => {
             history={history}
             onClose={() => setShowHistory(false)}
             onLoad={handleLoadFromHistory}
+            onClearHistory={handleClearHistory}
           />
         </Suspense>
       )}

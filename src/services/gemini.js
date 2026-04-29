@@ -1,7 +1,8 @@
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
 const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
-const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
-const getBaseUrl = () => import.meta.env.VITE_GEMINI_BASE_URL || 'https://api.bltcy.ai/';
+const getApiKey = () => import.meta.env.VITE_TEXT_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+const getBaseUrl = () => import.meta.env.VITE_TEXT_BASE_URL || import.meta.env.VITE_GEMINI_BASE_URL || 'https://api.bltcy.ai/';
+const getTextModel = () => import.meta.env.VITE_TEXT_MODEL || import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
 const isBrowser = () => typeof window !== 'undefined';
 
 const getProxyUrl = (targetUrl, proxyPrefix) => {
@@ -31,13 +32,6 @@ const parseJsonResponse = async (response, label) => {
     throw new Error(`${label} returned non-JSON response (${response.status}): ${preview}`);
   }
 };
-
-const shouldRetryWithoutImageResponseFormat = (response, text) => (
-  (response.status === 400 || response.status === 500) &&
-  /response_format|unsupported|unknown|invalid/i.test(text || '')
-);
-
-const shouldRequestImageBase64 = () => import.meta.env.VITE_IMAGE_RESPONSE_FORMAT === 'b64_json';
 
 const toImageDataUrl = (value, mimeType = 'image/png') => {
   if (!value) return null;
@@ -272,14 +266,14 @@ export const generateFastVisualConcept = async (inputs) => {
 
     const apiKey = getApiKey();
     const baseUrl = getBaseUrl();
-    const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
+    const modelId = getTextModel();
     const useProxy = import.meta.env.PROD || !apiKey;
 
     let response;
 
     if (useProxy) {
       const proxyBody = { prompt };
-      if (import.meta.env.VITE_GEMINI_MODEL) proxyBody.model = modelId;
+      if (import.meta.env.VITE_TEXT_MODEL || import.meta.env.VITE_GEMINI_MODEL) proxyBody.model = modelId;
       response = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -346,18 +340,18 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
   const apiKey = getApiKey();
 
   if (!import.meta.env.PROD && !apiKey) {
-    throw new Error('Please configure VITE_GEMINI_API_KEY in your .env file.');
+    throw new Error('Please configure VITE_TEXT_API_KEY in your .env file.');
   }
 
   const baseUrl = getBaseUrl();
-  const modelId = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
+  const modelId = getTextModel();
 
   try {
     let response;
     const useProxy = import.meta.env.PROD || !apiKey;
 
     if (useProxy) {
-      if (import.meta.env.VITE_GEMINI_MODEL) {
+      if (import.meta.env.VITE_TEXT_MODEL || import.meta.env.VITE_GEMINI_MODEL) {
         response = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -548,8 +542,8 @@ export const generateStandImage = async ({
 }) => {
   const apiKey = getApiKey();
   const imageModel = import.meta.env.VITE_IMAGE_MODEL || 'gpt-image-2';
-  const imageSize = import.meta.env.VITE_IMAGE_SIZE || '1536x1024';
-  const imageQuality = import.meta.env.VITE_IMAGE_QUALITY || 'medium';
+  const imageSize = '1536x1024';
+  const imageQuality = 'medium';
   const imageTimeoutMs = Number(import.meta.env.VITE_IMAGE_TIMEOUT_MS || 240000);
 
   console.log('Generating Image Model:', imageModel);
@@ -593,9 +587,6 @@ export const generateStandImage = async ({
       body.size = imageSize;
     }
 
-    if (shouldRequestImageBase64()) {
-      body.response_format = 'b64_json';
-    }
   }
 
   const controller = new AbortController();
@@ -617,8 +608,6 @@ export const generateStandImage = async ({
       if (import.meta.env.VITE_IMAGE_MODEL) {
         proxyBody.imageModel = imageModel;
       }
-      proxyBody.imageSize = imageSize;
-      proxyBody.imageQuality = imageQuality;
 
       response = await fetch('/api/generate', {
         method: 'POST',
@@ -659,20 +648,6 @@ export const generateStandImage = async ({
         signal: controller.signal
       });
 
-      if (!response.ok && body.response_format) {
-        const retryText = await response.clone().text();
-        if (shouldRetryWithoutImageResponseFormat(response, retryText)) {
-          console.warn('Image API does not support response_format=b64_json; retrying without it.');
-          const retryBody = { ...body };
-          delete retryBody.response_format;
-          response = await fetch(proxiedImageUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(retryBody),
-            signal: controller.signal
-          });
-        }
-      }
     }
 
     clearTimeout(timeoutId);

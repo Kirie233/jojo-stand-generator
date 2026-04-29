@@ -19,7 +19,7 @@ export default async function handler(req) {
   }
 
   // Get Key from Server Environment
-  const apiKey = process.env.GEMINI_SECRET_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = process.env.TEXT_SECRET_KEY || process.env.TEXT_API_KEY || process.env.GEMINI_SECRET_KEY || process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'Server Error: API Key not configured' }), {
@@ -39,8 +39,8 @@ export default async function handler(req) {
       });
     }
 
-    const modelId = model || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
-    const baseUrl = process.env.GEMINI_BASE_URL || 'https://api.bltcy.ai/';
+    const modelId = model || process.env.TEXT_MODEL || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
+    const baseUrl = process.env.TEXT_BASE_URL || process.env.GEMINI_BASE_URL || 'https://api.bltcy.ai/';
     const url = joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`);
 
     // Call API (Server-to-Server)

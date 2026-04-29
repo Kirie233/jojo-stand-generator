@@ -1,7 +1,62 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../styles/variables.css';
 
-const HistoryList = ({ history, onLoad, onClose }) => {
+const formatBytes = (bytes) => {
+  if (!Number.isFinite(bytes)) return '--';
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 ? 1 : 2)} ${units[unitIndex]}`;
+};
+
+const countStandCacheEntries = () => {
+  try {
+    let count = 0;
+    for (let i = 0; i < localStorage.length; i += 1) {
+      if (localStorage.key(i)?.startsWith('jojo_stand_cache_')) {
+        count += 1;
+      }
+    }
+    return count;
+  } catch {
+    return 0;
+  }
+};
+
+const HistoryList = ({ history, onLoad, onClose, onClearHistory }) => {
+  const [storageInfo, setStorageInfo] = useState(null);
+  const cacheCount = countStandCacheEntries();
+  const historyCount = history?.length || 0;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStorageInfo = async () => {
+      if (!navigator.storage?.estimate) return;
+      const estimate = await navigator.storage.estimate();
+      if (!cancelled) {
+        setStorageInfo(estimate);
+      }
+    };
+
+    loadStorageInfo().catch((err) => {
+      console.error('Failed to estimate storage:', err);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [historyCount]);
+
+  const usage = storageInfo?.usage;
+  const quota = storageInfo?.quota;
+  const usagePercent = usage && quota ? Math.min((usage / quota) * 100, 100) : 0;
+
   return (
     <div className="history-drawer open">
       <div className="history-header">
@@ -46,6 +101,38 @@ const HistoryList = ({ history, onLoad, onClose }) => {
             <div className="empty-icon">⏳</div>
           </div>
         )}
+      </div>
+
+      <div className="history-storage-panel">
+        <div className="storage-title">LOCAL STORAGE STATUS</div>
+        <div className="storage-row">
+          <span>站点占用</span>
+          <strong>{formatBytes(usage)}</strong>
+        </div>
+        <div className="storage-meter">
+          <div className="storage-meter-fill" style={{ width: `${usagePercent}%` }}></div>
+        </div>
+        <div className="storage-row muted">
+          <span>本地存储上限</span>
+          <strong>{formatBytes(quota)}</strong>
+        </div>
+        <div className="storage-row muted">
+          <span>历史记录</span>
+          <strong>{historyCount} 条</strong>
+        </div>
+        <div className="storage-row muted">
+          <span>生成缓存</span>
+          <strong>{cacheCount} 条</strong>
+        </div>
+        <button
+          type="button"
+          className="clear-history-btn"
+          onClick={onClearHistory}
+          disabled={historyCount === 0}
+        >
+          清空觉醒历史
+          <small>CLEAR HISTORY</small>
+        </button>
       </div>
 
       <style>{`
@@ -98,6 +185,93 @@ const HistoryList = ({ history, onLoad, onClose }) => {
         .history-content-scroll {
             flex: 1; overflow-y: auto; padding: 20px;
             scrollbar-width: thin; scrollbar-color: #ffd700 transparent;
+        }
+
+        .history-storage-panel {
+            border-top: 1px solid rgba(255, 215, 0, 0.25);
+            background: rgba(0, 0, 0, 0.38);
+            padding: 16px 20px 18px;
+            color: #fff;
+        }
+
+        .storage-title {
+            font-family: 'Anton', sans-serif;
+            color: #ffd700;
+            letter-spacing: 1.5px;
+            font-size: 0.78rem;
+            margin-bottom: 10px;
+        }
+
+        .storage-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.82rem;
+            margin-bottom: 7px;
+        }
+
+        .storage-row strong {
+            font-family: 'Anton', sans-serif;
+            color: #ffd700;
+            letter-spacing: 1px;
+        }
+
+        .storage-row.muted {
+            color: rgba(255,255,255,0.62);
+        }
+
+        .storage-meter {
+            height: 7px;
+            border: 1px solid rgba(255, 215, 0, 0.45);
+            background: rgba(255,255,255,0.08);
+            margin: 8px 0 10px;
+            overflow: hidden;
+        }
+
+        .storage-meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #d500f9);
+            min-width: 2px;
+        }
+
+        .clear-history-btn {
+            width: 100%;
+            margin-top: 12px;
+            border: 2px solid #ff1744;
+            background: rgba(255, 23, 68, 0.12);
+            color: #fff;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 900;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            transition: all 0.2s ease;
+        }
+
+        .clear-history-btn small {
+            font-family: 'Anton', sans-serif;
+            color: #ff8a9d;
+            letter-spacing: 2px;
+            font-size: 0.65rem;
+        }
+
+        .clear-history-btn:hover:not(:disabled) {
+            background: #ff1744;
+            transform: translateY(-2px);
+            box-shadow: 5px 5px 0 #000;
+        }
+
+        .clear-history-btn:hover:not(:disabled) small {
+            color: #fff;
+        }
+
+        .clear-history-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
         }
 
         .history-items { display: flex; flex-direction: column; gap: 15px; }

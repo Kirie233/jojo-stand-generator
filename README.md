@@ -1,141 +1,95 @@
-# JOJO 替身生成器 (JOJO Stand Generator)
+# JOJO 替身生成器
 
 > 你的替身，正如你的灵魂。
 
-这是一个基于 AI 的 Web 应用。用户输入名字、音乐、颜色、性格和参考图后，应用会生成一份 JOJO 风格的替身档案，并尝试绘制对应形象。
+一个 JOJO 风格的 AI 替身生成 Web 应用。输入名字、音乐灵感、主色调、性格/执念和参考图后，应用会生成替身名称、能力档案、六维面板，并绘制对应的替身视觉图。
 
 ![JOJO Stand Generator Preview](public/assets/preview_v2.jpg)
 
+## 快速入口
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FKirie233%2Fjojo-stand-generator&project-name=jojo-stand-generator&repository-name=jojo-stand-generator&env=TEXT_API_KEY,TEXT_BASE_URL,TEXT_MODEL,IMAGE_API_KEY,IMAGE_BASE_URL,IMAGE_MODEL&envDescription=Configure%20AI%20API%20keys%20and%20model%20settings%20for%20JOJO%20Stand%20Generator&envLink=https%3A%2F%2Fgithub.com%2FKirie233%2Fjojo-stand-generator%23%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F)
+
+推荐接口服务：[柏拉图 AI](https://api.bltcy.ai/register?aff=4AcV128715)
+
 ## 功能
 
-- 替身觉醒：根据用户输入生成替身名称、能力、面板和外观描述。
-- JOJO 风格绘图：文本生成和图片生成分离，方便分别切换模型和接口。
-- 雷达图展示：展示破坏力、速度、射程距离、持续力、精密动作性、成长性。
-- 本地历史记录：通过 IndexedDB 保存历史生成结果。
-- 双语命名：支持英文替身名和中文译名的组合展示。
+- 根据表单输入生成替身名称、能力、面板、战吼和台词。
+- 文本生成和图片生成分离，可分别配置模型、Key 和接口地址。
+- 展示 JOJO 风格六维面板：破坏力、速度、射程距离、持续力、精密动作性、成长性。
+- 支持图片纯览模式，隐藏 UI 只查看生成图。
+- 使用 IndexedDB 保存本地觉醒历史，并显示当前站点存储占用。
+- 生产环境通过 Vercel API Route 代理模型请求，避免服务端 Key 暴露到前端。
 
 ## 技术栈
 
-- 前端：React 19 + Vite
-- 样式：Vanilla CSS
-- 本地存储：IndexedDB
-- 部署：Vercel Edge Functions
-
-## 默认接口
-
-- 文本 `GEMINI_BASE_URL` 默认值：`https://api.bltcy.ai/`
-- 图片 `IMAGE_BASE_URL` 默认值：`https://api.bltcy.ai/`
-
-如果你在环境变量里显式配置了 `GEMINI_BASE_URL` 或 `IMAGE_BASE_URL`，环境变量优先。
+React 19、Vite、Vanilla CSS、IndexedDB、Vercel Edge Functions。
 
 ## 本地开发
 
-1. 克隆仓库
-
-```bash
-git clone https://github.com/Kirie233/jojo-stand-generator.git
-cd jojo-stand-generator
-```
-
-2. 安装依赖
-
 ```bash
 npm install
-```
-
-3. 创建本地环境变量
-
-把 `.env.example` 复制成 `.env`：
-
-```bash
 cp .env.example .env
-```
-
-推荐的本地开发配置：
-
-```env
-# 文本生成
-VITE_GEMINI_API_KEY=your_text_key
-# 默认值: https://api.bltcy.ai/
-VITE_GEMINI_BASE_URL=https://api.bltcy.ai/
-VITE_GEMINI_MODEL=gemini-3-flash-preview
-
-# 图片生成
-# 不配置时会复用上面的文本 Key
-# 默认值: https://api.bltcy.ai/
-VITE_IMAGE_API_KEY=your_image_key
-VITE_IMAGE_BASE_URL=https://api.bltcy.ai/
-VITE_IMAGE_MODEL=gpt-image-2
-```
-
-说明：
-
-- `.env` 已被 `.gitignore` 忽略。
-- `VITE_*` 变量会暴露到前端代码中，只适合本地开发调试。
-
-4. 启动开发服务器
-
-```bash
 npm run dev
 ```
 
 默认访问：`http://localhost:5173`
 
-## Vercel 部署
+`.env` 示例：
 
-### 架构说明
+```env
+VITE_TEXT_API_KEY=your_text_key
+VITE_TEXT_BASE_URL=https://api.bltcy.ai/
+VITE_TEXT_MODEL=gemini-3-flash-preview
 
-- 生产环境：浏览器请求前端，再由 Vercel 的 `/api/*` 代理到模型接口。
-- 本地开发：前端可以直接使用 `.env` 里的 `VITE_*` 变量访问接口。
-
-```text
-[生产环境] 浏览器 -> Vercel Serverless (/api/generate, /api/gemini) -> AI API
-[本地开发] 浏览器 -> 直连 AI API
+VITE_IMAGE_API_KEY=your_image_key
+VITE_IMAGE_BASE_URL=https://api.bltcy.ai/
+VITE_IMAGE_MODEL=gpt-image-2
 ```
 
-### 需要配置的环境变量
+`VITE_*` 变量会暴露到前端，只建议本地开发使用。
 
-在 Vercel 的 `Settings -> Environment Variables` 中配置：
+## Vercel 部署
 
-| Key | 示例值 | 说明 |
-| :--- | :--- | :--- |
-| `GEMINI_API_KEY` | `sk-xxx...` | 必填，文本生成 Key |
-| `GEMINI_BASE_URL` | `https://api.bltcy.ai/` | 选填，文本接口地址 |
-| `GEMINI_MODEL` | `gemini-3-flash-preview` | 选填，文本模型 |
-| `IMAGE_API_KEY` | `sk-xxx...` | 选填，图片生成 Key，不填则复用 `GEMINI_API_KEY` |
-| `IMAGE_BASE_URL` | `https://api.bltcy.ai/` | 选填，图片接口地址 |
-| `IMAGE_MODEL` | `gpt-image-2` | 选填，图片模型 |
-| `IMAGE_QUALITY` | `high` | 选填，部分图片模型可用 |
-| `IMAGE_SIZE` | `1024x1024` | 选填，部分图片模型可用 |
+生产环境只需要配置服务端环境变量：
 
-注意：
+| Key | 必填 | 默认/示例 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `TEXT_API_KEY` | 是 | `sk-xxx...` | 文本生成 Key |
+| `TEXT_BASE_URL` | 否 | `https://api.bltcy.ai/` | 文本接口地址 |
+| `TEXT_MODEL` | 否 | `gemini-3-flash-preview` | 文本模型 |
+| `IMAGE_API_KEY` | 否 | `sk-xxx...` | 图片生成 Key，不填则复用 `TEXT_API_KEY` |
+| `IMAGE_BASE_URL` | 否 | `https://api.bltcy.ai/` | 图片接口地址 |
+| `IMAGE_MODEL` | 否 | `gpt-image-2` | 图片模型 |
 
-- 不要在 Vercel 生产环境里配置 `VITE_*` 变量。
-- Vercel 上应只配置服务端变量，也就是上表这一组。
-- 前端设置弹窗里的模型配置适合本地或单浏览器覆盖，不应该替代服务端默认配置。
-- 当前默认生图模型是 `gpt-image-2`，但仍然保留 `gemini` 生图支持。
+部署后请求链路：
 
-### 部署步骤
+```text
+浏览器 -> Vercel /api/generate 或 /api/gemini -> AI API
+```
 
-1. Fork 或上传仓库到 GitHub
-2. 在 Vercel 导入该仓库
-3. 配置上面的环境变量
-4. 点击 `Deploy`
+不要在 Vercel 生产环境配置 `VITE_*` Key。
 
-后续只要推送新代码，Vercel 会自动重新部署。
+旧变量 `GEMINI_API_KEY`、`GEMINI_BASE_URL`、`GEMINI_MODEL` 仍可作为兼容 fallback 使用。
 
-## 配置建议
+## 脚本
 
-如果你准备长期部署到 Vercel，建议采用下面这套规则：
+```bash
+npm run dev      # 本地开发
+npm run build    # 生产构建
+npm run preview  # 预览构建产物
+npm run lint     # ESLint 检查
+```
 
-- 服务端环境变量负责生产默认值
-- `.env.example` 只作为本地开发模板
-- `VITE_*` 只给本地调试使用
-- 前端模型设置只做“本地覆盖”，不要作为项目默认配置来源
+## 说明
+
+- `.env` 只用于本地开发，不要提交到仓库。
+- 文本模型和图片模型可以使用不同 Key、不同接口。
+- 当前默认生图模型是 `gpt-image-2`，同时保留 Gemini 生图兼容逻辑。
 
 ## 免责声明
 
-本项目为 JOJO 粉丝向非商业项目。通过 AI 生成的内容仅供娱乐和学习使用。相关作品版权归原作者及版权方所有。
+本项目为 JOJO 粉丝向非商业项目。AI 生成内容仅供娱乐和学习使用。相关作品版权归原作者及版权方所有。
 
 ---
 

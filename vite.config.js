@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  const textBaseUrl = env.VITE_GEMINI_BASE_URL || 'https://api.bltcy.ai/';
+  const textBaseUrl = env.VITE_TEXT_BASE_URL || env.VITE_GEMINI_BASE_URL || 'https://api.bltcy.ai/';
   const imageBaseUrl = env.VITE_IMAGE_BASE_URL || 'https://api.bltcy.ai/';
 
   return {

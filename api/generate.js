@@ -108,13 +108,6 @@ const jsonResponse = (data, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-const shouldRetryWithoutImageResponseFormat = (response, text) => (
-  (response.status === 400 || response.status === 500) &&
-  /response_format|unsupported|unknown|invalid/i.test(text || '')
-);
-
-const shouldRequestImageBase64 = () => process.env.IMAGE_RESPONSE_FORMAT === 'b64_json';
-
 const toImageDataUrl = (value, mimeType = 'image/png') => {
   if (!value) return null;
   if (/^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(value)) {
@@ -133,13 +126,11 @@ export default async function handler(req) {
       action,
       payload,
       textModel: requestedTextModel,
-      imageModel: requestedImageModel,
-      imageSize: requestedImageSize,
-      imageQuality: requestedImageQuality
+      imageModel: requestedImageModel
     } = await req.json();
-    const apiKey = process.env.GEMINI_API_KEY;
-    const baseUrl = process.env.GEMINI_BASE_URL || 'https://api.bltcy.ai/';
-    const textModel = requestedTextModel || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
+    const apiKey = process.env.TEXT_API_KEY || process.env.GEMINI_API_KEY;
+    const baseUrl = process.env.TEXT_BASE_URL || process.env.GEMINI_BASE_URL || 'https://api.bltcy.ai/';
+    const textModel = requestedTextModel || process.env.TEXT_MODEL || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
     const imageModel = requestedImageModel || process.env.IMAGE_MODEL || 'gpt-image-2';
 
     if (!apiKey) {
@@ -221,8 +212,8 @@ export default async function handler(req) {
       const isGptImage = imageModel.toLowerCase().includes('gpt-image');
       const imgApiKey = process.env.IMAGE_API_KEY || apiKey;
       const imgBaseUrl = process.env.IMAGE_BASE_URL || 'https://api.bltcy.ai/';
-      const imageSize = requestedImageSize || process.env.IMAGE_SIZE || '1536x1024';
-      const imageQuality = requestedImageQuality || process.env.IMAGE_QUALITY || 'medium';
+      const imageSize = '1536x1024';
+      const imageQuality = 'medium';
       const prompt = buildEyecatchPrompt({
         standName,
         userName,
@@ -268,9 +259,6 @@ export default async function handler(req) {
           body.quality = imageQuality;
           body.size = imageSize;
         }
-        if (shouldRequestImageBase64()) {
-          body.response_format = 'b64_json';
-        }
       }
 
       console.log('[Image] Provider:', imgBaseUrl, '| Model:', imageModel, '| isGemini:', isGemini);
@@ -287,18 +275,6 @@ export default async function handler(req) {
           });
 
           let rawText = await response.text();
-
-          if (!response.ok && body.response_format && shouldRetryWithoutImageResponseFormat(response, rawText)) {
-            console.warn('[Image] response_format=b64_json unsupported; retrying without it.');
-            const retryBody = { ...body };
-            delete retryBody.response_format;
-            response = await fetch(url, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify(retryBody)
-            });
-            rawText = await response.text();
-          }
 
           const data = rawText ? JSON.parse(rawText) : {};
 

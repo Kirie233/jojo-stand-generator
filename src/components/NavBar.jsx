@@ -12,6 +12,7 @@ const NavBar = ({ onToggleHistory, onToggleHelp, onToggleDonate, onToggleFAQ, is
   ];
 
   const handleItemClick = (action) => {
+    if (!action) return;
     action();
     setIsOpen(false);
   };
