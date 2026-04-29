@@ -382,18 +382,18 @@ const _generateStandProfile = async (inputs, premadeConcept = null) => {
           body: JSON.stringify({
             action: 'profile',
             textModel: modelId,
-            payload: { ...inputs, userName: inputs.userName || 'Unknown', referenceImage: inputs.referenceImage }
+            payload: { ...inputs, userName: inputs.userName || 'Unknown', referenceImage: inputs.referenceImage, premadeConcept }
           })
         });
       } else {
         response = await fetch('/api/generate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'profile',
-            payload: { ...inputs, userName: inputs.userName || 'Unknown', referenceImage: inputs.referenceImage }
-          })
-        });
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'profile',
+              payload: { ...inputs, userName: inputs.userName || 'Unknown', referenceImage: inputs.referenceImage, premadeConcept }
+            })
+          });
       }
     } else {
       const systemPrompt = `你是 JOJO 风格替身档案撰写器。使用简洁、清晰、偏百科的中文口吻，返回合法 JSON。`;

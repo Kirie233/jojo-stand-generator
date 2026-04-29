@@ -28,6 +28,7 @@ const StandGenerator = () => {
   const [inputProgress, setInputProgress] = useState({ current: 0, total: 1 });
   const appContainerRef = useRef(null);
   const generationIdRef = useRef(0);
+  const standDataRef = useRef(null);
 
   const isCurrentGeneration = (generationId) => generationIdRef.current === generationId;
   const formatGenerationError = (stage, err) => `${stage} failed: ${err?.message || String(err)}`;
@@ -99,6 +100,10 @@ const StandGenerator = () => {
     setError(null); // Clear error when going back to title
   };
 
+  useEffect(() => {
+    standDataRef.current = standData;
+  }, [standData]);
+
   const handleReset = () => {
     generationIdRef.current += 1;
     closeAllPanels();
@@ -165,21 +170,45 @@ const StandGenerator = () => {
       const profileTask = generateStandProfile(inputs, concept);
 
       // Update UI with initial name so user sees progress
-      setStandData({
+      const initialStandData = {
         name: concept.name,
         userName: inputs.userName,
         imageUrl: null // Loading spinner
-      });
+      };
+      standDataRef.current = initialStandData;
+      setStandData(initialStandData);
       setGameState('RESULT');
 
       // 3. Update Text Content as soon as BIO arrives
       profileTask.then(fullProfile => {
         if (!isCurrentGeneration(generationId)) return;
+        const currentData = standDataRef.current || {};
+        const updatedData = {
+          ...currentData,
+          ...fullProfile,
+          imageUrl: currentData.imageUrl || null,
+          referenceImage: inputs.referenceImage,
+          timestamp: currentData.timestamp || Date.now(),
+          id: currentData.id || (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
+          userName: inputs.userName
+        };
+
+        standDataRef.current = updatedData;
         setStandData(prev => ({
           ...prev,
+          ...updatedData,
+          imageUrl: prev?.imageUrl || updatedData.imageUrl,
           ...fullProfile,
           userName: inputs.userName
         }));
+
+        saveCachedStand(inputs, updatedData);
+        saveStandToDB(updatedData)
+          .then(() => refreshHistory(generationId))
+          .catch(storageError => {
+            if (!isCurrentGeneration(generationId)) return;
+            console.error("Profile history sync failed:", storageError);
+          });
       }).catch(err => {
         if (!isCurrentGeneration(generationId)) return;
         console.error("Profile logic failed:", err);
@@ -191,30 +220,37 @@ const StandGenerator = () => {
         if (!isCurrentGeneration(generationId)) return;
         const finalImageUrl = imageUrl || 'FAILED';
 
-        let finalProfile = null;
-        try {
-          // Do not discard a successful image when profile generation degrades.
-          finalProfile = await profileTask;
-        } catch (profileError) {
-          console.error("Profile sync failed during finalization:", profileError);
-        }
-
-        if (!isCurrentGeneration(generationId)) return;
         const finalizedData = {
-          ...(finalProfile || {}),
-          name: finalProfile?.name || concept.name,
+          name: concept.name,
           imageUrl: finalImageUrl,
           userName: inputs.userName,
+          appearance: concept.appearance,
           referenceImage: inputs.referenceImage,
           timestamp: Date.now(),
           id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
         };
 
-        setStandData(finalizedData);
-        saveCachedStand(inputs, finalizedData);
+        const mergedData = {
+          ...finalizedData,
+          ...(standDataRef.current || {}),
+          imageUrl: finalImageUrl,
+          referenceImage: inputs.referenceImage,
+          timestamp: finalizedData.timestamp,
+          id: finalizedData.id
+        };
+        standDataRef.current = mergedData;
+        setStandData(prev => ({
+          ...mergedData,
+          ...(prev || {}),
+          imageUrl: finalImageUrl,
+          referenceImage: inputs.referenceImage,
+          timestamp: finalizedData.timestamp,
+          id: finalizedData.id
+        }));
+        saveCachedStand(inputs, mergedData);
 
         try {
-          await saveStandToDB(finalizedData);
+          await saveStandToDB(mergedData);
           await refreshHistory(generationId);
         } catch (storageError) {
           if (!isCurrentGeneration(generationId)) return;
