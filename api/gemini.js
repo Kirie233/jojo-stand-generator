@@ -4,6 +4,12 @@ export const config = {
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
 const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
+const shouldUseGeminiNative = (modelId, baseUrl) => {
+  const requestedFormat = (process.env.TEXT_API_FORMAT || process.env.GEMINI_API_FORMAT || '').toLowerCase();
+  if (requestedFormat === 'openai') return false;
+  if (/api\.bltcy\.ai/i.test(baseUrl)) return false;
+  return modelId.toLowerCase().includes('gemini');
+};
 
 const jsonResponse = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -52,18 +58,30 @@ export default async function handler(req) {
 
     const modelId = model || process.env.TEXT_MODEL || process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
     const baseUrl = process.env.TEXT_BASE_URL || process.env.GEMINI_BASE_URL || 'https://api.bltcy.ai/';
-    const url = joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`);
+    const useGeminiNative = shouldUseGeminiNative(modelId, baseUrl);
+    const url = useGeminiNative
+      ? joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`)
+      : joinUrl(baseUrl, '/v1/chat/completions');
 
     // Call API (Server-to-Server)
     const googleResponse = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
+      headers: useGeminiNative
+        ? {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          }
+        : {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+      body: JSON.stringify(useGeminiNative
+        ? { contents: [{ parts: [{ text: prompt }] }] }
+        : {
+            model: modelId,
+            messages: [{ role: 'user', content: prompt }],
+            response_format: { type: 'json_object' },
+          }),
     });
 
     const data = await readJsonOrText(googleResponse);

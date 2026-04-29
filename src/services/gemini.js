@@ -4,6 +4,12 @@ const getApiKey = () => import.meta.env.VITE_TEXT_API_KEY || import.meta.env.VIT
 const getBaseUrl = () => import.meta.env.VITE_TEXT_BASE_URL || import.meta.env.VITE_GEMINI_BASE_URL || 'https://api.bltcy.ai/';
 const getTextModel = () => import.meta.env.VITE_TEXT_MODEL || import.meta.env.VITE_GEMINI_MODEL || 'gemini-3-flash-preview';
 const isBrowser = () => typeof window !== 'undefined';
+const shouldUseGeminiNativeText = (modelId, baseUrl) => {
+  const requestedFormat = (import.meta.env.VITE_TEXT_API_FORMAT || import.meta.env.VITE_GEMINI_API_FORMAT || '').toLowerCase();
+  if (requestedFormat === 'openai') return false;
+  if (/api\.bltcy\.ai/i.test(baseUrl)) return false;
+  return modelId.toLowerCase().includes('gemini');
+};
 
 const getProxyUrl = (targetUrl, proxyPrefix) => {
   if (!isBrowser() || import.meta.env.PROD) {
@@ -294,7 +300,7 @@ export const generateFastVisualConcept = async (inputs) => {
         body: JSON.stringify(proxyBody)
       });
     } else {
-      const isGemini = modelId.toLowerCase().includes('gemini');
+      const isGemini = shouldUseGeminiNativeText(modelId, baseUrl);
       let directUrl;
       let headers;
       let body;
@@ -457,7 +463,7 @@ ${inputs.referenceImage ? '- 用户上传了参考图，请把能识别出的轮
   "appearance": "简洁中文外观描述"
 }`;
 
-      const isGemini = modelId.toLowerCase().includes('gemini');
+      const isGemini = shouldUseGeminiNativeText(modelId, baseUrl);
       let requestUrl;
       let headers;
       let body;

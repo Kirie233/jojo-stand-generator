@@ -4,6 +4,12 @@ export const config = {
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
 const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
+const shouldUseGeminiNativeText = (modelId, baseUrl) => {
+  const requestedFormat = (process.env.TEXT_API_FORMAT || process.env.GEMINI_API_FORMAT || '').toLowerCase();
+  if (requestedFormat === 'openai') return false;
+  if (/api\.bltcy\.ai/i.test(baseUrl)) return false;
+  return modelId.toLowerCase().includes('gemini');
+};
 
 const buildProfileSystemPrompt = () => {
   return '你是 JOJO 风格替身档案撰写器。使用简洁、清晰、偏百科的中文口吻，返回合法 JSON。';
@@ -148,7 +154,7 @@ export default async function handler(req) {
 
     if (action === 'profile') {
       const { song, color, personality, userName, premadeConcept, referenceImage } = payload;
-      const isGemini = textModel.toLowerCase().includes('gemini');
+      const isGemini = shouldUseGeminiNativeText(textModel, baseUrl);
       const systemPrompt = buildProfileSystemPrompt();
       const userPrompt = buildProfileUserPrompt({
         song,
