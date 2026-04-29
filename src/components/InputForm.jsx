@@ -100,7 +100,7 @@ const DEFAULT_FORM_DATA = {
 
 const loadFormDraft = () => {
   try {
-    const raw = localStorage.getItem(FORM_DRAFT_KEY);
+    const raw = sessionStorage.getItem(FORM_DRAFT_KEY);
     if (!raw) return DEFAULT_FORM_DATA;
 
     const parsed = JSON.parse(raw);
@@ -116,7 +116,7 @@ const loadFormDraft = () => {
 
 const saveFormDraft = (data) => {
   try {
-    localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(data));
+    sessionStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(data));
   } catch (err) {
     console.warn('Failed to save form draft:', err);
   }
