@@ -128,6 +128,7 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false); // 3D Flip State
   const [formData, setFormData] = useState(() => loadFormDraft());
+  const [showClearButton, setShowClearButton] = useState(false);
   const [invalidField, setInvalidField] = useState(null); // Which field failed validation
   const [showHint, setShowHint] = useState(false); // Show the floating validation hint
   const tarotCardRef = useRef(null);
@@ -145,6 +146,17 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
   useEffect(() => {
     saveFormDraft(formData);
   }, [formData]);
+
+  useEffect(() => {
+    setShowClearButton(false);
+    if (isFlipping) return undefined;
+
+    const timer = setTimeout(() => {
+      setShowClearButton(true);
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [currentStep, isFlipping]);
 
 
   const handleNext = () => {
@@ -258,6 +270,8 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
 
   const step = STEPS[currentStep];
   const currentVal = formData[getFieldKey()] || '';
+  const canShowClearCurrent = Boolean(showClearButton && currentVal);
+  const canShowClearUpload = Boolean(showClearButton && formData.referenceImage);
 
   return (
     <>
@@ -390,11 +404,15 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
                   </button>
                   <button
                     type="button"
-                    className={`random-dice-btn clear-current-btn ${currentVal ? '' : 'hidden'}`}
+                    className={`random-dice-btn clear-current-btn ${canShowClearCurrent ? '' : 'hidden'}`}
                     onClick={handleClearCurrentInput}
-                    tabIndex={currentVal ? 0 : -1}
+                    tabIndex={canShowClearCurrent ? 0 : -1}
                   >
-                    <span className="clear-icon">×</span>
+                    <span className="clear-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M16.2 3.6 21 8.4 9.4 20H4.6l-1.7-1.7v-4.8L14.5 1.9l1.7 1.7Zm-2.4 2.4L5 14.8v2.4l.8.8h2.4L17 9.2 13.8 6Zm-5.4 9.8 1.8 1.8" />
+                      </svg>
+                    </span>
                     <span className="random-text">清除当前输入</span>
                   </button>
                 </div>
@@ -420,11 +438,15 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
                   />
                   <button
                     type="button"
-                    className={`random-dice-btn clear-current-btn inline ${currentVal ? '' : 'hidden'}`}
+                    className={`random-dice-btn clear-current-btn inline ${canShowClearCurrent ? '' : 'hidden'}`}
                     onClick={handleClearCurrentInput}
-                    tabIndex={currentVal ? 0 : -1}
+                    tabIndex={canShowClearCurrent ? 0 : -1}
                   >
-                    <span className="clear-icon">×</span>
+                    <span className="clear-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M16.2 3.6 21 8.4 9.4 20H4.6l-1.7-1.7v-4.8L14.5 1.9l1.7 1.7Zm-2.4 2.4L5 14.8v2.4l.8.8h2.4L17 9.2 13.8 6Zm-5.4 9.8 1.8 1.8" />
+                      </svg>
+                    </span>
                     <span className="random-text">清除当前输入</span>
                   </button>
                 </div>
@@ -463,11 +485,15 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
                   </div>
                   <button
                     type="button"
-                    className={`random-dice-btn clear-current-btn upload-clear ${formData.referenceImage ? '' : 'hidden'}`}
+                    className={`random-dice-btn clear-current-btn upload-clear ${canShowClearUpload ? '' : 'hidden'}`}
                     onClick={handleClearCurrentInput}
-                    tabIndex={formData.referenceImage ? 0 : -1}
+                    tabIndex={canShowClearUpload ? 0 : -1}
                   >
-                    <span className="clear-icon">×</span>
+                    <span className="clear-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M16.2 3.6 21 8.4 9.4 20H4.6l-1.7-1.7v-4.8L14.5 1.9l1.7 1.7Zm-2.4 2.4L5 14.8v2.4l.8.8h2.4L17 9.2 13.8 6Zm-5.4 9.8 1.8 1.8" />
+                      </svg>
+                    </span>
                     <span className="random-text">清除当前输入</span>
                   </button>
                 </div>
@@ -548,11 +574,15 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
                     )}
                     <button
                       type="button"
-                      className={`random-dice-btn clear-current-btn input-clear ${currentVal ? '' : 'hidden'}`}
+                      className={`random-dice-btn clear-current-btn input-clear ${canShowClearCurrent ? '' : 'hidden'}`}
                       onClick={handleClearCurrentInput}
-                      tabIndex={currentVal ? 0 : -1}
+                      tabIndex={canShowClearCurrent ? 0 : -1}
                     >
-                      <span className="clear-icon">×</span>
+                      <span className="clear-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="M16.2 3.6 21 8.4 9.4 20H4.6l-1.7-1.7v-4.8L14.5 1.9l1.7 1.7Zm-2.4 2.4L5 14.8v2.4l.8.8h2.4L17 9.2 13.8 6Zm-5.4 9.8 1.8 1.8" />
+                        </svg>
+                      </span>
                       <span className="random-text">清除当前输入</span>
                     </button>
                   </div>
@@ -723,32 +753,47 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
         .card-header { position: relative; z-index: 2; flex-shrink: 0; }
         .clear-current-btn {
             margin-top: 8px;
-            background: #111;
-            color: #ffd700;
-            border-color: #ffd700;
-            padding: 4px 14px;
-            opacity: 0.95;
+            min-height: 28px;
+            background: rgba(255,255,255,0.72);
+            color: #222;
+            border: 1px solid rgba(0,0,0,0.55);
+            padding: 2px 12px;
+            opacity: 0.82;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.22);
+            transform: skewX(-12deg);
         }
         .clear-current-btn.hidden {
             visibility: hidden;
             pointer-events: none;
         }
         .clear-current-btn:hover {
-            background: #ffd700;
+            background: #fff;
             color: #000;
             border-color: #000;
+            opacity: 1;
+            transform: skewX(-12deg) translateY(-1px);
         }
         .clear-icon {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid currentColor;
-            border-radius: 50%;
-            font-family: 'Anton', sans-serif;
-            line-height: 1;
-            transform: skewX(15deg);
+            transform: skewX(12deg);
+        }
+        .clear-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .clear-current-btn .random-text {
+            font-size: 0.78rem;
+            transform: skewX(12deg);
+            opacity: 0.9;
         }
         .clear-current-btn.inline,
         .clear-current-btn.upload-clear {
