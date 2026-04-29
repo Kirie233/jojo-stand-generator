@@ -4,6 +4,21 @@ export const config = {
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
 const joinUrl = (baseUrl, path) => `${normalizeBaseUrl(baseUrl)}${path.startsWith('/') ? path : `/${path}`}`;
+const TEXT_TIMEOUT_MS = Number(process.env.TEXT_TIMEOUT_MS || 25000);
+
+const fetchWithTimeout = async (url, options, timeoutMs = TEXT_TIMEOUT_MS) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 const buildProfileSystemPrompt = () => {
   return '你是 JOJO 风格替身档案撰写器。使用简洁、清晰、偏百科的中文口吻，返回合法 JSON。';
@@ -196,11 +211,22 @@ export default async function handler(req) {
         };
       }
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body)
-      });
+      let response;
+      try {
+        response = await fetchWithTimeout(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          return jsonResponse({
+            error: `Text generation timed out after ${TEXT_TIMEOUT_MS}ms. Try a faster text model or a healthier API endpoint.`,
+            code: 'UPSTREAM_TIMEOUT',
+          }, 504);
+        }
+        throw error;
+      }
 
       const data = await response.json();
       return jsonResponse(data, response.status);

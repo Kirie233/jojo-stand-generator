@@ -210,9 +210,17 @@ const retryOperation = async (operation, retries = 3) => {
     try {
       return await operation();
     } catch (err) {
+      const message = String(err.message || err);
       if (
         i < retries - 1 &&
-        (err.message.includes('Overloaded') || err.message.includes('503') || err.message.includes('quota'))
+        (
+          message.includes('Overloaded') ||
+          message.includes('503') ||
+          message.includes('504') ||
+          message.includes('timeout') ||
+          message.includes('UPSTREAM_TIMEOUT') ||
+          message.includes('quota')
+        )
       ) {
         console.warn(`API Overloaded. Retrying in ${(i + 1) * 2}s...`);
         await sleep((i + 1) * 2000);
@@ -314,13 +322,17 @@ export const generateFastVisualConcept = async (inputs) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[Phase 1] API Error Details:', response.status, errorText);
+      let errorMsg = `API Error ${response.status}: ${errorText}`;
       try {
         const errorJson = JSON.parse(errorText);
-        throw new Error(errorJson.error || 'Fast Visual Concept Failed');
-      } catch (e) {
-        if (e.message.includes('Fast Visual Concept')) throw e;
-        throw new Error(`API Error ${response.status}: ${errorText}`);
+        const errorDetail = typeof errorJson.error === 'string'
+          ? errorJson.error
+          : errorJson.error?.message || JSON.stringify(errorJson.error || errorJson);
+        errorMsg = errorJson.code ? `${errorJson.code}: ${errorDetail}` : errorDetail;
+      } catch {
+        // Keep the raw response text for non-JSON API errors.
       }
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();
