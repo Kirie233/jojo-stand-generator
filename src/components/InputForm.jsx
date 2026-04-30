@@ -598,7 +598,6 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
               )}
 
               <div className="nav-center">
-                <span className="page-indicator">{currentStep + 1} / {STEPS.length}</span>
                 {showHint && (
                   <div className="validation-hint">
                     命运尚未开启 (INPUT REQUIRED)
@@ -1580,15 +1579,6 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
             align-items: center;
         }
 
-        .page-indicator {
-            font-family: 'Courier New', monospace;
-            font-weight: 900;
-            color: #000;
-            font-size: 1.1rem;
-            letter-spacing: 2px;
-            opacity: 0.8;
-        }
-
         .validation-hint {
             position: absolute;
             top: -45px;
@@ -1714,7 +1704,6 @@ const InputForm = ({ onSubmit, onCancel, onStepChange }) => {
             
             /* Footer */
             .card-footer { padding: 15px 20px; }
-            .page-indicator { font-size: 1rem; }
             .nav-btn .btn-inner { padding: 8px 12px; font-size: 0.8rem; }
             
             /* Return Button */
