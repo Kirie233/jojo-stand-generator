@@ -209,6 +209,7 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
               <div className="hand-slot slot-memory">
                 <button
                   className="disc-trigger-btn"
+                  title="保存整张替身档案为图片"
                   onClick={handleSaveImage}
                 >
                   <div className="flat-metallic-disc">
@@ -218,10 +219,10 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
                   </div>
                 </button>
                 <div className="slot-action-label">
-                  <span className="icon">📸</span>
+                  <span className="icon">SAVE</span>
                   <div className="text">
-                    <span className="label-cn">提取影像</span>
-                    <span className="label-en">MEMORY DISC</span>
+                    <span className="label-cn">保存整张档案</span>
+                    <span className="label-en">MEMORY DISC · 记忆磁碟</span>
                   </div>
                 </div>
               </div>
@@ -231,6 +232,7 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
             <div className="hand-slot slot-stand">
               <button
                 className="disc-trigger-btn"
+                title="下载生成的替身原图"
                 onClick={() => {
                   if (!hasRenderableImage) {
                     alert("替身尚未成型，无法提取实体 (No Stand Image)");
@@ -246,10 +248,10 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
                 </div>
               </button>
               <div className="slot-action-label">
-                <span className="icon">💽</span>
+                <span className="icon">PNG</span>
                 <div className="text">
-                  <span className="label-cn">导出磁碟</span>
-                  <span className="label-en">STAND DISC</span>
+                  <span className="label-cn">下载替身原图</span>
+                  <span className="label-en">STAND DISC · 替身磁碟</span>
                 </div>
               </div>
             </div>
@@ -421,6 +423,7 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
 
         .stand-card {
             width: 100%;
+            order: 1;
             border: 6px solid #000;
             background: #fff;
             display: flex;
@@ -878,6 +881,7 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
 
         /* Return Button */
         .return-container {
+            order: 3;
             margin-top: 50px;
             display: flex;
             justify-content: center;
@@ -1253,9 +1257,10 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
 
         .whitesnake-handheld-root {
             position: relative; /* Now occupies space! */
-            margin: 0 auto 40px; /* Centered with bottom gap */
-            width: 500px; 
-            height: 400px; /* Fixed height for the "box" */
+            order: 2;
+            margin: 40px auto 0; /* Centered below the result card */
+            width: min(620px, 100%);
+            height: 420px; /* Fixed height for the "box" */
             z-index: 2000;
             pointer-events: none;
             opacity: 1;
@@ -1341,6 +1346,10 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
             transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
         }
 
+        .hand-slot::before {
+            content: none;
+        }
+
         /* Labels Normal Orientation */
         .slot-action-label {
             transform: skewX(-10deg);
@@ -1350,25 +1359,25 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
         }
         
         .slot-memory {
-            left: 20%;
-            top: 45%;
-            transform: rotate(-3deg);
+            left: 25%;
+            top: 50%;
+            transform: rotate(-6deg);
         }
         .slot-stand {
-            left: 45%;
-            top: 65%;
-            transform: rotate(3deg);
+            left: 43%;
+            top: 62%;
+            transform: rotate(-4deg);
         }
 
         .hand-slot:hover {
-            transform: scale(1.15) translateY(-20px) rotate(0deg);
+            transform: scale(1.1) translateY(-12px) rotate(0deg);
             z-index: 100;
         }
 
         .disc-trigger-btn {
             background: none; border: none; padding: 0; cursor: pointer;
-            width: 85px; /* Enlarged from 65px */
-            height: 85px;
+            width: 78px;
+            height: 78px;
             position: relative;
         }
 
@@ -1413,10 +1422,10 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
         @keyframes discReflect { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         .slot-action-label {
-            margin-top: 10px;
+            margin-top: 8px;
             background: rgba(13, 3, 22, 0.95);
             border: 1px solid #ffd700;
-            padding: 5px 12px;
+            padding: 7px 14px 7px 12px;
             border-radius: 4px;
             display: flex;
             align-items: center;
@@ -1427,14 +1436,33 @@ const StandCard = ({ standData, onReset, imageOnlyMode = false, onToggleImageOnl
             transition: all 0.3s;
             white-space: nowrap;
         }
+        .slot-memory .slot-action-label {
+            transform: translateX(-46px) skewX(-10deg);
+        }
+        .slot-stand .slot-action-label {
+            transform: translateX(46px) skewX(-10deg);
+        }
         .hand-slot:hover .slot-action-label {
             opacity: 1;
             background: #25093a;
-            transform: skewX(-10deg) translateY(-3px) scale(1.02);
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+        .slot-memory:hover .slot-action-label {
+            transform: translateX(-46px) skewX(-10deg) translateY(-3px) scale(1.02);
+        }
+        .slot-stand:hover .slot-action-label {
+            transform: translateX(46px) skewX(-10deg) translateY(-3px) scale(1.02);
         }
 
         .slot-action-label .icon { font-size: 1rem; }
+        .slot-action-label .icon {
+            min-width: 34px;
+            font-family: 'Anton', sans-serif;
+            color: #ffd700;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-align: center;
+        }
         .slot-action-label .label-cn { display: block; font-family: 'Noto Serif SC', serif; font-size: 0.8rem; color: #fff; line-height: 1; font-weight: 900; }
         .slot-action-label .label-en { display: block; font-family: 'Anton', sans-serif; font-size: 0.6rem; color: #ffd700; letter-spacing: 1px; margin-top: 2px; }
 
