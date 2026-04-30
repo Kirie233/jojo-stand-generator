@@ -1,5 +1,5 @@
 export const config = {
-  maxDuration: 60,
+  runtime: 'edge',
 };
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
@@ -24,6 +24,7 @@ const streamJsonResponse = (task) => {
 
   (async () => {
     try {
+      await writer.write(encoder.encode('\n'));
       const data = await task();
       await writer.write(encoder.encode(JSON.stringify(data)));
       await writer.close();
@@ -89,6 +90,8 @@ export default async function handler(req) {
     const url = useGeminiNative
       ? joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`)
       : joinUrl(baseUrl, '/v1/chat/completions');
+
+    console.log('[Gemini] Provider:', baseUrl, '| Model:', modelId, '| native:', useGeminiNative);
 
     return streamJsonResponse(async () => {
       // Call API (Server-to-Server)

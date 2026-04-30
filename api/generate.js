@@ -1,5 +1,5 @@
 export const config = {
-  maxDuration: 60,
+  runtime: 'edge',
 };
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
@@ -132,6 +132,7 @@ const streamJsonResponse = (task) => {
 
   (async () => {
     try {
+      await writer.write(encoder.encode('\n'));
       const data = await task();
       await writer.write(encoder.encode(JSON.stringify(data)));
       await writer.close();
@@ -328,9 +329,11 @@ export default async function handler(req) {
 
       const { readable, writable } = new TransformStream();
       const writer = writable.getWriter();
+      const encoder = new TextEncoder();
 
       (async () => {
         try {
+          await writer.write(encoder.encode('\n'));
           let response = await fetch(url, {
             method: 'POST',
             headers,
@@ -344,7 +347,7 @@ export default async function handler(req) {
           if (!response.ok) {
             console.error('[Image] API Error:', response.status, JSON.stringify(data));
             await writer.write(
-              new TextEncoder().encode(JSON.stringify({ error: data.error || 'Image generation failed', raw: data }))
+              encoder.encode(JSON.stringify({ error: data.error || 'Image generation failed', raw: data }))
             );
             await writer.close();
             return;
@@ -365,12 +368,12 @@ export default async function handler(req) {
             imageData = item?.b64_json ? toImageDataUrl(item.b64_json, 'image/png') : item?.url || null;
           }
 
-          await writer.write(new TextEncoder().encode(JSON.stringify({ imageData })));
+          await writer.write(encoder.encode(JSON.stringify({ imageData })));
           await writer.close();
         } catch (err) {
           console.error('[Image] Stream error:', err);
           try {
-            await writer.write(new TextEncoder().encode(JSON.stringify({ error: err.message })));
+            await writer.write(encoder.encode(JSON.stringify({ error: err.message })));
             await writer.close();
           } catch {
             // writer may already be closed
