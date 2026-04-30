@@ -1,5 +1,5 @@
 export const config = {
-  runtime: 'edge',
+  maxDuration: 60,
 };
 
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
@@ -82,6 +82,8 @@ ${referenceImage ? '- 用户上传了参考图，请把能识别出的轮廓、�
 }`;
 };
 
+const PROFILE_MAX_OUTPUT_TOKENS = 2400;
+
 const buildEyecatchPrompt = ({
   standName,
   userName,
@@ -122,6 +124,33 @@ const jsonResponse = (data, status = 200) =>
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+
+const streamJsonResponse = (task) => {
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+
+  (async () => {
+    try {
+      const data = await task();
+      await writer.write(encoder.encode(JSON.stringify(data)));
+      await writer.close();
+    } catch (err) {
+      console.error('[Stream] Error:', err);
+      try {
+        await writer.write(encoder.encode(JSON.stringify({ error: err.message || String(err) })));
+        await writer.close();
+      } catch {
+        // writer may already be closed
+      }
+    }
+  })();
+
+  return new Response(readable, {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
+};
 
 const toImageDataUrl = (value, mimeType = 'image/png') => {
   if (!value) return null;
@@ -185,7 +214,14 @@ export default async function handler(req) {
           });
         }
 
-        body = { contents: [{ parts }] };
+        body = {
+          contents: [{ parts }],
+          generationConfig: {
+            maxOutputTokens: PROFILE_MAX_OUTPUT_TOKENS,
+            temperature: 0.8,
+            responseMimeType: 'application/json'
+          }
+        };
       } else {
         url = joinUrl(baseUrl, '/v1/chat/completions');
         headers = {
@@ -207,18 +243,29 @@ export default async function handler(req) {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userContent }
           ],
-          response_format: { type: 'json_object' }
+          response_format: { type: 'json_object' },
+          max_tokens: PROFILE_MAX_OUTPUT_TOKENS,
+          temperature: 0.8
         };
       }
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body)
-      });
+      return streamJsonResponse(async () => {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
 
-      const data = await response.json();
-      return jsonResponse(data, response.status);
+        const rawText = await response.text();
+        const data = rawText ? JSON.parse(rawText) : {};
+
+        if (!response.ok) {
+          console.error('[Profile] API Error:', response.status, JSON.stringify(data));
+          return { error: data.error || `Profile generation failed with status ${response.status}`, raw: data };
+        }
+
+        return data;
+      });
     }
 
     if (action === 'image') {

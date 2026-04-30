@@ -32,6 +32,43 @@ const StandGenerator = () => {
 
   const isCurrentGeneration = (generationId) => generationIdRef.current === generationId;
   const formatGenerationError = (stage, err) => `${stage} failed: ${err?.message || String(err)}`;
+  const isDeploymentTimeout = (err) => /FUNCTION_INVOCATION_TIMEOUT|Gateway Timeout|504/i.test(err?.message || String(err));
+
+  const buildTimeoutFallbackProfile = (inputs, concept) => ({
+    name: concept?.name || 'UNKNOWN STAND',
+    type: concept?.formType ? `${concept.formType} Stand` : 'Stand',
+    appearance: concept?.appearance || '',
+    stats: {
+      power: '?',
+      speed: '?',
+      range: '?',
+      durability: '?',
+      precision: '?',
+      potential: '?'
+    },
+    panel: {
+      abilityName: concept?.name || 'Stand Manifest',
+      desc: 'The visual concept was generated, but the full tactical profile timed out.',
+      long_desc: concept?.appearance
+        ? `Visual lock acquired: ${concept.appearance}. The text profile service timed out before the detailed ability record was returned.`
+        : 'Visual lock acquired. The text profile service timed out before the detailed ability record was returned.',
+      mechanics: [
+        {
+          title: 'Visual Concept',
+          content: concept?.reasoning || 'The first-pass design is preserved so the generated image and Stand identity can still be displayed.'
+        },
+        {
+          title: 'Profile Status',
+          content: 'The full ability profile can be regenerated when the text model responds within the deployment time limit.'
+        }
+      ],
+      limitations: [],
+      battleCry: '',
+      quote: 'The form has appeared; the record is still catching up.'
+    },
+    profileTimedOut: true,
+    userName: inputs.userName
+  });
 
   const closeAllPanels = () => {
     setShowHistory(false);
@@ -212,6 +249,37 @@ const StandGenerator = () => {
       }).catch(err => {
         if (!isCurrentGeneration(generationId)) return;
         console.error("Profile logic failed:", err);
+        if (isDeploymentTimeout(err)) {
+          const currentData = standDataRef.current || {};
+          const fallbackProfile = buildTimeoutFallbackProfile(inputs, concept);
+          const updatedData = {
+            ...currentData,
+            ...fallbackProfile,
+            imageUrl: currentData.imageUrl || null,
+            referenceImage: inputs.referenceImage,
+            timestamp: currentData.timestamp || Date.now(),
+            id: currentData.id || (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
+            userName: inputs.userName
+          };
+
+          standDataRef.current = updatedData;
+          setStandData(prev => ({
+            ...(prev || {}),
+            ...updatedData,
+            imageUrl: prev?.imageUrl || updatedData.imageUrl,
+            referenceImage: inputs.referenceImage,
+            userName: inputs.userName
+          }));
+
+          saveCachedStand(inputs, updatedData);
+          saveStandToDB(updatedData)
+            .then(() => refreshHistory(generationId))
+            .catch(storageError => {
+              if (!isCurrentGeneration(generationId)) return;
+              console.error("Fallback profile history sync failed:", storageError);
+            });
+          return;
+        }
         setError(formatGenerationError('Profile generation', err));
       });
 
