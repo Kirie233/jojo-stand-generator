@@ -17,6 +17,33 @@ const jsonResponse = (data, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
+const streamJsonResponse = (task) => {
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+
+  (async () => {
+    try {
+      const data = await task();
+      await writer.write(encoder.encode(JSON.stringify(data)));
+      await writer.close();
+    } catch (err) {
+      console.error('[Gemini Stream] Error:', err);
+      try {
+        await writer.write(encoder.encode(JSON.stringify({ error: err.message || String(err) })));
+        await writer.close();
+      } catch {
+        // writer may already be closed
+      }
+    }
+  })();
+
+  return new Response(readable, {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
 const readJsonOrText = async (response) => {
   const rawText = await response.text();
   if (!rawText) return {};
@@ -63,30 +90,37 @@ export default async function handler(req) {
       ? joinUrl(baseUrl, `/v1beta/models/${modelId}:generateContent`)
       : joinUrl(baseUrl, '/v1/chat/completions');
 
-    // Call API (Server-to-Server)
-    const googleResponse = await fetch(url, {
-      method: 'POST',
-      headers: useGeminiNative
-        ? {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey,
-          }
-        : {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-      body: JSON.stringify(useGeminiNative
-        ? { contents: [{ parts: [{ text: prompt }] }] }
-        : {
-            model: modelId,
-            messages: [{ role: 'user', content: prompt }],
-            response_format: { type: 'json_object' },
-          }),
+    return streamJsonResponse(async () => {
+      // Call API (Server-to-Server)
+      const googleResponse = await fetch(url, {
+        method: 'POST',
+        headers: useGeminiNative
+          ? {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey,
+            }
+          : {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+        body: JSON.stringify(useGeminiNative
+          ? { contents: [{ parts: [{ text: prompt }] }] }
+          : {
+              model: modelId,
+              messages: [{ role: 'user', content: prompt }],
+              response_format: { type: 'json_object' },
+            }),
+      });
+
+      const data = await readJsonOrText(googleResponse);
+
+      if (!googleResponse.ok) {
+        console.error('[Gemini] API Error:', googleResponse.status, JSON.stringify(data));
+        return { error: data.error || `Text generation failed with status ${googleResponse.status}`, raw: data };
+      }
+
+      return data;
     });
-
-    const data = await readJsonOrText(googleResponse);
-
-    return jsonResponse(data, googleResponse.status);
 
   } catch (error) {
     console.error("Edge Proxy Error:", error);

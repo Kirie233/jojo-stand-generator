@@ -348,6 +348,11 @@ export const generateFastVisualConcept = async (inputs) => {
     }
 
     const data = await response.json();
+    if (data.error) {
+      const detail = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+      throw new Error(detail);
+    }
+
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text && data.choices?.[0]?.message?.content) {
       text = data.choices[0].message.content;
